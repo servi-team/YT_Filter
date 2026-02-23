@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>YT Filter Ayarları</title>
+    <style>
+        :root {
+            --primary: #f00;
+            --bg: #1e1e1e;
+            --text: #ffffff;
+            --border: #333;
+        }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            margin: 0;
+            padding: 15px;
+            width: 320px;
+        }
+        h2 {
+            font-size: 18px;
+            margin-top: 0;
+            border-bottom: 2px solid var(--primary);
+            padding-bottom: 8px;
+            display: flex;
+            align-items: center;
+        }
+        .tag-group {
+            margin-bottom: 15px;
+            background: #2a2a2a;
+            padding: 10px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+        }
+        .tag-title {
+            font-weight: bold;
+            display: block;
+            margin-bottom: 8px;
+            text-transform: capitalize;
+            color: #ddd;
+        }
+        .option {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 5px;
+            font-size: 13px;
+        }
+        select {
+            background: #333;
+            color: white;
+            border: 1px solid var(--border);
+            padding: 3px;
+            border-radius: 4px;
+            outline: none;
+        }
+        .save-btn {
+            width: 100%;
+            padding: 10px;
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            transition: background 0.3s;
+        }
+        .save-btn:hover {
+            background-color: #cc0000;
+        }
+        .footer {
+            margin-top: 10px;
+            font-size: 10px;
+            text-align: center;
+            color: #666;
+        }
+    </style>
+</head>
+<body>
+    <h2>YT Filter 🛡️</h2>
+    
+    <div id="settings-container">
+        <!-- Ayarlar Dinamik Olarak Buraya Gelecek -->
+    </div>
+
+    <button id="save-btn" class="save-btn">Ayarları Kaydet</button>
+    
+    <div class="footer">YT Filter MVP - Senior Developer Handover</div>
+
+    <script src="popup.js"></script>
+</body>
+</html>

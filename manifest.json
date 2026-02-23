@@ -1,0 +1,41 @@
+{
+  "manifest_version": 3,
+  "name": "YT Filter",
+  "version": "1.0",
+  "description": "YouTube videolarını etiketler ve filtreler.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "https://www.youtube.com/*"
+  ],
+  "action": {
+    "default_popup": "popup.html",
+    "default_icon": {
+      "48": "icons/icon-48.png"
+    }
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "content.js"
+      ],
+      "css": [
+        "inject.css"
+      ]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "mapping.json"
+      ],
+      "matches": [
+        "https://www.youtube.com/*"
+      ]
+    }
+  ]
+}

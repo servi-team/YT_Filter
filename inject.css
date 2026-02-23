@@ -1,0 +1,74 @@
+/* Rozet Konteynırı - Layout'u bozmaması için kesinlikle absolute olmalı */
+.yt-filter-badge-container {
+    position: absolute !important;
+    top: 8px !important;
+    left: 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    z-index: 25 !important;
+    pointer-events: none !important;
+    width: fit-content !important;
+    height: fit-content !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+
+/* Rozet Stilleri */
+.yt-filter-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+
+.yt-filter-badge-safe {
+    background-color: #2ecc71;
+    border: 1px solid #27ae60;
+}
+
+.yt-filter-badge-warning {
+    background-color: #e74c3c;
+    border: 1px solid #c0392b;
+}
+
+.yt-filter-badge-neutral {
+    background-color: #f1c40f;
+    border: 1px solid #f39c12;
+    color: #000;
+}
+
+.yt-filter-badge-untagged {
+    background-color: #7f8c8d;
+    border: 1px solid #95a5a6;
+}
+
+/* Blur Efekti */
+.yt-filter-blur {
+    filter: blur(15px) !important;
+    transition: filter 0.3s ease;
+}
+
+.yt-filter-blur:hover {
+    filter: blur(0px) !important;
+}
+
+/* Remove Efekti */
+.yt-filter-hidden {
+    display: none !important;
+}
+
+/* Thumbnail Container ayarı - Tüm görünümler için kapsayıcıyı relative yap */
+ytd-thumbnail,
+ytd-rich-grid-media,
+ytd-rich-item-renderer #thumbnail,
+#thumbnail.ytd-video-renderer,
+#thumbnail.ytd-rich-grid-media,
+#thumbnail.ytd-compact-video-renderer {
+    position: relative !important;
+}
