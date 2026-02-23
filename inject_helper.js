@@ -12,7 +12,9 @@
             'data.shortBylineText.runs.0.navigationEndpoint.browseEndpoint.canonicalBaseUrl',
             'dataModel.shortBylineText.runs.0.navigationEndpoint.browseEndpoint.canonicalBaseUrl',
             'data.ownerText.runs.0.navigationEndpoint.commandMetadata.webCommandMetadata.url',
-            'data.navigationEndpoint.browseEndpoint.canonicalBaseUrl' // For channel-focused elements
+            'data.navigationEndpoint.browseEndpoint.canonicalBaseUrl',
+            'jvmModel.shortBylineText.runs.0.navigationEndpoint.browseEndpoint.canonicalBaseUrl', // Search results
+            'data.longBylineText.runs.0.navigationEndpoint.browseEndpoint.canonicalBaseUrl'
         ];
 
         for (const path of paths) {
@@ -25,7 +27,7 @@
                 }
             }
             if (typeof val === 'string') {
-                const handleMatch = val.match(/\/@([a-zA-Z0-9._-]+)/);
+                const handleMatch = val.match(/\/(@[a-zA-Z0-9._-]+)/);
                 if (handleMatch) return `@${handleMatch[1]}`;
 
                 const channelMatch = val.match(/\/(?:user|channel)\/([a-zA-Z0-9._-]+)/);
@@ -43,7 +45,9 @@
             'jvmModel.videoId',
             'data.contentId',
             'data.videoRenderer.videoId',
-            'videoRenderer.videoId'
+            'videoRenderer.videoId',
+            'data.gridVideoRenderer.videoId',
+            'data.reelItemRenderer.videoId'
         ];
 
         for (const path of paths) {
@@ -66,7 +70,9 @@
             'ytd-lockup-view-model-wiz',
             'yt-lockup-view-model-wiz',
             'ytd-reel-item-view-model',
-            'yt-reel-item-view-model'
+            'yt-reel-item-view-model',
+            'ytd-grid-video-renderer',
+            'ytd-rich-grid-media'
         ];
 
         document.querySelectorAll(selectors.join(', ')).forEach(el => {
@@ -81,7 +87,6 @@
                 const channelHandle = findChannelHandleInElement(el);
                 if (channelHandle) {
                     el.setAttribute('data-yt-exposed-channel', channelHandle);
-                    // console.log("YT Filter: Exposed Channel", channelHandle);
                 }
             }
         });
