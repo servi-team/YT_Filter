@@ -26,6 +26,15 @@
       "css": [
         "inject.css"
       ]
+    },
+    {
+      "matches": [
+        "https://www.youtube.com/*"
+      ],
+      "js": [
+        "inject_helper.js"
+      ],
+      "world": "MAIN"
     }
   ],
   "web_accessible_resources": [
