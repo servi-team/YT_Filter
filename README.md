@@ -28,7 +28,7 @@ Eklenti henüz resmi mağazalarda yer almadığı için aşağıdaki adımları 
 
 1. Tarayıcınızın adres çubuğundan `chrome://extensions/` adresine gidin
 2. Sağ üstten Geliştirici modunu açıp sol üstten "Paketlenmemiş öğe yükle" 'yi seçin.
-3. İndirdiğiniz 7 dosyayı bir klasör olarak seçin.
+3. İndirdiğiniz dosyaları bir klasör olarak seçin.
 4. **Hazır!** YouTube'a girerek eklentinin aktif olduğunu görebilirsiniz. Sağ üstteki eklenti ikonuna tıklayarak filtreleme ayarlarını yapabilirsiniz.
 
 ## 🛠️ Teknik Detaylar
