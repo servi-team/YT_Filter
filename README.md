@@ -3,7 +3,7 @@
 **YT Filter**, YouTube deneyiminizi kişiselleştirmenize ve güvenli hale getirmenize yardımcı olan bir tarayıcı eklentisidir. Özellikle çocuklar ve yetişkinler için istenmeyen içeriklerden uzak durmayı, içeriği kontrol altına almayı hedefler.
 
 > [!IMPORTANT]
-> **Şu anda sadece Firefox tarayıcısı üzerinde çalışmaktadır.**
+> **Şu anda sadece Chrome tarayıcısı üzerinde denenmiştir.**
 
 ## 🎯 Projenin Hedefi
 
@@ -24,17 +24,15 @@
 
 Eklenti henüz resmi mağazalarda yer almadığı için aşağıdaki adımları izleyerek geçici olarak tarayıcınıza yükleyebilirsiniz:
 
-### Firefox için Adımlar:
+### Chrome için Adımlar:
 
-1. **Firefox'u Açın:** Tarayıcınızın adres çubuğuna `about:debugging` yazın ve Enter'a basın.
-2. **Bu Firefox (This Firefox):** Sol menüden "Bu Firefox" seçeneğine tıklayın.
-3. **Geçici Eklenti Yükle (Load Temporary Add-on):** Sağ üst taraftaki bu butona tıklayın.
-4. **Dosyayı Seçin:** Proje klasörüne gidin ve `manifest.json` dosyasını seçerek "Aç" deyin.
-5. **Hazır!** YouTube'a girerek eklentinin aktif olduğunu görebilirsiniz. Sağ üstteki eklenti ikonuna tıklayarak filtreleme ayarlarını yapabilirsiniz.
+1. Tarayıcınızın adres çubuğundan `chrome://extensions/` adresine gidin
+2. Sağ üstten Geliştirici modunu açıp sol üstten "Paketlenmemiş öğe yükle" 'yi seçin.
+3. İndirdiğiniz 7 dosyayı bir klasör olarak seçin.
+4. **Hazır!** YouTube'a girerek eklentinin aktif olduğunu görebilirsiniz. Sağ üstteki eklenti ikonuna tıklayarak filtreleme ayarlarını yapabilirsiniz.
 
 ## 🛠️ Teknik Detaylar
 
-- **Mapping (Eşleştirme):** `mapping.json` dosyası, video ID'lerini ve kanal isimlerini etiketlerle eşleştirir. Kendi listelerinizi bu dosyayı düzenleyerek güncelleyebilirsiniz.
 - **Inject Logic:** İçerik betikleri (`content.js`), YouTube'un dinamik yapısına (Sürekli kaydırma/Infinite scroll) uyum sağlayacak şekilde optimize edilmiştir.
 
 ---
