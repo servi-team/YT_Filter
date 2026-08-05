@@ -1,50 +1,28 @@
 {
   "manifest_version": 3,
-  "name": "YT Filter",
+  "name": "YouTube Filtreleyici",
   "version": "1.0",
-  "description": "YouTube videolarını etiketler ve filtreler.",
+  "description": "Özel kanal istisnaları, video etiketleme, PIN koruması ve otomatik senkronizasyon içeren gelişmiş filtreleyici.",
   "permissions": [
-    "storage"
+    "storage",
+    "alarms"
   ],
   "host_permissions": [
-    "https://www.youtube.com/*"
+    "*://*.youtube.com/*",
+    "*://*/*"
   ],
-  "action": {
-    "default_popup": "popup.html",
-    "default_icon": {
-      "48": "icons/icon-48.png"
-    }
+  "background": {
+    "service_worker": "background.js"
   },
   "content_scripts": [
     {
-      "matches": [
-        "https://www.youtube.com/*"
-      ],
-      "js": [
-        "content.js"
-      ],
-      "css": [
-        "inject.css"
-      ]
-    },
-    {
-      "matches": [
-        "https://www.youtube.com/*"
-      ],
-      "js": [
-        "inject_helper.js"
-      ],
-      "world": "MAIN"
+      "matches": ["*://*.youtube.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
     }
   ],
-  "web_accessible_resources": [
-    {
-      "resources": [
-        "mapping.json"
-      ],
-      "matches": [
-        "https://www.youtube.com/*"
-      ]
-    }
-  ]
+  "options_page": "options.html",
+  "action": {
+    "default_title": "Filtre Ayarları"
+  }
 }

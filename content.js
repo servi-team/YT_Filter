@@ -1,281 +1,215 @@
-/**
- * YT Filter Content Script
- * YouTube videolarını algılar, veritabanı ile eşleştirir ve filtreler.
- */
-
-// Global Ayarlar (Storage'dan gelecek)
-let userPreferences = {
-    "profanity": { visibility: "Show Badge", enforcement: "Blur Thumbnail" },
-    "violence": { visibility: "Show Badge", enforcement: "Remove Video Entirely" },
-    "safe": { visibility: "Show Badge", enforcement: "Allow Video" },
-    "educational": { visibility: "Show Badge", enforcement: "Allow Video" },
-    "untagged": { visibility: "Show Badge", enforcement: "Allow Video" }
-};
-
-// Admin Mapping (Dahili JSON - Gelecekte API olabilir)
-let videoMapping = {};
-
-// Channel Context: Eğer bir kanal sayfasındaysak (/@handle), bu kanalın handle'ını tutar.
+let hafiza = {};
 let currentChannelContext = null;
+let stilElemani = document.createElement('style');
+document.head.appendChild(stilElemani);
 
-/**
- * URL'den kanal handle'ını ayıkla
- */
 function updateChannelContext() {
     const url = window.location.href;
     const handleMatch = url.match(/\/(@[a-zA-Z0-9._-]+)/);
     if (handleMatch && handleMatch[1]) {
         currentChannelContext = handleMatch[1];
-        console.log("YT Filter: Current Channel Context:", currentChannelContext);
     } else {
         currentChannelContext = null;
     }
 }
 
-// Veritabanını yükle (Önce Storage, yoksa JSON, sonra birleştir)
-async function loadMapping() {
+async function loadData() {
     try {
-        const response = await fetch(chrome.runtime.getURL('mapping.json'));
-        const defaultMapping = await response.json();
-
-        let storageData;
-        if (typeof browser !== 'undefined' && browser.storage) {
-            storageData = await browser.storage.local.get("mapping");
-        } else if (typeof chrome !== 'undefined' && chrome.storage) {
-            storageData = await new Promise(r => chrome.storage.local.get("mapping", r));
-        }
-
-        videoMapping = { ...defaultMapping, ...(storageData?.mapping || {}) };
-
-        if (!storageData?.mapping || Object.keys(defaultMapping).some(key => !storageData.mapping[key])) {
-            chrome.storage.local.set({ "mapping": videoMapping });
-        }
-
-        console.log("YT Filter: Mapping loaded and merged", videoMapping);
+        const storageData = await chrome.storage.local.get(null);
+        hafiza = storageData;
+        arayuzAyarlariniUygula();
     } catch (e) {
-        console.error("YT Filter: Mapping load failed", e);
+        console.error("Veri yükleme hatası", e);
     }
 }
 
-// Kullanıcı tercihlerini yükle
-async function loadPreferences() {
-    try {
-        if (typeof browser !== 'undefined' && browser.storage) {
-            const data = await browser.storage.local.get("preferences");
-            if (data.preferences) userPreferences = data.preferences;
-        } else if (typeof chrome !== 'undefined' && chrome.storage) {
-            const data = await new Promise(r => chrome.storage.local.get("preferences", r));
-            if (data.preferences) userPreferences = data.preferences;
+function arayuzAyarlariniUygula() {
+    let cssKurallari = `
+        .yt-filter-badge-container { position: absolute !important; top: 8px !important; left: 8px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 200 !important; pointer-events: none !important; }
+        .yt-filter-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
+        
+        .yt-filter-badge-safe { background-color: #2ecc71; border: 1px solid #27ae60; }
+        .yt-filter-badge-educational { background-color: #3498db; border: 1px solid #2980b9; }
+        .yt-filter-badge-warning { background-color: #e74c3c; border: 1px solid #c0392b; }
+        .yt-filter-badge-profanity { background-color: #e67e22; border: 1px solid #d35400; }
+        .yt-filter-badge-untagged { background-color: #7f8c8d; border: 1px solid #95a5a6; }
+        
+        /* Blur etkileri */
+        [data-yt-filter-blur="true"] img,
+        [data-yt-filter-blur="true"] yt-image,
+        [data-yt-filter-blur="true"] ytd-video-preview,
+        [data-yt-filter-blur="true"] #mouseover-overlay,
+        [data-yt-filter-blur="true"] #hover-overlays,
+        [data-yt-filter-blur="true"] ytd-moving-thumbnail-renderer,
+        [data-yt-filter-blur="true"] #inline-preview-player { 
+            filter: blur(25px) !important; 
         }
-    } catch (e) {
-        console.warn("YT Filter: Preferences load failed, using defaults", e);
+        
+        .yt-filter-hidden { display: none !important; }
+        ytd-thumbnail, ytd-rich-grid-media, ytd-rich-item-renderer, ytd-video-renderer { position: relative !important; }
+    `;
+
+    if (hafiza.ayarlar?.otomatikOynatmaKapat) {
+        cssKurallari += `
+            ytd-video-preview,
+            #mouseover-overlay,
+            #hover-overlays,
+            ytd-moving-thumbnail-renderer,
+            #inline-preview-player { display: none !important; }
+        \n`;
     }
+
+    if (hafiza.ayarlar?.shortsGizle) {
+        cssKurallari += `ytd-rich-shelf-renderer[is-shorts], ytd-reel-shelf-renderer, a[href^="/shorts"] { display: none !important; }\n`;
+    }
+    if (hafiza.ayarlar?.yorumGizle) {
+        cssKurallari += `ytd-comments { display: none !important; }\n`;
+    }
+    if (hafiza.ayarlar?.onerilenGizle) {
+        cssKurallari += `ytd-watch-next-secondary-results-renderer { display: none !important; }\n`;
+    }
+    stilElemani.textContent = cssKurallari;
 }
 
-/**
- * Deep search for links including Shadow DOM
- */
+function etiketRengiUret(metin) {
+    let hash = 0;
+    for (let i = 0; i < metin.length; i++) {
+        hash = metin.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    const hue = Math.abs(hash) % 360;
+    return {
+        bg: `hsl(${hue}, 65%, 45%)`,
+        border: `hsl(${hue}, 70%, 35%)`
+    };
+}
+
 function findAllLinks(root) {
     if (!root) return [];
     let links = Array.from(root.querySelectorAll('a[href]'));
-
     const walkers = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
     let node = walkers.nextNode();
     while (node) {
-        if (node.shadowRoot) {
-            links = links.concat(findAllLinks(node.shadowRoot));
-        }
+        if (node.shadowRoot) links = links.concat(findAllLinks(node.shadowRoot));
         node = walkers.nextNode();
     }
     return links;
 }
 
-/**
- * The Extractor: Video ID ayıkla
- */
 function extractVideoId(element) {
     if (!element) return null;
-
-    // 0. Check for MAIN world exposed ID
     const exposedId = element.getAttribute('data-yt-exposed-id');
     if (exposedId && exposedId.length === 11) return exposedId;
-
-    // 1. Element-level property check
-    const propertyPaths = [
-        'data.videoId',
-        'dataModel.videoId',
-        'jvmModel.videoId',
-        'data.contentId',
-        'data.videoRenderer.videoId'
-    ];
-
+    const propertyPaths = ['data.videoId', 'dataModel.videoId', 'jvmModel.videoId', 'data.contentId', 'data.videoRenderer.videoId'];
     for (const path of propertyPaths) {
         let val = element;
-        for (const segment of path.split('.')) {
-            val = val ? val[segment] : null;
-        }
+        for (const segment of path.split('.')) val = val ? val[segment] : null;
         if (typeof val === 'string' && val.length === 11) return val;
     }
-
-    // 2. Link scanning (Most robust for Search & Shorts)
     const links = findAllLinks(element);
     for (const link of links) {
         const href = link.getAttribute('href') || link.href;
         if (!href) continue;
-
         const watchMatch = href.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
         if (watchMatch && watchMatch[1]) return watchMatch[1];
-
         const shortsMatch = href.match(/\/shorts\/([a-zA-Z0-9_-]{11})/);
         if (shortsMatch && shortsMatch[1]) return shortsMatch[1];
     }
-
-    // 3. Thumbnail Image check
-    const thumbImg = element.querySelector('img[src*="/vi/"], img[src*="ytimg.com/"]');
-    if (thumbImg) {
-        const patterns = [
-            /\/vi\/([a-zA-Z0-9_-]{11})\//,
-            /\/([a-zA-Z0-9_-]{11})\/(?:hq|mq|sd|maxres)default/
-        ];
-
-        for (const pattern of patterns) {
-            const match = thumbImg.src.match(pattern);
-            if (match && match[1]) return match[1];
-        }
-    }
-
     return null;
 }
 
-/**
- * Channel Handle/ID ayıkla
- */
 function extractChannelHandle(element) {
     if (!element) return null;
-
-    // 0. Check for MAIN world exposed Channel
     const exposedChannel = element.getAttribute('data-yt-exposed-channel');
     if (exposedChannel) return exposedChannel;
+    
+    let kanalElemani = element.querySelector('.ytd-channel-name a, ytd-channel-name yt-formatted-string, #channel-name');
+    if (kanalElemani) {
+        let text = (kanalElemani.title || kanalElemani.innerText || kanalElemani.textContent || "").trim();
+        if (text) return text;
+    }
 
-    // 1. Link pattern check
     const links = findAllLinks(element);
     for (const link of links) {
         const href = (link.getAttribute('href') || link.href || "");
         if (!href) continue;
-
         const handleMatch = href.match(/\/(@[a-zA-Z0-9._-]+)/);
         if (handleMatch && handleMatch[1]) return handleMatch[1];
-
-        const channelMatch = href.match(/\/(?:user|channel)\/([a-zA-Z0-9._-]+)/);
-        if (channelMatch && channelMatch[1]) return channelMatch[1];
     }
-
-    // 2. Element specific check
-    const channelLink = element.querySelector('a[href*="/@"], a[href*="/user/"], a[href*="/channel/"]');
-    if (channelLink) {
-        const href = channelLink.getAttribute('href');
-        const handleMatch = href.match(/\/(@[a-zA-Z0-9._-]+)/);
-        if (handleMatch) return handleMatch[1];
-    }
-
-    // 3. Context Fallback: Eğer bir kanal sayfasındaysak ve listedeki bir videosak
-    // (ve başka bir kanal linki bulamadıysak), bu kanalın videosu olduğumuzu varsayabiliriz.
-    if (currentChannelContext) {
-        // Ancak bu varsayımı sadece kanalın kendi içerik alanındaysak yapmalıyız.
-        // YouTube genellikle kanal sayfasında videoları ytd-rich-grid-media veya ytd-video-renderer içinde gösterir.
-        return currentChannelContext;
-    }
-
+    if (currentChannelContext) return currentChannelContext;
     return null;
 }
 
-/**
- * Data Provider: Video veya Kanal etiketlerini getir
- */
-function getTagData(videoId, channelHandle) {
-    let tags = [];
+function applyFilter(element, videoId, channelHandle) {
+    let etiketTuru = "untagged";
 
-    if (videoId && videoMapping[videoId]) {
-        tags = videoMapping[videoId];
-    } else if (channelHandle) {
-        const handleMatch = channelHandle.startsWith('@') ? channelHandle : `@${channelHandle}`;
-        const handleLower = handleMatch.toLowerCase();
-
-        const matchingKey = Object.keys(videoMapping).find(key => key.toLowerCase() === handleLower);
-        if (matchingKey) {
-            tags = videoMapping[matchingKey];
-            console.log(`YT Filter: Matched channel ${handleMatch} to tags:`, tags);
+    if (hafiza.customMapping) {
+        let safeVideoId = videoId ? videoId.toLowerCase() : "";
+        let safeChannelHandle = channelHandle ? channelHandle.toLowerCase() : "";
+        
+        if (safeVideoId && hafiza.customMapping[safeVideoId]) {
+            etiketTuru = hafiza.customMapping[safeVideoId];
+        } else if (safeChannelHandle && hafiza.customMapping[safeChannelHandle]) {
+            etiketTuru = hafiza.customMapping[safeChannelHandle];
         }
     }
 
-    return tags.length > 0 ? tags : ['untagged'];
-}
-
-/**
- * UI Injection & Filtering
- */
-function applyFilter(element, tags) {
-    if (!tags || tags.length === 0) return;
-
-    const primaryTag = tags[0];
-    const pref = userPreferences[primaryTag] || { visibility: "Show Badge", enforcement: "Allow Video" };
+    const pref = (hafiza.preferences && hafiza.preferences[etiketTuru]) 
+        ? hafiza.preferences[etiketTuru] 
+        : { visibility: "Show Badge", enforcement: "Remove Video Entirely" };
 
     if (pref.enforcement === "Remove Video Entirely") {
         element.classList.add('yt-filter-hidden');
-        return;
     } else if (pref.enforcement === "Blur Thumbnail") {
         element.dataset.ytFilterBlur = "true";
     }
 
     if (pref.visibility === "Show Badge") {
-        addBadge(element, tags);
+        addBadge(element, etiketTuru);
     }
 }
 
-function addBadge(element, tags) {
+function addBadge(element, tag) {
     if (element.querySelector('.yt-filter-badge-container')) return;
-
     const container = document.createElement('div');
     container.className = 'yt-filter-badge-container';
-    container.style.zIndex = "200";
-    container.style.pointerEvents = "auto";
+    
+    const badge = document.createElement('span');
+    const isCore = ["profanity", "violence", "educational", "safe", "untagged"].includes(tag);
+    const tagLabels = { "profanity": "Küfür/Argo", "violence": "Şiddet", "educational": "Eğitici", "safe": "Güvenli", "untagged": "Etiketlenmemiş" };
+    
+    let etiketAdi = tag;
+    if (isCore) {
+        etiketAdi = tagLabels[tag];
+    } else {
+        etiketAdi = (hafiza.preferences && hafiza.preferences[tag] && hafiza.preferences[tag].adi) 
+            ? hafiza.preferences[tag].adi 
+            : tag;
+    }
 
-    tags.forEach(tag => {
-        const badge = document.createElement('span');
-        badge.textContent = tag === 'untagged' ? 'ETİKETLENMEMİŞ' : tag.toUpperCase();
-
-        let typeClass = 'yt-filter-badge-neutral';
-        if (tag === 'safe' || tag === 'educational') typeClass = 'yt-filter-badge-safe';
-        if (tag === 'violence' || tag === 'profanity') typeClass = 'yt-filter-badge-warning';
-        if (tag === 'untagged') typeClass = 'yt-filter-badge-untagged';
-
+    badge.textContent = etiketAdi.toLocaleUpperCase('tr-TR');
+    
+    if (isCore) {
+        let typeClass = 'yt-filter-badge-untagged';
+        if (tag === 'safe') typeClass = 'yt-filter-badge-safe';
+        else if (tag === 'educational') typeClass = 'yt-filter-badge-educational';
+        else if (tag === 'violence') typeClass = 'yt-filter-badge-warning';
+        else if (tag === 'profanity') typeClass = 'yt-filter-badge-profanity';
+        
         badge.className = `yt-filter-badge ${typeClass}`;
-        container.appendChild(badge);
-    });
+    } else {
+        const renkler = etiketRengiUret(tag);
+        badge.className = 'yt-filter-badge';
+        badge.style.backgroundColor = renkler.bg;
+        badge.style.border = `1px solid ${renkler.border}`;
+    }
 
+    container.appendChild(badge);
+    
     element.style.setProperty('position', 'relative', 'important');
     element.appendChild(container);
 }
 
-/**
- * The Watcher: MutationObserver
- */
-const videoSelectors = [
-    'ytd-rich-item-renderer',
-    'ytd-video-renderer',
-    'ytd-compact-video-renderer',
-    'ytd-reel-item-renderer',
-    'ytd-lockup-view-model',
-    'ytd-rich-grid-media',
-    'ytd-lockup-view-model-wiz',
-    'yt-lockup-view-model-wiz',
-    'yt-lockup-view-model',
-    'ytd-reel-video-renderer',
-    'ytd-rich-grid-slim-media',
-    'yt-reel-item-view-model',
-    'ytd-reel-item-view-model',
-    'ytd-grid-video-renderer' // Eskiden daha yaygındı, hala bulunabilir
-].join(', ');
+const videoSelectors = ['ytd-rich-item-renderer', 'ytd-video-renderer', 'ytd-compact-video-renderer', 'ytd-reel-item-renderer', 'ytd-lockup-view-model', 'ytd-rich-grid-media', 'ytd-grid-video-renderer'].join(', ');
 
 const observer = new MutationObserver((mutations) => {
     for (let mutation of mutations) {
@@ -284,19 +218,7 @@ const observer = new MutationObserver((mutations) => {
                 if (node.nodeType === 1) {
                     const videos = node.querySelectorAll(videoSelectors);
                     videos.forEach(processVideo);
-
-                    if (node.matches && node.matches(videoSelectors)) {
-                        processVideo(node);
-                    }
-
-                    // Link-first detection
-                    if (node.querySelectorAll) {
-                        const potentialLinks = node.querySelectorAll('a[href*="watch?v="], a[href*="/shorts/"]');
-                        potentialLinks.forEach(link => {
-                            const container = link.closest(videoSelectors);
-                            if (container) processVideo(container);
-                        });
-                    }
+                    if (node.matches && node.matches(videoSelectors)) processVideo(node);
                 }
             });
         }
@@ -304,34 +226,19 @@ const observer = new MutationObserver((mutations) => {
 });
 
 async function processVideo(element) {
-    // İç içe renderları engelle (Örn: ytd-rich-item-renderer içinde ytd-rich-grid-media)
-    const childVideo = element.querySelector(videoSelectors);
-    if (childVideo && childVideo !== element) {
-        // Eğer içimizde başka bir video renderer varsa, dıştakini işlemeden çıkabiliriz 
-        // VEYA dıştakini işleyip içtekini pas geçebiliriz. 
-        // YouTube genellikle içtekini asıl video verisiyle doldurur.
-        // Ancak badge'i dıştakine takmak layout açısından daha güvenli olabilir.
-        // Şimdilik: Eğer en dıştaki renderer isek devam et.
-    }
-
     const currentVideoId = extractVideoId(element);
     const currentChannelHandle = extractChannelHandle(element);
-
-    if (!currentVideoId && !currentChannelHandle) {
-        return;
-    }
-
+    if (!currentVideoId && !currentChannelHandle) return;
+    
     const lastVideoId = element.dataset.ytFilterLastId;
     const lastChannelId = element.dataset.ytFilterLastChannelId;
-
+    
     if (currentVideoId !== lastVideoId || currentChannelHandle !== lastChannelId) {
         resetElement(element);
         element.dataset.ytFilterLastId = currentVideoId || "";
         element.dataset.ytFilterLastChannelId = currentChannelHandle || "";
         finishProcessing(element, currentVideoId, currentChannelHandle);
-    } else if (element.dataset.ytFilterProcessed) {
-        return;
-    } else {
+    } else if (!element.dataset.ytFilterProcessed) {
         finishProcessing(element, currentVideoId, currentChannelHandle);
     }
 }
@@ -348,42 +255,29 @@ function resetElement(element) {
 
 function finishProcessing(element, videoId, channelHandle) {
     element.dataset.ytFilterProcessed = "true";
-    const tags = getTagData(videoId, channelHandle);
-
-    if (videoId || channelHandle) {
-        // console.log(`YT Filter: Processing - ID: ${videoId}, Channel: ${channelHandle}, Tags: ${tags.join(', ')}`);
-    }
-
-    applyFilter(element, tags);
+    applyFilter(element, videoId, channelHandle);
 }
 
-// Başlat
 async function init() {
     updateChannelContext();
-    await loadMapping();
-    await loadPreferences();
-
+    await loadData();
     document.querySelectorAll(videoSelectors).forEach(processVideo);
-
-    observer.observe(document.body, { childList: true, subtree: true });
+    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
 }
 
-// URL ve Navigasyon Takibi
 let lastUrl = location.href;
 setInterval(() => {
-    const url = location.href;
-    if (url !== lastUrl) {
-        lastUrl = url;
-        console.log("YT Filter: URL changed, updating context and re-scanning");
+    if (location.href !== lastUrl) {
+        lastUrl = location.href;
         updateChannelContext();
-
-        // Kanal sayfalarında sekmeler arası geçişte her şey tazelenmeli
         document.querySelectorAll(videoSelectors).forEach(el => resetElement(el));
-
-        setTimeout(() => {
-            document.querySelectorAll(videoSelectors).forEach(processVideo);
-        }, 1000);
+        setTimeout(() => document.querySelectorAll(videoSelectors).forEach(processVideo), 1000);
     }
 }, 1000);
+
+chrome.storage.onChanged.addListener(() => {
+    document.querySelectorAll('[data-yt-filter-processed="true"]').forEach(el => resetElement(el));
+    loadData().then(() => document.querySelectorAll(videoSelectors).forEach(processVideo));
+});
 
 init();

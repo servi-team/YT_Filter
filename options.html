@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>YT Filter Ayarları</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f9f9f9; color: #333; }
+        .kutu { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); margin-bottom: 20px; }
+        #anaArayuz { display: none; }
+        button { padding: 10px 15px; cursor: pointer; background: #065fd4; color: white; border: none; border-radius: 4px; font-weight: bold; }
+        .bilgi { color: #555; font-size: 13px; margin-bottom: 10px; line-height: 1.5;}
+        input[type="text"], input[type="password"] { padding: 8px; width: 200px; border: 1px solid #ccc; border-radius: 4px;}
+        .tag-group { margin-bottom: 15px; background: #f1f1f1; padding: 10px; border-radius: 8px; border: 1px solid #ccc; position: relative; }
+        .tag-title { font-weight: bold; display: block; margin-bottom: 8px; }
+        .option { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 13px; }
+        select { padding: 8px; border-radius: 4px; outline: none; border: 1px solid #ccc; }
+        .btnSilKural { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; position: absolute; right: 10px; top: 10px; }
+    </style>
+</head>
+<body>
+    <div id="pinEkrani" class="kutu">
+        <h3>Filtre Ayarları - Güvenlik Doğrulaması</h3>
+        <p>Devam etmek için PIN kodunu girin (Varsayılan: 1234)</p>
+        <input type="password" id="pinGiris" placeholder="PIN Kodu">
+        <button id="btnPinOnayla" style="margin-top: 10px;">Giriş Yap</button>
+        <p id="pinHata" style="color:red; display:none;">Hatalı PIN!</p>
+    </div>
+    
+    <div id="anaArayuz">
+        <div class="kutu">
+            <h3>Sistem Bilgisi</h3>
+            <p class="bilgi">Kurulum Tarihi: <span id="lblKurulumTarihi"></span></p>
+            <p>Yeni PIN Kodu Belirle: <input type="text" id="yeniPin"> <button id="btnPinGuncelle">Değiştir</button></p>
+        </div>
+        
+        <div class="kutu">
+            <h3>Genel Görünüm Ayarları</h3>
+            <label><input type="checkbox" id="chkOtomatikOynatma"> Küçük resim üstüne gelince otomatik oynatmayı kapat (Tüm Videolar)</label><br><br>
+            <label><input type="checkbox" id="chkShorts"> Tüm Shorts videolarını kaldır</label><br><br>
+            <label><input type="checkbox" id="chkYorum"> Yorumlar bölümünü kaldır</label><br><br>
+            <label><input type="checkbox" id="chkOnerilen"> Video yanı önerilenleri kaldır</label>
+        </div>
+        
+        <div class="kutu">
+            <h3>Etiket ve Eylem Kuralları</h3>
+            <p class="bilgi">Mevcut etiketlerin davranışlarını belirleyin veya kendi özel etiketinizi oluşturun.</p>
+            <div style="display: flex; gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="yeniKuralAdi" placeholder="Yeni Etiket Adı (Örn: Oyun)" style="flex: 1;">
+                <button id="btnKuralEkle" style="margin-top: 0;">Etiket Oluştur</button>
+            </div>
+            <div id="settings-container"></div>
+        </div>
+        
+        <div class="kutu">
+            <h3>Kişisel Etiket Listesi (Kanal ve Video)</h3>
+            <p class="bilgi">
+                Kanal adını (Örn: <b>@YusufIpek</b>), Video ID'sini (Örn: <b>dQw4w9WgXcQ</b>) veya doğrudan <b>Video URL'sini</b> yapıştırın ve etiketini seçin.
+            </p>
+            <div style="display: flex; gap: 10px; margin-bottom: 15px; align-items: center;">
+                <input type="text" id="yeniEtiketId" placeholder="URL, Video ID veya @KanalAdı" style="flex: 1;">
+                <select id="yeniEtiketTuru">
+                </select>
+                <button id="btnEtiketEkle" style="margin-top: 0;">Ekle</button>
+            </div>
+            
+            <div id="etiketListesiKonteyner" style="max-height: 250px; overflow-y: auto; border: 1px solid #ccc; padding: 10px; border-radius: 4px; background: #fff;">
+            </div>
+        </div>
+        
+        <div class="kutu">
+            <h3>Veritabanı ve Paylaşım</h3>
+            <label>Otomatik Güncelleme URL Adresi (JSON):</label><br>
+            <input type="text" id="txtUrl" style="width: 80%; margin-top: 5px;"><br><br>
+            <button id="btnKaydet" style="background: #28a745;">Tüm Ayarları Kaydet</button>
+            <button id="btnDisaAktar">Verileri Dışa Aktar (JSON)</button>
+            <input type="file" id="btnIceAktar" accept=".json" style="margin-top:10px;">
+        </div>
+
+        <div class="kutu" style="text-align: center; background: #f1f1f1;">
+            <p style="margin: 0; font-size: 13px;">
+                Öneri ve Hata Bildirimleriniz İçin ==> <a href="https://serviekibi.com/iletisim" target="_blank" style="color: #065fd4; font-weight: bold; text-decoration: none;">https://serviekibi.com/iletisim</a>
+            </p>
+        </div>
+    </div>
+    
+    <script src="options.js"></script>
+</body>
+</html>

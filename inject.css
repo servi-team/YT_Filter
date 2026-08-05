@@ -1,4 +1,3 @@
-/* Rozet Konteynırı - Layout'u bozmaması için kesinlikle absolute olmalı */
 .yt-filter-badge-container {
     position: absolute !important;
     top: 8px !important;
@@ -14,8 +13,6 @@
     padding: 0 !important;
     border: none !important;
 }
-
-/* Rozet Stilleri */
 .yt-filter-badge {
     display: inline-block;
     padding: 2px 6px;
@@ -26,104 +23,17 @@
     text-transform: uppercase;
     box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
+.yt-filter-badge-safe { background-color: #2ecc71; border: 1px solid #27ae60; }
+.yt-filter-badge-warning { background-color: #e74c3c; border: 1px solid #c0392b; }
+.yt-filter-badge-neutral { background-color: #f1c40f; border: 1px solid #f39c12; color: #000; }
+.yt-filter-badge-untagged { background-color: #7f8c8d; border: 1px solid #95a5a6; }
 
-.yt-filter-badge-safe {
-    background-color: #2ecc71;
-    border: 1px solid #27ae60;
-}
-
-.yt-filter-badge-warning {
-    background-color: #e74c3c;
-    border: 1px solid #c0392b;
-}
-
-.yt-filter-badge-neutral {
-    background-color: #f1c40f;
-    border: 1px solid #f39c12;
-    color: #000;
-}
-
-.yt-filter-badge-untagged {
-    background-color: #7f8c8d;
-    border: 1px solid #95a5a6;
-}
-
-/* Blur Efekti - Hem class hem attribute desteği */
-.yt-filter-blur,
-[data-yt-filter-blur="true"] ytd-thumbnail,
-[data-yt-filter-blur="true"] #thumbnail,
-[data-yt-filter-blur="true"] .ytd-thumbnail,
-[data-yt-filter-blur="true"] img,
-[data-yt-filter-blur="true"] yt-image,
-[data-yt-filter-blur="true"] .yt-core-image,
-[data-yt-filter-blur="true"] .ytd-lockup-view-model-wiz__thumbnail-container,
-[data-yt-filter-blur="true"] .yt-lockup-view-model-wiz__thumbnail-container,
-[data-yt-filter-blur="true"] .yt-lockup-replacement-wiz__thumbnail-container,
-[data-yt-filter-blur="true"] .ytd-reel-item-renderer__thumbnail-container,
-[data-yt-filter-blur="true"] .yt-reel-item-view-model__thumbnail-container,
-[data-yt-filter-blur="true"] .ytd-reel-item-view-model__thumbnail-container,
-[data-yt-filter-blur="true"] #content.ytd-rich-grid-slim-media,
-[data-yt-filter-blur="true"] ytd-reel-item-renderer #thumbnail,
-[data-yt-filter-blur="true"] .ytd-reel-item-renderer>#thumbnail,
-[data-yt-filter-blur="true"] ytd-reel-video-renderer #video-container,
-[data-yt-filter-blur="true"] ytd-reel-video-renderer .video-player-container,
-[data-yt-filter-blur="true"] yt-reel-video-web-renderer #video-container {
+.yt-filter-blur, [data-yt-filter-blur="true"] ytd-thumbnail, [data-yt-filter-blur="true"] #thumbnail, [data-yt-filter-blur="true"] img, [data-yt-filter-blur="true"] yt-image {
     filter: blur(40px) !important;
     transition: filter 0.3s ease !important;
 }
-
-/* Hover durumunda netleştirme (Badge hariç her şey bulanıkken hovering renderer'da çalışmalı) */
-.yt-filter-blur:hover,
-[data-yt-filter-blur="true"]:hover ytd-thumbnail,
-[data-yt-filter-blur="true"]:hover #thumbnail,
-[data-yt-filter-blur="true"]:hover .ytd-thumbnail,
-[data-yt-filter-blur="true"]:hover img,
-[data-yt-filter-blur="true"]:hover yt-image,
-[data-yt-filter-blur="true"]:hover .yt-core-image,
-[data-yt-filter-blur="true"]:hover .ytd-lockup-view-model-wiz__thumbnail-container,
-[data-yt-filter-blur="true"]:hover .yt-lockup-view-model-wiz__thumbnail-container,
-[data-yt-filter-blur="true"]:hover .yt-lockup-replacement-wiz__thumbnail-container,
-[data-yt-filter-blur="true"]:hover .ytd-reel-item-renderer__thumbnail-container,
-[data-yt-filter-blur="true"]:hover .yt-reel-item-view-model__thumbnail-container,
-[data-yt-filter-blur="true"]:hover .ytd-reel-item-view-model__thumbnail-container,
-[data-yt-filter-blur="true"]:hover #content.ytd-rich-grid-slim-media,
-[data-yt-filter-blur="true"]:hover ytd-reel-item-renderer #thumbnail,
-[data-yt-filter-blur="true"]:hover .ytd-reel-item-renderer>#thumbnail,
-[data-yt-filter-blur="true"]:hover ytd-reel-video-renderer #video-container,
-[data-yt-filter-blur="true"]:hover ytd-reel-video-renderer .video-player-container,
-[data-yt-filter-blur="true"]:hover yt-reel-video-web-renderer #video-container {
+.yt-filter-blur:hover, [data-yt-filter-blur="true"]:hover ytd-thumbnail, [data-yt-filter-blur="true"]:hover #thumbnail, [data-yt-filter-blur="true"]:hover img, [data-yt-filter-blur="true"]:hover yt-image {
     filter: blur(0px) !important;
 }
-
-/* Remove Efekti */
-.yt-filter-hidden {
-    display: none !important;
-}
-
-ytd-thumbnail,
-ytd-rich-grid-media,
-ytd-rich-item-renderer,
-ytd-video-renderer,
-ytd-reel-item-renderer,
-ytd-lockup-view-model,
-ytd-lockup-view-model-wiz,
-yt-lockup-view-model-wiz,
-yt-reel-item-view-model,
-ytd-reel-item-view-model,
-ytd-rich-grid-video-renderer,
-ytd-reel-shelf-renderer,
-ytd-rich-item-renderer #thumbnail,
-#thumbnail.ytd-video-renderer,
-#thumbnail.ytd-rich-grid-media,
-#thumbnail.ytd-compact-video-renderer,
-#thumbnail.ytd-reel-item-renderer,
-ytd-lockup-view-model #thumbnail,
-yt-image.ytd-lockup-view-model-wiz,
-.ytd-lockup-view-model-wiz__thumbnail-container,
-.yt-lockup-view-model-wiz__thumbnail-container,
-.yt-reel-item-view-model__thumbnail-container,
-.ytd-reel-item-view-model__thumbnail-container,
-ytd-reel-video-renderer,
-yt-reel-video-web-renderer {
-    position: relative !important;
-}
+.yt-filter-hidden { display: none !important; }
+ytd-thumbnail, ytd-rich-grid-media, ytd-rich-item-renderer, ytd-video-renderer { position: relative !important; }
