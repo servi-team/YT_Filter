@@ -1,0 +1,39 @@
+.yt-filter-badge-container {
+    position: absolute !important;
+    top: 8px !important;
+    left: 8px !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 4px !important;
+    z-index: 25 !important;
+    pointer-events: none !important;
+    width: fit-content !important;
+    height: fit-content !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    border: none !important;
+}
+.yt-filter-badge {
+    display: inline-block;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: bold;
+    color: white;
+    text-transform: uppercase;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
+}
+.yt-filter-badge-safe { background-color: #2ecc71; border: 1px solid #27ae60; }
+.yt-filter-badge-warning { background-color: #e74c3c; border: 1px solid #c0392b; }
+.yt-filter-badge-neutral { background-color: #f1c40f; border: 1px solid #f39c12; color: #000; }
+.yt-filter-badge-untagged { background-color: #7f8c8d; border: 1px solid #95a5a6; }
+
+.yt-filter-blur, [data-yt-filter-blur="true"] ytd-thumbnail, [data-yt-filter-blur="true"] #thumbnail, [data-yt-filter-blur="true"] img, [data-yt-filter-blur="true"] yt-image {
+    filter: blur(40px) !important;
+    transition: filter 0.3s ease !important;
+}
+.yt-filter-blur:hover, [data-yt-filter-blur="true"]:hover ytd-thumbnail, [data-yt-filter-blur="true"]:hover #thumbnail, [data-yt-filter-blur="true"]:hover img, [data-yt-filter-blur="true"]:hover yt-image {
+    filter: blur(0px) !important;
+}
+.yt-filter-hidden { display: none !important; }
+ytd-thumbnail, ytd-rich-grid-media, ytd-rich-item-renderer, ytd-video-renderer { position: relative !important; }

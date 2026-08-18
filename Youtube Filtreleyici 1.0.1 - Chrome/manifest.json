@@ -1,0 +1,33 @@
+{
+  "manifest_version": 3,
+  "name": "YouTube Filtreleyici",
+  "version": "1.0",
+  "description": "Özel kanal istisnaları, video etiketleme, PIN koruması ve otomatik senkronizasyon içeren gelişmiş filtreleyici.",
+  "permissions": [
+    "storage"
+  ],
+  "host_permissions": [
+    "*://*.youtube.com/*",
+    "*://*.google.com/*",
+    "*://*.google.com.tr/*"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "*://*.youtube.com/*", 
+        "*://*.google.com/*", 
+        "*://*.google.com.tr/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle",
+      "all_frames": true
+    }
+  ],
+  "action": {
+    "default_title": "Filtre Ayarları",
+    "default_popup": "options.html"
+  }
+}
