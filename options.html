@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <title>YT Filter Ayarları</title>
+    <style>
+        :root {
+            --bg-color: #f9f9f9;
+            --kutu-bg: #ffffff;
+            --text-color: #333333;
+            --bilgi-color: #555555;
+            --border-color: #cccccc;
+            --tag-bg: #f1f1f1;
+            --input-bg: #ffffff;
+            --shadow: rgba(0,0,0,0.1);
+            --footer-bg: #e9eff5;
+        }
+
+        body.dark-theme {
+            --bg-color: #121212;
+            --kutu-bg: #1e1e1e;
+            --text-color: #e0e0e0;
+            --bilgi-color: #aaaaaa;
+            --border-color: #444444;
+            --tag-bg: #2a2a2a;
+            --input-bg: #333333;
+            --shadow: rgba(0,0,0,0.5);
+            --footer-bg: #1a202c;
+        }
+
+        body { font-family: Arial, sans-serif; margin: 10px; padding: 0; background: var(--bg-color); color: var(--text-color); width: 420px; transition: background 0.3s, color 0.3s; }
+        .kutu { background: var(--kutu-bg); padding: 15px; border-radius: 8px; box-shadow: 0 2px 5px var(--shadow); margin-bottom: 15px; position: relative; }
+        #anaArayuz { display: none; }
+        button { padding: 8px 12px; cursor: pointer; background: #065fd4; color: white; border: none; border-radius: 4px; font-weight: bold; font-size: 13px; }
+        
+        #btnTemaGecis { position: absolute; top: 15px; right: 15px; background: transparent; border: 1px solid var(--border-color); color: var(--text-color); border-radius: 4px; font-size: 14px; padding: 4px 8px; cursor: pointer; }
+        
+        .bilgi { color: var(--bilgi-color); font-size: 12px; margin-bottom: 10px; line-height: 1.5;}
+        input[type="text"], input[type="password"] { padding: 6px; width: 100%; box-sizing: border-box; border: 1px solid var(--border-color); border-radius: 4px; margin-bottom: 5px; background: var(--input-bg); color: var(--text-color); }
+        .tag-group { margin-bottom: 10px; background: var(--tag-bg); padding: 10px; border-radius: 8px; border: 1px solid var(--border-color); position: relative; }
+        .tag-title { font-weight: bold; display: block; margin-bottom: 8px; font-size: 13px; }
+        .option { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
+        select { padding: 6px; border-radius: 4px; outline: none; border: 1px solid var(--border-color); font-size: 12px; background: var(--input-bg); color: var(--text-color);}
+        .btnSilKural { background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 11px; position: absolute; right: 10px; top: 10px; }
+        .flex-container { display: flex; gap: 5px; margin-bottom: 10px; align-items: center; }
+    </style>
+</head>
+<body>
+    <div id="pinEkrani" class="kutu">
+        <h3>Güvenlik Doğrulaması</h3>
+        <p class="bilgi">Devam etmek için PIN kodunu girin (Varsayılan: 1234)</p>
+        <input type="password" id="pinGiris" placeholder="PIN Kodu">
+        <button id="btnPinOnayla" style="width: 100%; margin-top: 5px;">Giriş Yap</button>
+        <p id="pinHata" style="color:red; display:none; font-size: 12px; margin-top: 5px;">Hatalı PIN!</p>
+    </div>
+    
+    <div id="anaArayuz">
+        <div class="kutu">
+            <button id="btnTemaGecis" title="Temayı Değiştir">🌙</button>
+            <h3 style="margin-top: 0;">Sistem Bilgisi</h3>
+            <p class="bilgi">Kurulum: <span id="lblKurulumTarihi"></span></p>
+            <p style="font-size: 13px; margin-bottom: 5px;">Yeni PIN Kodu Belirle:</p>
+            <div class="flex-container">
+                <input type="text" id="yeniPin" placeholder="Yeni PIN"> 
+                <button id="btnPinGuncelle">Değiştir</button>
+            </div>
+            <label style="font-size: 12px; display: block; margin-top: 10px; color: var(--text-color);">
+                <input type="checkbox" id="chkPinIptal"> PIN Korumasını Devre Dışı Bırak (Direkt Giriş)
+            </label>
+        </div>
+        
+        <div class="kutu">
+            <h3 style="margin-top: 0;">Ayarlar ve Yedekleme</h3>
+            <button id="btnKaydet" style="background: #28a745; width: 100%; margin-bottom: 10px; padding: 10px;">Tüm Ayarları Kaydet</button>
+            <button id="btnDisaAktar" style="width: 100%; margin-bottom: 10px;">Verileri Dışa Aktar (JSON)</button>
+            <div>
+                <label class="bilgi" style="display:block; margin-bottom: 2px;">Verileri İçe Aktar:</label>
+                <input type="file" id="btnIceAktar" accept=".json" style="width: 100%; font-size: 12px;">
+            </div>
+        </div>
+
+        <div class="kutu" style="font-size: 13px;">
+            <h3 style="margin-top: 0;">Genel Görünüm Ayarları</h3>
+            <label><input type="checkbox" id="chkOtomatikOynatma"> Küçük resim üstüne gelince otomatik oynatmayı kapat</label><br><br>
+            <label><input type="checkbox" id="chkShorts"> Tüm Shorts videolarını ve sol menü butonunu kaldır</label><br><br>
+            <label><input type="checkbox" id="chkYorum"> Yorumlar bölümünü kaldır</label><br><br>
+            <label><input type="checkbox" id="chkOnerilen"> Video yanı önerilenleri kaldır</label>
+        </div>
+        
+      <div class="kutu">
+    <h3 style="margin-top: 0;">Etiket ve Eylem Kuralları</h3>
+    
+    <!-- Üste Alınan Kısım: Kanal/Video Etiketleme -->
+    <p class="bilgi">
+        Kanal adını (Örn: @serviekibi), Video ID'sini (Örn: dQw4w9WgXcQ) veya doğrudan Video URL'sini yapıştırın ve etiketini seçin.
+    </p>
+    <div class="flex-container" style="margin-bottom: 20px;">
+        <input type="text" id="yeniEtiketId" placeholder="URL, Video ID veya @KanalAdı">
+        <select id="yeniEtiketTuru" style="width: 100px;"></select>
+        <button id="btnEtiketEkle">Ekle</button>
+    </div>
+
+    <!-- Alta Alınan Kısım: Yeni Etiket Oluşturma -->
+    <p class="bilgi" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
+        Mevcut etiketlerin davranışlarını belirleyin veya yeni etiket oluşturun.
+    </p>
+    <div class="flex-container">
+        <input type="text" id="yeniKuralAdi" placeholder="Yeni Etiket (Örn: Oyun)">
+        <button id="btnKuralEkle">Oluştur</button>
+    </div>
+
+    <div id="settings-container"></div>
+</div>
+            
+            
+            </div>
+
+            <div id="settings-container"></div>
+        </div>
+        
+        <div class="kutu" style="text-align: center; background: var(--footer-bg);">
+            <p style="margin: 0; font-size: 12px;">
+                Öneri ve Hata Bildirimleriniz İçin:<br>
+                <a href="https://serviekibi.com/iletisim" target="_blank" style="color: #065fd4; font-weight: bold; text-decoration: none;">https://serviekibi.com/iletisim</a>
+            </p>
+        </div>
+    </div>
+    
+    <script src="options.js"></script>
+</body>
+</html>
