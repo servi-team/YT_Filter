@@ -1,4 +1,11 @@
-chrome.runtime.onInstalled.addListener((details) => {
+/**
+ * YouTube Filtreleyici - Background Script
+ * Hem Chromium hem de Firefox için ortak çalışır.
+ */
+
+const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
+
+browserAPI.runtime.onInstalled.addListener((details) => {
     if (details.reason === "install") {
         const simdi = new Date();
         const tarihSaat = simdi.toLocaleDateString('tr-TR') + ", " + simdi.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
@@ -25,6 +32,7 @@ chrome.runtime.onInstalled.addListener((details) => {
                 koyuTema: false
             }
         };
-        chrome.storage.local.set(varsayilanVeriler);
+        
+        browserAPI.storage.local.set(varsayilanVeriler);
     }
 });

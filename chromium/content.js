@@ -1,7 +1,28 @@
+/**
+ * YouTube Filtreleyici - Content Script
+ * Hem Chromium hem de Firefox ile %100 uyumlu içerik denetleyici.
+ */
+
+const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
+
 let hafiza = {};
 let currentChannelContext = null;
 let stilElemani = document.createElement('style');
 document.head.appendChild(stilElemani);
+
+function ensureHelperInjected() {
+    if (!document.querySelector('script[data-yt-filter-helper]')) {
+        try {
+            const script = document.createElement('script');
+            script.src = browserAPI.runtime.getURL('inject_helper.js');
+            script.setAttribute('data-yt-filter-helper', 'true');
+            script.onload = () => script.remove();
+            (document.head || document.documentElement).appendChild(script);
+        } catch (e) {
+            // Manifest MAIN world üzerinden zaten yüklendiyse veya CSP izin vermiyorsa yakala
+        }
+    }
+}
 
 function updateChannelContext() {
     const url = window.location.href;
@@ -13,10 +34,19 @@ function updateChannelContext() {
     }
 }
 
+async function getStorageData(keys = null) {
+    if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+        return await browser.storage.local.get(keys);
+    }
+    return new Promise((resolve) => {
+        chrome.storage.local.get(keys, (res) => resolve(res || {}));
+    });
+}
+
 async function loadData() {
     try {
-        const storageData = await chrome.storage.local.get(null);
-        hafiza = storageData;
+        const storageData = await getStorageData(null);
+        hafiza = storageData || {};
         arayuzAyarlariniUygula();
     } catch (e) {
         console.error("Veri yükleme hatası", e);
@@ -376,6 +406,7 @@ function finishProcessing(element, videoId, channelHandle) {
 }
 
 async function init() {
+    ensureHelperInjected();
     updateChannelContext();
     await loadData();
     document.querySelectorAll(videoSelectors).forEach(processVideo);
@@ -394,12 +425,15 @@ setInterval(() => {
     }
 }, 1000);
 
-chrome.storage.onChanged.addListener(() => {
-    document.querySelectorAll('[data-yt-filter-processed="true"]').forEach(el => resetElement(el));
-    loadData().then(() => {
-        document.querySelectorAll(videoSelectors).forEach(processVideo);
-        checkWatchPage();
+const storageObj = (typeof browser !== 'undefined' && browser.storage) ? browser.storage : chrome.storage;
+if (storageObj && storageObj.onChanged) {
+    storageObj.onChanged.addListener(() => {
+        document.querySelectorAll('[data-yt-filter-processed="true"]').forEach(el => resetElement(el));
+        loadData().then(() => {
+            document.querySelectorAll(videoSelectors).forEach(processVideo);
+            checkWatchPage();
+        });
     });
-});
+}
 
 init();

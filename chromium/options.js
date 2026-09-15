@@ -1,46 +1,76 @@
+/**
+ * YouTube Filtreleyici - Options Script
+ * Hem Chromium hem de Firefox ile %100 uyumlu ayar yöneticisi.
+ */
+
+const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
+
 let mevcutVeri = {};
 const coreTags = ["profanity", "violence", "educational", "safe", "untagged"];
-const tagLabels = { "profanity": "Küfür/Argo", "violence": "Şiddet", "educational": "Eğitici", "safe": "Güvenli", "untagged": "Etiketlenmemiş" };
+const tagLabels = { 
+    "profanity": "Küfür/Argo", 
+    "violence": "Şiddet", 
+    "educational": "Eğitici", 
+    "safe": "Güvenli", 
+    "untagged": "Etiketlenmemiş" 
+};
 
-document.addEventListener('DOMContentLoaded', () => {
-    chrome.storage.local.get(null, (veri) => {
-        mevcutVeri = veri;
-        if (!mevcutVeri.customMapping) mevcutVeri.customMapping = {};
-        if (!mevcutVeri.preferences) mevcutVeri.preferences = {};
-        if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
-        
-        coreTags.forEach(tag => {
-            if (!mevcutVeri.preferences[tag]) {
-                mevcutVeri.preferences[tag] = { visibility: "Show Badge", enforcement: "Allow Video", adi: tagLabels[tag] };
-            }
-        });
-        
-        document.getElementById('lblKurulumTarihi').innerText = veri.kurulumTarihi || "Bilinmiyor";
+async function getStorageData(keys = null) {
+    if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+        return await browser.storage.local.get(keys);
+    }
+    return new Promise((resolve) => {
+        chrome.storage.local.get(keys, (res) => resolve(res || {}));
+    });
+}
 
-        // Temayı Uygula
-        if (mevcutVeri.ayarlar.koyuTema) {
-            document.body.classList.add('dark-theme');
-            document.getElementById('btnTemaGecis').innerText = '☀️';
-        }
+async function setStorageData(items) {
+    if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+        return await browser.storage.local.set(items);
+    }
+    return new Promise((resolve) => {
+        chrome.storage.local.set(items, () => resolve());
+    });
+}
 
-        // PIN İptal Edildiyse Doğrudan Arayüze Geç
-        if (mevcutVeri.ayarlar.pinIptal || !mevcutVeri.pinKodu) {
-            document.getElementById('pinEkrani').style.display = 'none';
-            document.getElementById('anaArayuz').style.display = 'block';
-            arayuzuDoldur();
+document.addEventListener('DOMContentLoaded', async () => {
+    const veri = await getStorageData(null);
+    mevcutVeri = veri || {};
+    if (!mevcutVeri.customMapping) mevcutVeri.customMapping = {};
+    if (!mevcutVeri.preferences) mevcutVeri.preferences = {};
+    if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
+    
+    coreTags.forEach(tag => {
+        if (!mevcutVeri.preferences[tag]) {
+            mevcutVeri.preferences[tag] = { visibility: "Show Badge", enforcement: "Allow Video", adi: tagLabels[tag] };
         }
     });
+    
+    document.getElementById('lblKurulumTarihi').innerText = veri.kurulumTarihi || "Bilinmiyor";
+
+    // Temayı Uygula
+    if (mevcutVeri.ayarlar.koyuTema) {
+        document.body.classList.add('dark-theme');
+        document.getElementById('btnTemaGecis').innerText = '☀️';
+    }
+
+    // PIN İptal Edildiyse Doğrudan Arayüze Geç
+    if (mevcutVeri.ayarlar.pinIptal || !mevcutVeri.pinKodu) {
+        document.getElementById('pinEkrani').style.display = 'none';
+        document.getElementById('anaArayuz').style.display = 'block';
+        arayuzuDoldur();
+    }
 });
 
 // Tema Geçiş Tuşu
-document.getElementById('btnTemaGecis').addEventListener('click', () => {
+document.getElementById('btnTemaGecis').addEventListener('click', async () => {
     document.body.classList.toggle('dark-theme');
     const isDark = document.body.classList.contains('dark-theme');
     document.getElementById('btnTemaGecis').innerText = isDark ? '☀️' : '🌙';
     
     // Anlık olarak hafızaya kaydet
     mevcutVeri.ayarlar.koyuTema = isDark;
-    chrome.storage.local.set({ ayarlar: mevcutVeri.ayarlar });
+    await setStorageData({ ayarlar: mevcutVeri.ayarlar });
 });
 
 document.getElementById('pinGiris').addEventListener('keypress', function(e) {
@@ -187,12 +217,14 @@ document.getElementById('btnEtiketEkle').addEventListener('click', () => {
     }
 });
 
-document.getElementById('btnPinGuncelle').addEventListener('click', () => {
+document.getElementById('btnPinGuncelle').addEventListener('click', async () => {
     const yeni = document.getElementById('yeniPin').value;
-    chrome.storage.local.set({ pinKodu: yeni }, () => alert("PIN Güncellendi."));
+    mevcutVeri.pinKodu = yeni;
+    await setStorageData({ pinKodu: yeni });
+    alert("PIN Güncellendi.");
 });
 
-document.getElementById('btnKaydet').addEventListener('click', () => {
+document.getElementById('btnKaydet').addEventListener('click', async () => {
     for (let tag in mevcutVeri.preferences) {
         const visEl = document.getElementById(`${tag}-visibility`);
         const enfEl = document.getElementById(`${tag}-enforcement`);
@@ -206,7 +238,7 @@ document.getElementById('btnKaydet').addEventListener('click', () => {
         }
     }
 
-    chrome.storage.local.set({
+    await setStorageData({
         preferences: mevcutVeri.preferences,
         customMapping: mevcutVeri.customMapping,
         ayarlar: {
@@ -217,35 +249,35 @@ document.getElementById('btnKaydet').addEventListener('click', () => {
             pinIptal: document.getElementById('chkPinIptal').checked,
             koyuTema: document.body.classList.contains('dark-theme')
         }
-    }, () => alert("Ayarlar başarıyla kaydedildi."));
+    });
+    alert("Ayarlar başarıyla kaydedildi.");
 });
 
-document.getElementById('btnDisaAktar').addEventListener('click', () => {
-    chrome.storage.local.get(null, (veri) => {
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(veri, null, 2));
-        const indirmeLinki = document.createElement('a');
-        indirmeLinki.setAttribute("href", dataStr);
-        indirmeLinki.setAttribute("download", "yt_filter_yedek.json");
-        document.body.appendChild(indirmeLinki);
-        indirmeLinki.click();
-        indirmeLinki.remove();
-    });
+document.getElementById('btnDisaAktar').addEventListener('click', async () => {
+    const veri = await getStorageData(null);
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(veri, null, 2));
+    const indirmeLinki = document.createElement('a');
+    indirmeLinki.setAttribute("href", dataStr);
+    indirmeLinki.setAttribute("download", "yt_filter_yedek.json");
+    document.body.appendChild(indirmeLinki);
+    indirmeLinki.click();
+    indirmeLinki.remove();
 });
 
 document.getElementById('btnIceAktar').addEventListener('change', (e) => {
     const dosya = e.target.files[0];
     if (!dosya) return;
     const okuyucu = new FileReader();
-    okuyucu.onload = (olay) => {
+    okuyucu.onload = async (olay) => {
         try {
             const yuklenen = JSON.parse(olay.target.result);
-            chrome.storage.local.set({
+            await setStorageData({
                 customMapping: yuklenen.customMapping || mevcutVeri.customMapping,
                 ayarlar: yuklenen.ayarlar || mevcutVeri.ayarlar,
-                preferences: yuklenen.preferences || mevcutVeri.preferences
-            }, () => {
-                alert("Veriler içe aktarıldı. Açılır pencereyi kapatıp açın.");
+                preferences: yuklenen.preferences || mevcutVeri.preferences,
+                pinKodu: yuklenen.pinKodu || mevcutVeri.pinKodu
             });
+            alert("Veriler içe aktarıldı. Açılır pencereyi kapatıp açın.");
         } catch (hata) { alert("Geçersiz JSON!"); }
     };
     okuyucu.readAsText(dosya);
