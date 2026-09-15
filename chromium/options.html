@@ -3,205 +3,315 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>YT Filter Ayarları</title>
-    <style>
-        :root {
-            --bg-color: #f9f9f9;
-            --kutu-bg: #ffffff;
-            --text-color: #333333;
-            --bilgi-color: #555555;
-            --border-color: #cccccc;
-            --tag-bg: #f1f1f1;
-            --input-bg: #ffffff;
-            --shadow: rgba(0,0,0,0.1);
-            --footer-bg: #e9eff5;
-        }
-
-        body.dark-theme {
-            --bg-color: #121212;
-            --kutu-bg: #1e1e1e;
-            --text-color: #e0e0e0;
-            --bilgi-color: #aaaaaa;
-            --border-color: #444444;
-            --tag-bg: #2a2a2a;
-            --input-bg: #333333;
-            --shadow: rgba(0,0,0,0.5);
-            --footer-bg: #1a202c;
-        }
-
-        body { 
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Oxygen, Ubuntu, Cantarell, "Open Sans", "Helvetica Neue", sans-serif; 
-            margin: 10px; 
-            padding: 0; 
-            background: var(--bg-color); 
-            color: var(--text-color); 
-            width: 420px; 
-            transition: background 0.2s, color 0.2s; 
-        }
-        
-        .kutu { 
-            background: var(--kutu-bg); 
-            padding: 15px; 
-            border-radius: 8px; 
-            box-shadow: 0 2px 5px var(--shadow); 
-            margin-bottom: 12px; 
-            position: relative; 
-        }
-        
-        #anaArayuz { display: none; }
-        
-        button { 
-            padding: 8px 12px; 
-            cursor: pointer; 
-            background: #065fd4; 
-            color: white; 
-            border: none; 
-            border-radius: 4px; 
-            font-weight: 600; 
-            font-size: 13px; 
-            transition: background 0.15s;
-        }
-        button:hover { background: #004dc0; }
-        
-        #btnTemaGecis { 
-            position: absolute; 
-            top: 15px; 
-            right: 15px; 
-            background: transparent; 
-            border: 1px solid var(--border-color); 
-            color: var(--text-color); 
-            border-radius: 4px; 
-            font-size: 14px; 
-            padding: 4px 8px; 
-            cursor: pointer; 
-        }
-        
-        .bilgi { color: var(--bilgi-color); font-size: 12px; margin-bottom: 10px; line-height: 1.5; }
-        
-        input[type="text"], input[type="password"] { 
-            padding: 7px; 
-            width: 100%; 
-            box-sizing: border-box; 
-            border: 1px solid var(--border-color); 
-            border-radius: 4px; 
-            margin-bottom: 5px; 
-            background: var(--input-bg); 
-            color: var(--text-color); 
-            font-size: 13px;
-        }
-        
-        .tag-group { 
-            margin-bottom: 10px; 
-            background: var(--tag-bg); 
-            padding: 10px; 
-            border-radius: 8px; 
-            border: 1px solid var(--border-color); 
-            position: relative; 
-        }
-        
-        .tag-title { font-weight: bold; display: block; margin-bottom: 8px; font-size: 13px; }
-        .option { display: flex; align-items: center; justify-content: space-between; margin-bottom: 5px; font-size: 12px; }
-        select { 
-            padding: 6px; 
-            border-radius: 4px; 
-            outline: none; 
-            border: 1px solid var(--border-color); 
-            font-size: 12px; 
-            background: var(--input-bg); 
-            color: var(--text-color);
-        }
-        .btnSilKural { 
-            background: #dc3545; 
-            color: white; 
-            border: none; 
-            padding: 4px 8px; 
-            border-radius: 4px; 
-            cursor: pointer; 
-            font-size: 11px; 
-            position: absolute; 
-            right: 10px; 
-            top: 10px; 
-        }
-        .btnSilKural:hover { background: #bd2130; }
-        .flex-container { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; }
-        label { cursor: pointer; user-select: none; }
-    </style>
+    <title>YouTube Filtreleyici Ayarları</title>
+    <link rel="stylesheet" href="options.css">
 </head>
 <body>
-    <div id="pinEkrani" class="kutu">
-        <h3 style="margin-top: 0;">Güvenlik Doğrulaması</h3>
-        <p class="bilgi">Devam etmek için PIN kodunu girin (Varsayılan: 1234)</p>
-        <input type="password" id="pinGiris" placeholder="PIN Kodu">
-        <button id="btnPinOnayla" style="width: 100%; margin-top: 5px;">Giriş Yap</button>
-        <p id="pinHata" style="color:#e74c3c; display:none; font-size: 12px; margin-top: 8px; font-weight: bold;">Hatalı PIN!</p>
-    </div>
-    
-    <div id="anaArayuz">
-        <div class="kutu">
-            <button id="btnTemaGecis" title="Temayı Değiştir">🌙</button>
-            <h3 style="margin-top: 0;">Sistem Bilgisi</h3>
-            <p class="bilgi">Kurulum: <span id="lblKurulumTarihi"></span></p>
-            <p style="font-size: 13px; margin-bottom: 5px; font-weight: 500;">Yeni PIN Kodu Belirle:</p>
-            <div class="flex-container">
-                <input type="text" id="yeniPin" placeholder="Yeni PIN"> 
-                <button id="btnPinGuncelle">Değiştir</button>
+    <!-- Üst Başlık (Header) -->
+    <header class="app-header">
+        <div class="brand">
+            <div class="brand-icon">
+                <!-- Kalkan / Filtre İkonu -->
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-2.33v8.02z"/>
+                </svg>
             </div>
-            <label style="font-size: 12px; display: block; margin-top: 8px; color: var(--text-color);">
-                <input type="checkbox" id="chkPinIptal"> PIN Korumasını Devre Dışı Bırak (Direkt Giriş)
-            </label>
-        </div>
-        
-        <div class="kutu">
-            <h3 style="margin-top: 0;">Ayarlar ve Yedekleme</h3>
-            <button id="btnKaydet" style="background: #28a745; width: 100%; margin-bottom: 8px; padding: 10px;">Tüm Ayarları Kaydet</button>
-            <button id="btnDisaAktar" style="width: 100%; margin-bottom: 8px;">Verileri Dışa Aktar (JSON)</button>
-            <div>
-                <label class="bilgi" style="display:block; margin-bottom: 3px; font-weight: 500;">Verileri İçe Aktar:</label>
-                <input type="file" id="btnIceAktar" accept=".json" style="width: 100%; font-size: 12px;">
+            <div class="brand-title">
+                YT Filtreleyici
+                <span class="badge-version">v1.0</span>
             </div>
         </div>
+        <div class="header-actions">
+            <button id="btnPinKilitle" class="btn-icon" title="PIN ile Kilitle" style="display: none;">
+                <!-- Kilit İkonu -->
+                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                    <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                    <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                </svg>
+            </button>
+            <button id="btnTemaGecis" class="btn-icon" title="Temayı Değiştir">
+                <span id="lblTemaIkon">🌙</span>
+            </button>
+        </div>
+    </header>
 
-        <div class="kutu" style="font-size: 13px;">
-            <h3 style="margin-top: 0;">Genel Görünüm Ayarları</h3>
-            <label><input type="checkbox" id="chkOtomatikOynatma"> Küçük resim üstüne gelince otomatik oynatmayı kapat</label><br><br>
-            <label><input type="checkbox" id="chkShorts"> Tüm Shorts videolarını ve sol menü butonunu kaldır</label><br><br>
-            <label><input type="checkbox" id="chkYorum"> Yorumlar bölümünü kaldır</label><br><br>
-            <label><input type="checkbox" id="chkOnerilen"> Video yanı önerilenleri kaldır</label>
+    <!-- Aktif YouTube Sayfası Hızlı Ekleme Banner'ı -->
+    <div id="quickActionBanner" class="quick-action-banner" style="display: none;">
+        <div class="quick-banner-header">
+            <span>🔴 Aktif YouTube İçeriği</span>
+            <span id="quickPageType" style="color: var(--accent-yt);">Kanal</span>
         </div>
-        
-        <div class="kutu">
-            <h3 style="margin-top: 0;">Etiket ve Eylem Kuralları</h3>
-            
-            <!-- Kanal/Video Etiketleme -->
-            <p class="bilgi">
-                Kanal adını (Örn: @serviekibi), Video ID'sini (Örn: dQw4w9WgXcQ) veya doğrudan Video URL'sini yapıştırın ve etiketini seçin.
-            </p>
-            <div class="flex-container" style="margin-bottom: 15px;">
-                <input type="text" id="yeniEtiketId" placeholder="URL, Video ID veya @KanalAdı">
-                <select id="yeniEtiketTuru" style="width: 110px;"></select>
-                <button id="btnEtiketEkle">Ekle</button>
+        <div class="quick-banner-content">
+            <div id="quickTitle" class="quick-banner-title">@ornekkanal</div>
+            <div class="quick-banner-btns">
+                <button id="btnQuickBlock" class="btn-quick btn-quick-danger" title="Engelle / Şiddet">Engelle</button>
+                <button id="btnQuickAllow" class="btn-quick btn-quick-safe" title="İzin Ver / Güvenli">Güvenli</button>
             </div>
-
-            <!-- Yeni Etiket Oluşturma -->
-            <p class="bilgi" style="margin-top: 15px; border-top: 1px solid var(--border-color); padding-top: 10px;">
-                Mevcut etiketlerin davranışlarını belirleyin veya yeni etiket oluşturun.
-            </p>
-            <div class="flex-container">
-                <input type="text" id="yeniKuralAdi" placeholder="Yeni Etiket (Örn: Oyun)">
-                <button id="btnKuralEkle">Oluştur</button>
-            </div>
-
-            <div id="settings-container"></div>
-        </div>
-        
-        <div class="kutu" style="text-align: center; background: var(--footer-bg);">
-            <p style="margin: 0; font-size: 12px;">
-                Öneri ve Hata Bildirimleriniz İçin:<br>
-                <a href="https://serviekibi.com/iletisim" target="_blank" style="color: #065fd4; font-weight: bold; text-decoration: none;">https://serviekibi.com/iletisim</a>
-            </p>
         </div>
     </div>
-    
+
+    <!-- PIN Giriş Ekranı (Kilitliyken) -->
+    <div id="pinEkrani" class="pin-wrapper">
+        <div class="pin-lock-icon">
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+            </svg>
+        </div>
+        <h3 style="margin-bottom: 6px; font-size: 16px; font-weight: 700;">Güvenlik Doğrulaması</h3>
+        <p class="card-desc" style="margin-bottom: 14px;">Ayarları yönetmek için PIN kodunuzu girin.</p>
+        
+        <div style="width: 100%; max-width: 240px; margin-bottom: 8px;">
+            <input type="password" id="pinGiris" placeholder="PIN Kodunuz" maxlength="12" style="text-align: center; font-size: 16px; letter-spacing: 4px; padding: 10px;">
+        </div>
+
+        <div id="pinVarsayilanIpucu" class="pin-hint-box">
+            <span>Varsayılan PIN:</span>
+            <strong>1234</strong>
+        </div>
+        
+        <button id="btnPinOnayla" class="btn btn-primary" style="width: 100%; max-width: 240px; padding: 10px;">
+            Giriş Yap
+        </button>
+        <p id="pinHata" style="color: var(--danger); display: none; font-size: 12px; margin-top: 10px; font-weight: 600;">
+            Hatalı PIN kodu, tekrar deneyin!
+        </p>
+    </div>
+
+    <!-- Ana Arayüz (Giriş Yapılınca Açılır) -->
+    <div id="anaArayuz" style="display: none;">
+        <!-- İlk Girişte PIN Değiştirme Uyarısı -->
+        <div id="pinDegistirUyarisi" class="warning-banner" style="display: none;">
+            <div class="warning-banner-icon">
+                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                    <line x1="12" y1="9" x2="12" y2="13"></line>
+                    <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+            </div>
+            <div class="warning-banner-text">
+                <strong>PIN Kodunu Değiştirin!</strong>
+                <span>Varsayılan (1234) PIN kullanılıyor. Güvenliğiniz için yeni bir PIN belirleyin.</span>
+            </div>
+            <button id="btnUyariPinDegistir" class="btn btn-primary" style="padding: 4px 8px; font-size: 11px; white-space: nowrap;">Değiştir</button>
+        </div>
+
+        <!-- Sekmeli Gezinme Çubuğu -->
+        <nav class="tab-nav">
+            <button class="tab-btn active" data-tab="tabListeler">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>
+                Listeler
+            </button>
+            <button class="tab-btn" data-tab="tabGorunum">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path></svg>
+                Görünüm
+            </button>
+            <button class="tab-btn" data-tab="tabGuvenlik">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                Güvenlik
+            </button>
+            <button class="tab-btn" data-tab="tabYedek">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                Sistem
+            </button>
+        </nav>
+
+        <!-- SEKME 1: Listeler & Kurallar -->
+        <div id="tabListeler" class="tab-content active">
+            <!-- Kanal / Video Ekleme Kartı -->
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
+                    Kanal veya Video Ata
+                </div>
+                <div class="card-desc">URL, Video ID veya @KanalAdı girerek kategoriye atayın.</div>
+                <div class="input-row">
+                    <input type="text" id="yeniEtiketId" placeholder="@kanal, link veya ID...">
+                    <select id="yeniEtiketTuru" style="width: 125px;"></select>
+                    <button id="btnEtiketEkle" class="btn btn-primary">Ekle</button>
+                </div>
+            </div>
+
+            <!-- Atanmış İçerikler Listesi -->
+            <div class="card">
+                <div class="card-title" style="justify-content: space-between;">
+                    <div style="display: flex; align-items: center; gap: 6px;">
+                        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
+                        Tanımlı İçerikler
+                    </div>
+                    <span id="lblToplamIcerik" style="font-size: 11px; color: var(--text-muted); font-weight: 500;">0 İçerik</span>
+                </div>
+
+                <!-- Arama Kutusu -->
+                <div class="search-box">
+                    <svg class="search-icon" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"></circle><line x1="21" y1="21" x2="16.65" y2="16.65"></line></svg>
+                    <input type="text" id="txtArama" placeholder="Listede ara (@kanal veya ID)...">
+                </div>
+
+                <!-- Kategori Filtreleme Çipleri -->
+                <div id="filterChipsContainer" class="filter-chips">
+                    <button class="chip active" data-filter="all">Tümü</button>
+                </div>
+
+                <!-- İçerik Listesi Kutusu -->
+                <div id="itemListContainer" class="item-list">
+                    <!-- Dinamik doldurulur -->
+                </div>
+            </div>
+
+            <!-- Kategori Davranış Kuralları -->
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+                    Kategori Eylem Kuralları
+                </div>
+                <div class="card-desc">Her kategorinin YouTube üzerindeki davranışını belirleyin.</div>
+                
+                <div class="input-row" style="margin-bottom: 12px;">
+                    <input type="text" id="yeniKuralAdi" placeholder="Yeni Kategori Adı (Örn: Oyun, Spor)">
+                    <button id="btnKuralEkle" class="btn btn-secondary">Oluştur</button>
+                </div>
+
+                <div id="settings-container">
+                    <!-- Dinamik Kural Kartları -->
+                </div>
+            </div>
+        </div>
+
+        <!-- SEKME 2: YouTube Görünüm Ayarları -->
+        <div id="tabGorunum" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>
+                    Arayüz Temizleme
+                </div>
+                <div class="card-desc">Dikkati dağıtan YouTube bileşenlerini gizleyerek odaklanın.</div>
+
+                <div class="switch-item">
+                    <div class="switch-label-group">
+                        <span class="switch-title">YouTube Shorts Gizle</span>
+                        <span class="switch-subtext">Shorts sekmesini, gezinme butonlarını ve videolarını kaldırır.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkShorts">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-item">
+                    <div class="switch-label-group">
+                        <span class="switch-title">Yorumları Gizle</span>
+                        <span class="switch-subtext">Video altındaki yorum bölümünü tamamen gizler.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkYorum">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-item">
+                    <div class="switch-label-group">
+                        <span class="switch-title">Önerilen Videoları Gizle</span>
+                        <span class="switch-subtext">Video yanındaki önerilen videolar panelini gizler.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkOnerilen">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div class="switch-item">
+                    <div class="switch-label-group">
+                        <span class="switch-title">Küçük Resim Önizlemesini Kapat</span>
+                        <span class="switch-subtext">Fare imleci küçük resim üzerine gelince otomatik oynatmayı engeller.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkOtomatikOynatma">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEKME 3: Güvenlik & PIN -->
+        <div id="tabGuvenlik" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+                    PIN Güvenliği
+                </div>
+                <div class="card-desc">Eklenti ayarlarına izinsiz erişimi engellemek için PIN koruması.</div>
+
+                <div class="switch-item" style="margin-bottom: 12px;">
+                    <div class="switch-label-group">
+                        <span class="switch-title">PIN Korumasını Devre Dışı Bırak</span>
+                        <span class="switch-subtext">İşaretlendiğinde şifre sormadan doğrudan açılır.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkPinIptal">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div style="border-top: 1px solid var(--border-subtle); padding-top: 12px; margin-top: 6px;">
+                    <label style="display: block; font-size: 11.5px; font-weight: 600; margin-bottom: 6px;">Yeni PIN Belirle:</label>
+                    <div class="input-row">
+                        <input type="password" id="yeniPin" placeholder="Yeni 4 Haneli PIN">
+                        <button id="btnPinGuncelle" class="btn btn-indigo">Güncelle</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEKME 4: Sistem & Yedekleme -->
+        <div id="tabYedek" class="tab-content">
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><polyline points="12 6 12 12 14 14"></polyline></svg>
+                    Sistem Bilgisi
+                </div>
+                <div style="display: flex; justify-content: space-between; font-size: 12px; padding: 4px 0;">
+                    <span style="color: var(--text-muted);">İlk Kurulum Tarihi:</span>
+                    <strong id="lblKurulumTarihi" style="color: var(--text-primary);">-</strong>
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Yedekleme ve Geri Yükleme
+                </div>
+                <div class="card-desc">Filtreleme kurallarınızı ve listelerinizi JSON formatında saklayın.</div>
+
+                <button id="btnDisaAktar" class="btn btn-secondary btn-full" style="margin-bottom: 10px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
+                    Verileri Dışa Aktar (JSON)
+                </button>
+
+                <label class="btn btn-secondary btn-full" style="cursor: pointer; position: relative; overflow: hidden; margin-bottom: 6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Verileri İçe Aktar
+                    <input type="file" id="btnIceAktar" accept=".json" style="position: absolute; opacity: 0; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer;">
+                </label>
+            </div>
+
+            <button id="btnKaydet" class="btn btn-primary btn-full" style="padding: 10px; margin-top: 4px;">
+                Tüm Değişiklikleri Kaydet
+            </button>
+
+            <div class="footer-note">
+                Öneri ve Destek Bildirimleriniz İçin:<br>
+                <a href="https://serviekibi.com/iletisim" target="_blank">serviekibi.com/iletisim</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Bildirim Balonu (Toast) -->
+    <div id="toastNotification" class="toast-notification">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 6L9 17l-5-5"></path></svg>
+        <span id="toastMessage">Ayarlar kaydedildi!</span>
+    </div>
+
     <script src="options.js"></script>
 </body>
 </html>
