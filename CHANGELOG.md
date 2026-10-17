@@ -5,17 +5,18 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 ## [Yayınlanmamış] — 2.0 geliştirme dalı
 
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
-Beş adımda (PR 1–4) yapıldı; PR 1–3 çalıştırılıp doğrulandı, **PR 4 teslim edildi, elle test bekliyor**.
+PR 1–5 tamamlanıp doğrulandı, **PR 6 (engel banner) kodlandı; tarayıcıda tetiklenme teşhisi sürüyor**.
 
 ### Kullanıcıya görünen değişiklikler
 - **Yeni "Filtre" sekmesi (ilk sekme).**
   - Serbest / Orta / Katı mod kaydırıcısı, seçilen modun kısa açıklamasıyla.
   - 15 konu için izin/engel anahtarı ("tümüne izin ver", "tümünü engelle" kısayollarıyla).
-  - 8 etiket için engelleme anahtarı (küfür, argo, AI, kumar, şiddet, zararlı, olumsuz örnek, spam).
+  - 8 etiket için 3 durumlu segment kontrolü (`izinli / bulanıklaştır / kaldır` — PR 5). Birden çok sebepte en sert eylem kazanır.
 - **İlk açılışta "Etiketlenmemiş içerik" seçimi** (açılsın / engellensin) ve "veritabanı yeni bir proje, raporlarınızla gelişecek" bilgilendirmesi. Sıfırdan kurulumda kart vurgulanır; seçilene kadar etiketlenmemiş içerik engellenir. Mevcut kullanıcıların önceki tercihi korunur.
-- **Listeler sekmesi yenilendi:** içerik artık **Beyaz liste**, **Kara liste** veya kullanıcının **özel listelerinden** birine eklenir. Çipler ve arama listelere göre çalışır. Veritabanında kaydı olan kanalların adı listede görünür.
+- **Listeler sekmesi ("İstisnalar"):** içerik artık **Beyaz liste**, **Kara liste** veya kullanıcının **özel listelerinden** birine eklenir. Kuralları geçersiz kılan istisna mantığı vurgulandı. Çipler ve arama listelere göre çalışır. Veritabanında kaydı olan kanalların adı listede görünür.
 - **"Kategori Eylem Kuralları" kaldırıldı;** yerine **Özel Listeler** geldi (oluştur, eylemi değiştir [engelle / izin ver], sil). Liste adları benzersiz olmak zorunda; "Beyaz liste" ve "Kara liste" adları ayrılmış.
 - **Görünüm sekmesine "Engellenen İçerik" kartı:** engellenen videoları kaldır / bulanıklaştır, rozetleri göster/gizle.
+- **Tam sayfa engel banner'ı (PR 6 — teşhis aşamasında):** Engellenen video/kanal açıldığında tam sayfa karanlık kart, engellenme sebebi (konu/etiket/liste), "Geri dön" ve "Beyaz listeye ekle" butonları.
 - **Adlandırma:** hızlı ekleme düğmeleri "Güvenli / Engelle" yerine **"Beyaz liste / Kara liste"**. Rozet metinleri de buna göre değişti ("GÜVENLİ", "EĞİTİCİ" → "BEYAZ LİSTE"; engelli kayıtlar → "KARA LİSTE").
 - **Yedek içe aktarma** hem yeni hem eski biçimli dosyaları kabul eder (üzerine yazar, onay sorar).
 
@@ -53,8 +54,8 @@ Beş adımda (PR 1–4) yapıldı; PR 1–3 çalıştırılıp doğrulandı, **P
 - **İçe aktarılan ayar doğrulaması:** `ayarTemizle` bilinmeyen alanları atar, geçersiz değerleri varsayılana çevirir, liste adlarını kırpar ve yinelenen/ayrılmış adları eler, anahtar uzunluğunu sınırlar.
 - **Nesne özellikleri:** liste araması `Object.prototype` özelliklerine (`constructor`, `__proto__`) takılmıyor (`hasOwnProperty`).
 
-### Bilinen sınırlar (henüz yapılmadı)
-- Engellenen sayfa için tam sayfa banner ve "istisna olarak beyaz listeye ekle" butonu.
+### Bilinen sınırlar (henüz yapılmadı / çözülüyor)
+- PR 6 tam sayfa engel banner'ı kodlandı ancak tarayıcıda filtrenin ve banner'ın tetiklenmeme sorunu inceleniyor.
 - İçe aktarmada ad çakışması diyaloğu (üzerine yaz / yeniden adlandır / birleştir) ve siteden indirilen `db.json`'u içe aktarma.
 - Düzenleme sitesi.
 - İzleme sayfasında kanal ID'si yok (yalnızca handle ile eşleşir).

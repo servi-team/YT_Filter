@@ -153,7 +153,8 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 2 | `taxonomy/decision/migrate` + 24 test | **kullanıcı testleri çalıştırdı, geçti** |
 | 3 | `db.js`, `engine.js`, `content.js`'in yeni motora bağlanması, manifest/WAR güncellemesi, `data/db.json`, `docs/db-sema.md`; toplam 42 test; jsdom smoke testi | testler kullanıcıda geçti; **tarayıcıda davranış kontrolü bildirilmedi** |
 | 4 | Arayüz: Filtre sekmesi, Listeler/özel listeler, Görünüm kartı, ilk açılış seçimi, kalıcı geçiş, `ayarTemizle` sertleştirmesi, Türkçe harf düzeltmesi; 49 test + jsdom arayüz testi (55 kontrol) | ✅ **tamam, doğrulandı** (turuncu kart göründü, sekme 1-2 tamam) |
-| 5 | Etiket 3 durumlu (`izinli/bulaniklastir/kaldir`); en sert sebep kazanır; `content.js` dataset bug düzeltmesi; arayüzde 3'lü etiket segmenti; 51 test | 📦 **teslim edildi, elle test bekliyor** |
+| 5 | Etiket 3 durumlu (`izinli/bulaniklastir/kaldir`); en sert sebep kazanır; `content.js` dataset bug düzeltmesi; arayüzde 3'lü etiket segmenti; 51 test | ✅ **tamam, doğrulandı** |
+| 6 | Tam sayfa engel banner'ı: sebep, Geri dön, Beyaz listeye ekle; `inject.css` banner stilleri | ⚠️ **kodlandı (commit 0b2272b); kullanıcı testinde filtrenin/banner'ın tetiklenmediği görüldü, teşhis sürüyor** |
 
 ### Başlangıçta bulunan hatalar
 - Helper'da `@@` (regex zaten `@ad` yakalıyor, bir `@` daha ekleniyordu) → düzeltildi.
@@ -198,6 +199,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 11. `setInterval` ile yoklama (izleme sayfası 1 sn, helper 2 sn); `yt-navigate-finish` ile değiştirilebilir.
 12. Arayüz (jsdom) smoke testleri repoda değil; yalnızca birim testleri `tests/`'te.
 13. Rozet metinleri değişti ("GÜVENLİ/EĞİTİCİ" → "BEYAZ LİSTE" vb.).
+14. **PR 6 Engel Banner & Filtre Tetiklenme Blokajı:** PR 6 kodlandı ve 51 test geçti. Ancak tarayıcı testinde sayfaların normal şekilde yüklendiği ve engelleme/banner'ın tetiklenmediği gözlemlendi. Teşhiste `content.js` içinde `hafiza.ayarlar` gibi eski model kalıntılarının bulunması, `loadData` akışı ve içerik betiğinin çalışma ortamı (`YTF`, `ayarMotor`) incelenmektedir.
 
 ---
 

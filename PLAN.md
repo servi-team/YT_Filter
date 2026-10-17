@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-17 (PR 5 teslim)
+> Son güncelleme: 2026-10-17 (PR 6 kodlandı, elle testte engelleme/banner tetiklenme sorunu inceleniyor)
 
 ## 1. Hedef
 
@@ -20,12 +20,14 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | 3 | Motoru eklentiye bağlama, `db.json` sözleşmesi, manifest | ✅ teslim edildi; testler geçti; **tarayıcıda davranış kontrolü bekliyor** |
 | 4 | Arayüz: Filtre sekmesi, listeler, ilk açılış seçimi, kalıcı geçiş | ✅ tamam, doğrulandı (turuncu kart, sekme 1-2) |
 | 5 | Çerçeve düzetmesi + etiket başına eylem | ✅ tamam, doğrulandı |
-| 6 | Engel sayfası (tam sayfa banner) | ⏳ |
+| 6 | Engel sayfası (tam sayfa banner) | ⚠️ kodlandı (commit 0b2272b); elle testte tetiklenmeme sorunu inceleniyor |
 | 7 | İçe/dışa aktarma: çakışma diyaloğu, veritabanı JSON'u içe aktarma | ⏳ |
 | 8 | Sağlamlaştırma ve mağaza hazırlığı | ⏳ |
 | S | Düzenleme sitesi | ⏳ (şema donduğu için paralel başlayabilir) |
 
-### PR 6 elle test listesi (sonraki adımdan önce)
+### PR 6 elle test listesi ve mevcut durum
+> **Mevcut Durum / Blokaj:** Kodlama ve birim testler (51 test) tamamlanıp commit edildi (`0b2272b`). Ancak tarayıcı testinde sayfaların normal yüklendiği ve banner/engellemenin hiç devreye girmediği bildirildi. Teşhis aşamasında: `content.js` içindeki eski şema kalıntıları (`hafiza.ayarlar`), `loadData` zamanlaması ve YouTube sekmesinde betiklerin yüklenme durumu araştırılıyor.
+
 1. Engelli bir kanal/video sayfasına git — tam sayfa banner görünüyor mu?
 2. Banner'da sebep doğru yazıyor mu? (liste adı, konu, etiket)
 3. **Geri dön** butonu tarayıcı geçmişine dönüyor mu?
