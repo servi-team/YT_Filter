@@ -152,7 +152,8 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 1 | `kararVer` tek noktası; helper'a kanal ID'si + derin arama; `__ytFilterDiag()`; kopya CSS kaldırıldı | **kullanıcı çalıştırdı** (tanılama çıktısı alındı) |
 | 2 | `taxonomy/decision/migrate` + 24 test | **kullanıcı testleri çalıştırdı, geçti** |
 | 3 | `db.js`, `engine.js`, `content.js`'in yeni motora bağlanması, manifest/WAR güncellemesi, `data/db.json`, `docs/db-sema.md`; toplam 42 test; jsdom smoke testi | testler kullanıcıda geçti; **tarayıcıda davranış kontrolü bildirilmedi** |
-| 4 | Arayüz: Filtre sekmesi, Listeler/özel listeler, Görünüm kartı, ilk açılış seçimi, kalıcı geçiş, `ayarTemizle` sertleştirmesi, Türkçe harf düzeltmesi; 49 test + jsdom arayüz testi (55 kontrol) | **teslim edildi, kullanıcı henüz uygulamadı/test etmedi** |
+| 4 | Arayüz: Filtre sekmesi, Listeler/özel listeler, Görünüm kartı, ilk açılış seçimi, kalıcı geçiş, `ayarTemizle` sertleştirmesi, Türkçe harf düzeltmesi; 49 test + jsdom arayüz testi (55 kontrol) | ✅ **tamam, doğrulandı** (turuncu kart göründü, sekme 1-2 tamam) |
+| 5 | Etiket 3 durumlu (`izinli/bulaniklastir/kaldir`); en sert sebep kazanır; `content.js` dataset bug düzeltmesi; arayüzde 3'lü etiket segmenti; 51 test | 📦 **teslim edildi, elle test bekliyor** |
 
 ### Başlangıçta bulunan hatalar
 - Helper'da `@@` (regex zaten `@ad` yakalıyor, bir `@` daha ekleniyordu) → düzeltildi.
@@ -178,6 +179,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 8. **Özel liste = beyaz/kara listeyle aynı güçte "istisna grubu"** (eylem: engelle/izinver). Spec özel listelerin anlamını tanımlamıyordu. **Yeniden düşünülüyor.**
 9. **Bir kayıt tek listede bulunur;** başka listeye eklenince taşınır (eski modeldeki "bir ID = bir etiket" davranışı).
 10. **Kalıcı geçiş ancak arayüzle birlikte** (PR 4). Gerekçe: eski arayüz eski veriyi yazarken motoru yeni modele bağlarsak değişiklikler yansımazdı.
+11. **Etiket başına eylem: `izinli | bulaniklastir | kaldir`** (PR 5). Konular ikili kaldı (izinli/engelli). Birden çok sebep varsa en sert kazanır (kaldir > bulaniklastir). Konu/liste/etiketlenmemiş kaynaklı engeller genel `engelEylemi`ni kullanır; etiket kaynaklı engeller etiket-özgü eylemi kullanır. Eski `engelli` değeri geçişte genel `engelEylemi`'ne çevrilir. Konulara eylem verilmedi (gereksiz karmaşıklık).
 
 ---
 

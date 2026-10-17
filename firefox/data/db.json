@@ -1,7 +1,17 @@
 {
   "sema": 1,
-  "veriSurumu": 1,
+  "veriSurumu": 2,
   "olusturma": "2026-10-16",
-  "kanallar": [],
+  "kanallar": [
+    {
+      "id": "UCfYNqluOf8EbQkL44otydMw",
+      "handle": "@trtspor",
+      "ad": "TRT Spor",
+      "avatar": null,
+      "anaKonu": "spor",
+      "yanKonular": [],
+      "etiketler": []
+    }
+  ],
   "videolar": []
 }

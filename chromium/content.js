@@ -120,6 +120,86 @@ function icerikKarari(videoId, channelHandle, channelId) {
     );
 }
 
+// ---------- Engel Banner'ı (PR 6) ----------
+const BANNER_ID = 'yt-filter-engel-banner';
+
+function sebepiMetne(sebep) {
+    if (!sebep) return '';
+    switch (sebep.tur) {
+        case 'liste':
+            if (sebep.liste === 'beyaz') return 'Beyaz listede';
+            if (sebep.liste === 'kara') return 'Kara listede';
+            return `"${sebep.liste}" listesinde`;
+        case 'etiketlenmemis': return 'Etiketlenmemiş içerik';
+        case 'etiket': return `Etiket: ${sebep.id}`;
+        case 'konu': return `Konu: ${sebep.id}`;
+        case 'izinli-konu-yok': return 'İzinli konu yok';
+        default: return sebep.tur || '';
+    }
+}
+
+function engelBanneriniKaldir() {
+    const b = document.getElementById(BANNER_ID);
+    if (b) b.remove();
+}
+
+function engelBanneriniGoster(sonuc, videoId, channelHandle) {
+    engelBanneriniKaldir();
+
+    const sebepler = (sonuc.sebepler || []).map(sebepiMetne).filter(Boolean);
+    const sebepler_metin = sebepler.length ? sebepler.join(' · ') : 'Filtre kuralı';
+
+    const banner = document.createElement('div');
+    banner.id = BANNER_ID;
+    banner.setAttribute('data-yt-filter-banner', 'true');
+
+    // Sebep satırı
+    const baslik = document.createElement('div');
+    baslik.className = 'ytf-banner-baslik';
+    baslik.textContent = '🚫 Bu içerik engellendi';
+
+    const sebepEl = document.createElement('div');
+    sebepEl.className = 'ytf-banner-sebep';
+    sebepEl.textContent = sebepler_metin;
+
+    // Butonlar
+    const butonlar = document.createElement('div');
+    butonlar.className = 'ytf-banner-butonlar';
+
+    const geriBtn = document.createElement('button');
+    geriBtn.className = 'ytf-btn ytf-btn-geri';
+    geriBtn.textContent = '← Geri dön';
+    geriBtn.addEventListener('click', () => { history.back(); });
+
+    const beyazBtn = document.createElement('button');
+    beyazBtn.className = 'ytf-btn ytf-btn-beyaz';
+    beyazBtn.textContent = '✓ İstisna: Beyaz listeye ekle';
+    beyazBtn.addEventListener('click', async () => {
+        const anahtar = (videoId || channelHandle || '').toLowerCase();
+        if (!anahtar) return;
+        // Storage'dan ayarı oku, beyaz listeye ekle, geri yaz
+        const storageData = await getStorageData(null);
+        const mevcut = storageData || {};
+        const a = YTF.ayarCoz(mevcut);
+        // Tüm listelerden çıkar, beyaza ekle
+        delete a.listeler.kara[anahtar];
+        (a.listeler.ozel || []).forEach(l => { delete l.uyeler[anahtar]; });
+        a.listeler.beyaz[anahtar] = true;
+        await (new Promise(res => {
+            const s = (typeof browser !== 'undefined' && browser.storage) ? browser.storage : chrome.storage;
+            s.local.set({ surum: 2, ayar: a }, res);
+        }));
+        engelBanneriniKaldir();
+        // Veriyi yenile ve sayfayı kontrol et
+        await loadData();
+        checkWatchPage();
+    });
+
+    butonlar.append(geriBtn, beyazBtn);
+    banner.append(baslik, sebepEl, butonlar);
+    document.body.appendChild(banner);
+}
+
 // Oynatılan, Tıklanan ve Dış Sitedeki (Google) Embed Videoları için Kontrolcü
 function checkWatchPage() {
     const url = new URL(window.location.href);
@@ -136,83 +216,66 @@ function checkWatchPage() {
         videoId = url.pathname.split('/')[2];
     }
 
-    if (videoId) {
-        let channelHandle = currentChannelContext;
-        if (!isEmbed) {
-            const channelLink = document.querySelector('ytd-watch-metadata #owner a[href^="/@"]');
-            if (channelLink) {
-                const match = channelLink.href.match(/\/(@[a-zA-Z0-9._-]+)/);
-                if (match) channelHandle = match[1];
-            }
-        }
+    // İzleme sayfası değilse banner'ı kaldır (sayfa değişti)
+    if (!videoId) {
+        engelBanneriniKaldir();
+        return;
+    }
 
-        const sonuc = icerikKarari(videoId, channelHandle, null);
-
-        const ytdPlayer = document.querySelector('#ytd-player');
-        const embedPlayer = document.querySelector('#player');
-        const html5Player = document.querySelector('.html5-video-player');
-        const videoElements = document.querySelectorAll('video');
-        
-        let isBlocked = (sonuc.karar === 'engelle' && sonuc.engelEylemi !== 'bulaniklastir');
-        let isBlurred = (sonuc.karar === 'engelle' && sonuc.engelEylemi === 'bulaniklastir');
-
-        // Shorts Videolar Gizliyse, URL'den Direkt Girmeyi De Kesin Engelle
-        if (url.pathname.startsWith('/shorts/') && hafiza.ayarlar?.shortsGizle) {
-            isBlocked = true;
-        }
-
-        if (isBlocked) {
-            if (ytdPlayer) ytdPlayer.style.setProperty('display', 'none', 'important');
-            if (embedPlayer) embedPlayer.style.setProperty('display', 'none', 'important');
-            if (html5Player) html5Player.style.setProperty('display', 'none', 'important');
-            
-            // Eğer Google Search vb. dış bir sitede iframe içinde ise iframe gövdesini gizle
-            if (isEmbed) {
-                document.body.style.setProperty('display', 'none', 'important');
-            }
-
-            videoElements.forEach(v => {
-                v.style.setProperty('display', 'none', 'important');
-                if (!v.paused) v.pause();
-                if (v.src) v.removeAttribute('src'); // Kaynağı tamamen sil (Arka planda dahi oynamaz)
-            });
-        } else if (isBlurred) {
-            // Arka planda oynar ancak dev bir blur ile engellenir ve Sesi Susturulur
-            if (ytdPlayer) ytdPlayer.style.setProperty('filter', 'blur(35px)', 'important');
-            if (embedPlayer) embedPlayer.style.setProperty('filter', 'blur(35px)', 'important');
-            if (html5Player) html5Player.style.setProperty('filter', 'blur(35px)', 'important');
-            
-            if (isEmbed) {
-                document.body.style.setProperty('filter', 'blur(35px)', 'important');
-            }
-
-            videoElements.forEach(v => {
-                v.muted = true; // Sesi zorunlu kapat (Mute)
-            });
-        } else {
-            // İzin veriliyorsa kısıtlamaları kaldır
-            if (ytdPlayer) {
-                ytdPlayer.style.removeProperty('display');
-                ytdPlayer.style.removeProperty('filter');
-            }
-            if (embedPlayer) {
-                embedPlayer.style.removeProperty('display');
-                embedPlayer.style.removeProperty('filter');
-            }
-            if (html5Player) {
-                html5Player.style.removeProperty('display');
-                html5Player.style.removeProperty('filter');
-            }
-            if (isEmbed) {
-                document.body.style.removeProperty('display');
-                document.body.style.removeProperty('filter');
-            }
-            videoElements.forEach(v => {
-                v.style.removeProperty('display');
-            });
+    let channelHandle = currentChannelContext;
+    if (!isEmbed) {
+        const channelLink = document.querySelector('ytd-watch-metadata #owner a[href^="/@"]');
+        if (channelLink) {
+            const match = channelLink.href.match(/\/(@[a-zA-Z0-9._-]+)/);
+            if (match) channelHandle = match[1];
         }
     }
+
+    const sonuc = icerikKarari(videoId, channelHandle, null);
+
+    const ytdPlayer = document.querySelector('#ytd-player');
+    const embedPlayer = document.querySelector('#player');
+    const html5Player = document.querySelector('.html5-video-player');
+    const videoElements = document.querySelectorAll('video');
+
+    let isBlocked = (sonuc.karar === 'engelle' && sonuc.engelEylemi !== 'bulaniklastir');
+    let isBlurred = (sonuc.karar === 'engelle' && sonuc.engelEylemi === 'bulaniklastir');
+
+    // Shorts Videolar Gizliyse, URL'den Direkt Girmeyi De Kesin Engelle
+    if (url.pathname.startsWith('/shorts/') && hafiza.ayarlar?.shortsGizle) {
+        isBlocked = true;
+    }
+
+    if (isBlocked) {
+        // Oynatıcıyı gizle
+        if (ytdPlayer) ytdPlayer.style.setProperty('display', 'none', 'important');
+        if (embedPlayer) embedPlayer.style.setProperty('display', 'none', 'important');
+        if (html5Player) html5Player.style.setProperty('display', 'none', 'important');
+        if (isEmbed) document.body.style.setProperty('display', 'none', 'important');
+        videoElements.forEach(v => {
+            v.style.setProperty('display', 'none', 'important');
+            if (!v.paused) v.pause();
+            if (v.src) v.removeAttribute('src');
+        });
+        // PR 6: Tam sayfa engel banner'ı göster (embed'de değil)
+        if (!isEmbed) engelBanneriniGoster(sonuc, videoId, channelHandle);
+    } else if (isBlurred) {
+        engelBanneriniKaldir();
+        if (ytdPlayer) ytdPlayer.style.setProperty('filter', 'blur(35px)', 'important');
+        if (embedPlayer) embedPlayer.style.setProperty('filter', 'blur(35px)', 'important');
+        if (html5Player) html5Player.style.setProperty('filter', 'blur(35px)', 'important');
+        if (isEmbed) document.body.style.setProperty('filter', 'blur(35px)', 'important');
+        videoElements.forEach(v => { v.muted = true; });
+    } else {
+        engelBanneriniKaldir();
+        if (ytdPlayer) { ytdPlayer.style.removeProperty('display'); ytdPlayer.style.removeProperty('filter'); }
+        if (embedPlayer) { embedPlayer.style.removeProperty('display'); embedPlayer.style.removeProperty('filter'); }
+        if (html5Player) { html5Player.style.removeProperty('display'); html5Player.style.removeProperty('filter'); }
+        if (isEmbed) { document.body.style.removeProperty('display'); document.body.style.removeProperty('filter'); }
+        videoElements.forEach(v => { v.style.removeProperty('display'); });
+    }
 }
+
 
 function etiketRengiUret(metin) {
     let hash = 0;

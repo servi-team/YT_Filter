@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-17
+> Son güncelleme: 2026-10-17 (PR 5 teslim)
 
 ## 1. Hedef
 
@@ -18,19 +18,19 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | 1 | Zemin: tek karar noktası, helper'a kanal ID'si, tanılama | ✅ tamam, doğrulandı |
 | 2 | Çekirdek: taxonomy / decision / migrate + testler | ✅ tamam, testler geçti |
 | 3 | Motoru eklentiye bağlama, `db.json` sözleşmesi, manifest | ✅ teslim edildi; testler geçti; **tarayıcıda davranış kontrolü bekliyor** |
-| 4 | Arayüz: Filtre sekmesi, listeler, ilk açılış seçimi, kalıcı geçiş | 📦 teslim edildi; **uygulanıp elle test edilecek** |
-| 5 | Çerçeve düzeltmesi + etiket başına eylem (aşağıda) | ⏳ karar bekliyor |
+| 4 | Arayüz: Filtre sekmesi, listeler, ilk açılış seçimi, kalıcı geçiş | ✅ tamam, doğrulandı (turuncu kart, sekme 1-2) |
+| 5 | Çerçeve düzetmesi + etiket başına eylem | ✅ tamam, doğrulandı |
 | 6 | Engel sayfası (tam sayfa banner) | ⏳ |
 | 7 | İçe/dışa aktarma: çakışma diyaloğu, veritabanı JSON'u içe aktarma | ⏳ |
 | 8 | Sağlamlaştırma ve mağaza hazırlığı | ⏳ |
 | S | Düzenleme sitesi | ⏳ (şema donduğu için paralel başlayabilir) |
 
-### PR 4 elle test listesi (sonraki adımdan önce)
-1. 5 sekme 430 px'e sığıyor mu? (Taşarsa `.tab-btn svg{display:none}`.)
-2. Eski ayarlar korunuyor mu? Pop-up'ı bir kez aç; eskiden eklediğin kanal/videolar aynı davranıyor mu?
-3. İlk açılış seçimi: `etiketlenmemis = null` yapıp pop-up'ı aç; kart turuncu çerçeveli mi, seçince kayboluyor mu?
-4. Kaydırıcı, konu/etiket anahtarları, liste ekleme/silme, özel liste oluşturma YouTube'da anında yansıyor mu?
-5. Firefox'ta (varsa) aynı akış.
+### PR 6 elle test listesi (sonraki adımdan önce)
+1. Engelli bir kanal/video sayfasına git — tam sayfa banner görünüyor mu?
+2. Banner'da sebep doğru yazıyor mu? (liste adı, konu, etiket)
+3. **Geri dön** butonu tarayıcı geçmişine dönüyor mu?
+4. **İstisna olarak beyaz listeye ekle** butonu tıklanınca sayfa anında açılıyor mu?
+5. Video izleme sayfasında da aynı banner çalışıyor mu?
 
 ## 3. Mantık çerçevesi: üç katman
 
@@ -60,20 +60,8 @@ Alternatif: özel liste = kullanıcının **kendi konusu** (ör. "Ders kanallar�
 
 ## 4. Karar bekleyen konular
 
-### 4.1 Etiket başına eylem (Şiddet → bulanıklaştır, Kumar → tamamen kaldır)
-**Bugün:** tek genel `engelEylemi` (kaldır / bulanıklaştır). Eski modelde etiket başına vardı; yeniden düşünmeyi Talha önerdi.
-
-**Neden anlamlı:** Konu "ilgi alanı", etiket "ciddiyet" eksenidir. "Şiddet" çoğu kullanıcı için "göstermeyelim ama yasaklamayalım"dır (bulanık); "kumar" için bulanıklık yetmez (kaldır). Ayrıca spec'teki "kullanıcı şiddete izin veriyor olabilir" durumu zaten üç duruma genişler.
-
-**Önerilen tasarım:**
-- `ayar.etiketler[id]` ∈ `izinli | bulaniklastir | kaldir`. (Geriye uyum: eski `engelli` değeri okunurken o anki `engelEylemi` değerine çevrilir.)
-- **Konular ikili kalır** (izinli/engelli). Konu, liste ve etiketlenmemiş kaynaklı engeller **genel `engelEylemi`**ni kullanır.
-- Birden çok sebep varsa **en sert olan kazanır** (kaldır > bulanıklaştır).
-- Arayüz: etiket satırında anahtar yerine 3'lü seçim (İzin ver / Bulanıklaştır / Kaldır). Varsayılan hepsi "Kaldır".
-- `decision.js` değişmez (saf, karar + sebep); `engine.icerikKarari` sebeplere bakıp nihai eylemi hesaplar. Rozet ve engel sayfası sebebi gösterir.
-- Maliyet: orta (şema alanı, engine, 3'lü kontrol, testler). Veri birikmeden yapmak daha ucuz → **PR 5'in ilk işi**.
-
-**Soru:** Konulara da etiket gibi eylem verilsin mi? **Önerim: hayır** (karmaşıklık, tek mantıksal fayda yok).
+### 4.1 Etiket başına eylem — ✅ KARAR VERİLDİ (PR 5)
+`ayar.etiketler[id]` ∈ `izinli | bulaniklastir | kaldir`. Konular ikili kaldı. En sert sebep kazanır. Eski `engelli` → `engelEylemi`'ne çevrilir. Konulara eylem verilmedi (hayır kararı). Bkz. `DEVIR_NOTU.md` bölüm 5, madde 11.
 
 ### 4.2 Diğer
 - Orta modda incelenmemiş video: kanalın ana konusunun da izinli olması şartı (bugünkü varsayım) kalsın mı, spec'i harfiyen mi izleyelim?
