@@ -1,25 +1,45 @@
 /**
  * YouTube Filtreleyici - Options Script
- * Hem Chromium hem de Firefox ile %100 uyumlu, modern arayüz yöneticisi.
+ * Hem Chromium hem de Firefox ile uyumlu arayüz yöneticisi.
+ *
+ * Veri modeli: storage.local içinde { surum: 2, ayar: {...} } (bkz. core/taxonomy.js varsayilanAyar).
+ * Eski model (customMapping + preferences) ilk açılışta bir kez yeni modele taşınır (core/migrate.js);
+ * eski veri "eskiYedek" altında saklanır.
  */
 
 const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
 
-let mevcutVeri = {};
-let aktifFiltre = 'all';
+let mevcutVeri = {};          // storage içeriği (ayarlar, PIN, ...)
+let ayar = null;              // yeni model; mevcutVeri.ayar ile aynı nesne
+let veriTabani = YTF.dbKur(null);
+let aktifFiltre = 'all';      // 'all' | 'beyaz' | 'kara' | 'ozel:<liste adı>'
 let aramaMetni = '';
 let aktifYouTubeIcerigi = null;
 
-const coreTags = ["profanity", "violence", "educational", "safe", "untagged"];
-const tagLabels = { 
-    "profanity": "Küfür/Argo", 
-    "violence": "Şiddet", 
-    "educational": "Eğitici", 
-    "safe": "Güvenli", 
-    "untagged": "Etiketlenmemiş" 
+const MODLAR = YTF.MODLAR;    // ['serbest', 'orta', 'kati']
+const MOD_BILGI = {
+    serbest: 'Videonun veya kanalın herhangi bir konusu izinliyse video açılır. Yalnızca engellediğiniz bir etiket (küfür, şiddet vb.) varsa engellenir.',
+    orta: 'Yalnızca ana konuya bakılır. Ana konu izinliyse ve video engellediğiniz bir etiketi taşımıyorsa video açılır.',
+    kati: 'Video veya kanalda engellediğiniz bir konu (yan konular dahil) ya da etiket varsa video engellenir.'
+};
+const ETIKETLENMEMIS_IPUCU = {
+    null: 'Henüz seçmediniz. Siz seçene kadar etiketlenmemiş içerikler engellenir.',
+    ac: 'Veritabanında olmayan kanal ve videolar normal şekilde açılır.',
+    engelle: 'Veritabanında olmayan kanal ve videolar engellenir. Listelere ekleyerek tek tek açabilirsiniz.'
 };
 
-// Storage Yardımcıları
+const SVG_COP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+const SVG_KANAL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+const SVG_VIDEO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+
+function el(etiket, sinif, metin) {
+    const e = document.createElement(etiket);
+    if (sinif) e.className = sinif;
+    if (metin !== undefined) e.textContent = metin;
+    return e;
+}
+
+// ---- Storage yardımcıları, toast ----
 async function getStorageData(keys = null) {
     if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
         return await browser.storage.local.get(keys);
@@ -38,7 +58,6 @@ async function setStorageData(items) {
     });
 }
 
-// Toast Bildirimi
 function showToast(message) {
     const toast = document.getElementById('toastNotification');
     const toastMsg = document.getElementById('toastMessage');
@@ -51,21 +70,48 @@ function showToast(message) {
     }, 2400);
 }
 
+
+// ---- Ayar hazırlama / kaydetme ----
+
+// Yeni modeldeyse okur; eski modeldeyse bir kez taşır ve kalıcı yazar; hiç veri yoksa varsayılanı kullanır.
+async function ayariHazirla() {
+    if (mevcutVeri.surum >= 2 && mevcutVeri.ayar) {
+        ayar = YTF.ayarTemizle(mevcutVeri.ayar);
+        return;
+    }
+    const eskiVar = !!(mevcutVeri.customMapping || mevcutVeri.preferences);
+    const yama = eskiVar ? YTF.migrate(mevcutVeri) : null;
+    ayar = YTF.ayarTemizle(yama ? yama.ayar : null); // eski veri yoksa: varsayılan (etiketlenmemis: null -> ilk seçim)
+    const yazilacak = { surum: 2, ayar };
+    if (yama) yazilacak.eskiYedek = yama.eskiYedek;
+    await setStorageData(yazilacak);
+    Object.assign(mevcutVeri, yazilacak);
+}
+
+async function ayarKaydet() {
+    mevcutVeri.ayar = ayar;
+    await setStorageData({ surum: 2, ayar });
+}
+
+// Paketle gelen veritabanını (yalnızca kanal adı göstermek için) okur. Hata olursa boş veritabanıyla devam eder.
+async function veriTabaniniYukle() {
+    try {
+        const yanit = await fetch(browserAPI.runtime.getURL('data/db.json'));
+        veriTabani = YTF.dbKur(YTF.dbSec(await yanit.json(), mevcutVeri.dbOverride));
+    } catch (e) {
+        veriTabani = YTF.dbKur(null);
+    }
+}
+
 // Başlangıç Yüklemesi
 document.addEventListener('DOMContentLoaded', async () => {
     const veri = await getStorageData(null);
     mevcutVeri = veri || {};
-    if (!mevcutVeri.customMapping) mevcutVeri.customMapping = {};
-    if (!mevcutVeri.preferences) mevcutVeri.preferences = {};
     if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
-    
-    // Varsayılan Etiketleri Tanımla
-    coreTags.forEach(tag => {
-        if (!mevcutVeri.preferences[tag]) {
-            mevcutVeri.preferences[tag] = { visibility: "Show Badge", enforcement: "Allow Video", adi: tagLabels[tag] };
-        }
-    });
-    
+
+    await ayariHazirla();
+    await veriTabaniniYukle();
+
     document.getElementById('lblKurulumTarihi').innerText = veri.kurulumTarihi || "Bilinmiyor";
 
     // Temayı Başlat
@@ -99,7 +145,6 @@ document.addEventListener('DOMContentLoaded', async () => {
     initEvents();
 });
 
-// Arayüz Kilidini Aç
 function kilidiAc() {
     document.getElementById('pinEkrani').style.display = 'none';
     document.getElementById('anaArayuz').style.display = 'block';
@@ -142,7 +187,6 @@ function kilidiAc() {
     arayuzuDoldur();
 }
 
-// Arayüzü Kilitle
 function kilitle() {
     document.getElementById('anaArayuz').style.display = 'none';
 
@@ -168,7 +212,6 @@ function kilitle() {
     setTimeout(() => document.getElementById('pinGiris').focus(), 50);
 }
 
-// PIN Onayı
 function pinDogrula() {
     const girilen = document.getElementById('pinGiris').value;
     const pinKutu = document.getElementById('pinEkrani');
@@ -183,14 +226,363 @@ function pinDogrula() {
     }
 }
 
-// Olay Dinleyicileri
+
+// ---- Liste işlemleri ----
+
+const REZERVE = YTF.REZERVE_LISTE_ADLARI; // ['beyaz liste', 'kara liste']
+
+function ozelListeBul(ad) {
+    return ayar.listeler.ozel.find(l => l.ad === ad) || null;
+}
+
+// Bir anahtarı (küçük harfli kanal @adı, kanal ID'si veya video ID'si) tüm listelerden çıkarır.
+function listedenCikar(anahtar) {
+    delete ayar.listeler.beyaz[anahtar];
+    delete ayar.listeler.kara[anahtar];
+    ayar.listeler.ozel.forEach(l => { delete l.uyeler[anahtar]; });
+}
+
+// hedef: 'beyaz' | 'kara' | 'ozel:<ad>'. Bir anahtar tek bir listede bulunur (eklenince eskisinden taşınır).
+function listeyeEkle(anahtar, hedef) {
+    let hedefNesne = null;
+    if (hedef === 'beyaz') hedefNesne = ayar.listeler.beyaz;
+    else if (hedef === 'kara') hedefNesne = ayar.listeler.kara;
+    else if (hedef.startsWith('ozel:')) {
+        const l = ozelListeBul(hedef.slice(5));
+        if (l) hedefNesne = l.uyeler;
+    }
+    if (!hedefNesne) return false;
+    listedenCikar(anahtar);
+    hedefNesne[anahtar] = true;
+    return true;
+}
+
+function hedefAdi(hedef) {
+    if (hedef === 'beyaz') return 'Beyaz liste';
+    if (hedef === 'kara') return 'Kara liste';
+    return hedef.startsWith('ozel:') ? hedef.slice(5) : hedef;
+}
+
+function tumKayitlar() {
+    const kayitlar = [];
+    Object.keys(ayar.listeler.beyaz).forEach(id => kayitlar.push({ id, hedef: 'beyaz' }));
+    Object.keys(ayar.listeler.kara).forEach(id => kayitlar.push({ id, hedef: 'kara' }));
+    ayar.listeler.ozel.forEach(l => Object.keys(l.uyeler).forEach(id => kayitlar.push({ id, hedef: 'ozel:' + l.ad })));
+    return kayitlar;
+}
+
+// Girilen metinden (link, @kanal, video ID) liste anahtarını çıkarır; küçük harfe çevirir.
+function anahtarCikar(ham) {
+    let bulunan = ham.trim();
+    const video = ham.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([a-zA-Z0-9_-]{11})/);
+    const kanal = ham.match(/(@[a-zA-Z0-9._-]+)/);
+    const kanalId = ham.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+    if (video && video[1]) bulunan = video[1];
+    else if (kanalId && kanalId[1]) bulunan = kanalId[1];
+    else if (kanal && kanal[1]) bulunan = kanal[1];
+    return bulunan.toLowerCase();
+}
+
+async function icerikEkle() {
+    const girdi = document.getElementById('yeniEtiketId');
+    const ham = girdi.value.trim();
+    if (!ham) return;
+    const hedef = document.getElementById('yeniEtiketTuru').value;
+    const anahtar = anahtarCikar(ham);
+    if (anahtar.length > 100) { showToast('Geçersiz giriş'); return; }
+    if (!listeyeEkle(anahtar, hedef)) { showToast('Hedef liste bulunamadı'); return; }
+    await ayarKaydet();
+    girdi.value = '';
+    renderListeler();
+    showToast(`${anahtar} → ${hedefAdi(hedef)}`);
+}
+
+async function ozelListeOlustur() {
+    const girdi = document.getElementById('yeniListeAdi');
+    const ad = girdi.value.trim().slice(0, 40);
+    if (!ad) return;
+    const kucuk = ad.toLocaleLowerCase('tr-TR'); // Türkçe I/ı, İ/i için
+    if (REZERVE.includes(kucuk) || ayar.listeler.ozel.some(l => l.ad.toLocaleLowerCase('tr-TR') === kucuk)) {
+        showToast('Bu adda bir liste zaten var');
+        return;
+    }
+    ayar.listeler.ozel.push({ ad, eylem: document.getElementById('yeniListeEylemi').value === 'izinver' ? 'izinver' : 'engelle', uyeler: {} });
+    await ayarKaydet();
+    girdi.value = '';
+    renderListeler();
+    showToast(`"${ad}" listesi oluşturuldu`);
+}
+
+// ---- Render: Listeler sekmesi ----
+
+function renderListeler() {
+    if (aktifFiltre.startsWith('ozel:') && !ozelListeBul(aktifFiltre.slice(5))) aktifFiltre = 'all';
+    renderHedefSecimi();
+    renderFilterChips();
+    renderItemList();
+    renderOzelListeler();
+}
+
+function renderHedefSecimi() {
+    const secim = document.getElementById('yeniEtiketTuru');
+    const onceki = secim.value;
+    secim.textContent = '';
+    const secenekler = [['beyaz', 'Beyaz liste'], ['kara', 'Kara liste'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
+    secenekler.forEach(([deger, ad]) => {
+        const o = el('option', '', ad);
+        o.value = deger;
+        secim.appendChild(o);
+    });
+    if (secenekler.some(([d]) => d === onceki)) secim.value = onceki;
+}
+
+function renderFilterChips() {
+    const konteyner = document.getElementById('filterChipsContainer');
+    if (!konteyner) return;
+    konteyner.textContent = '';
+    const cipler = [['all', 'Tümü'], ['beyaz', 'Beyaz liste'], ['kara', 'Kara liste'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
+    cipler.forEach(([deger, ad]) => {
+        const b = el('button', 'chip' + (aktifFiltre === deger ? ' active' : ''), ad);
+        b.setAttribute('data-filter', deger);
+        b.addEventListener('click', () => {
+            aktifFiltre = deger;
+            renderFilterChips();
+            renderItemList();
+        });
+        konteyner.appendChild(b);
+    });
+}
+
+function renderItemList() {
+    const kutu = document.getElementById('itemListContainer');
+    const sayac = document.getElementById('lblToplamIcerik');
+    if (!kutu) return;
+    kutu.textContent = '';
+    const hepsi = tumKayitlar();
+    let gosterilen = 0;
+
+    hepsi.forEach(({ id, hedef }) => {
+        if (aktifFiltre !== 'all' && hedef !== aktifFiltre) return;
+        const kanalKaydi = veriTabani.anahtarBul(id);
+        const ad = kanalKaydi && kanalKaydi.ad;
+        if (aramaMetni && !id.includes(aramaMetni) && !(ad && ad.toLowerCase().includes(aramaMetni))) return;
+        gosterilen++;
+
+        const kanalMi = id.startsWith('@') || id.startsWith('uc');
+        const satir = el('div', 'item-row');
+        const bilgi = el('div', 'item-info');
+        const ikon = el('div', 'item-type-icon');
+        ikon.title = kanalMi ? 'Kanal' : 'Video';
+        ikon.innerHTML = kanalMi ? SVG_KANAL : SVG_VIDEO; // sabit SVG, kullanıcı verisi içermez
+        const tanim = el('span', 'item-identifier', ad ? `${ad} (${id})` : id);
+        tanim.title = ad ? `${ad} (${id})` : id;
+        const rozet = el('span', 'item-tag-badge' + (hedef === 'beyaz' ? ' badge-beyaz' : hedef === 'kara' ? ' badge-kara' : ''), hedefAdi(hedef));
+        bilgi.append(ikon, tanim, rozet);
+
+        const sil = el('button', 'btn-delete-item');
+        sil.title = 'Listeden Kaldır';
+        sil.innerHTML = SVG_COP;
+        sil.addEventListener('click', async () => {
+            listedenCikar(id);
+            await ayarKaydet();
+            renderListeler();
+            showToast(`${id} silindi`);
+        });
+
+        satir.append(bilgi, sil);
+        kutu.appendChild(satir);
+    });
+
+    if (sayac) sayac.textContent = `${hepsi.length} İçerik`;
+    if (gosterilen === 0) {
+        const bos = el('div', 'empty-state');
+        bos.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
+        bos.appendChild(el('p', '', 'Eşleşen içerik bulunamadı.'));
+        kutu.appendChild(bos);
+    }
+}
+
+function renderOzelListeler() {
+    const konteyner = document.getElementById('ozelListelerKonteyner');
+    if (!konteyner) return;
+    konteyner.textContent = '';
+    if (ayar.listeler.ozel.length === 0) {
+        konteyner.appendChild(el('div', 'card-desc', 'Henüz özel liste oluşturmadınız.'));
+        return;
+    }
+    ayar.listeler.ozel.forEach(liste => {
+        const kart = el('div', 'kural-card');
+        const baslik = el('div', 'kural-card-header');
+        baslik.appendChild(el('span', 'kural-card-name', liste.ad));
+        const sil = el('button', 'btn-delete-item');
+        sil.title = 'Listeyi Sil';
+        sil.innerHTML = SVG_COP;
+        sil.addEventListener('click', async () => {
+            const uyeSayisi = Object.keys(liste.uyeler).length;
+            if (!confirm(`"${liste.ad}" listesi${uyeSayisi ? ` ve içindeki ${uyeSayisi} içerik` : ''} silinecek. Emin misiniz?`)) return;
+            ayar.listeler.ozel = ayar.listeler.ozel.filter(l => l !== liste);
+            await ayarKaydet();
+            renderListeler();
+            showToast(`"${liste.ad}" silindi`);
+        });
+        baslik.appendChild(sil);
+
+        const secenekler = el('div', 'kural-options');
+        const alan1 = el('div', 'kural-field');
+        alan1.appendChild(el('label', '', 'Eylem'));
+        const secim = el('select');
+        [['engelle', 'Engelle'], ['izinver', 'İzin ver']].forEach(([deger, ad]) => {
+            const o = el('option', '', ad);
+            o.value = deger;
+            secim.appendChild(o);
+        });
+        secim.value = liste.eylem;
+        secim.addEventListener('change', async () => {
+            liste.eylem = secim.value === 'izinver' ? 'izinver' : 'engelle';
+            await ayarKaydet();
+            showToast('Liste eylemi güncellendi');
+        });
+        alan1.appendChild(secim);
+        const alan2 = el('div', 'kural-field');
+        alan2.appendChild(el('label', '', 'İçerik sayısı'));
+        alan2.appendChild(el('div', 'kural-count', String(Object.keys(liste.uyeler).length)));
+        secenekler.append(alan1, alan2);
+
+        kart.append(baslik, secenekler);
+        konteyner.appendChild(kart);
+    });
+}
+
+// ---- Render: Filtre sekmesi ----
+
+function renderFiltreSekmesi() {
+    renderMod();
+    renderEtiketlenmemis();
+    renderKonular();
+    renderEtiketler();
+}
+
+function renderMod() {
+    const indeks = Math.max(0, MODLAR.indexOf(ayar.mod));
+    document.getElementById('sliderMod').value = String(indeks);
+    modAciklamasiniGuncelle(indeks);
+}
+
+function modAciklamasiniGuncelle(indeks) {
+    const mod = MODLAR[indeks] || 'orta';
+    document.getElementById('lblModAciklama').textContent = MOD_BILGI[mod];
+    document.querySelectorAll('#modEtiketleri span').forEach(s => s.classList.toggle('active', s.getAttribute('data-mod') === mod));
+}
+
+function renderEtiketlenmemis() {
+    document.querySelectorAll('input[name="etiketlenmemis"]').forEach(r => { r.checked = (r.value === ayar.etiketlenmemis); });
+    document.getElementById('lblEtiketlenmemisIpucu').textContent = ETIKETLENMEMIS_IPUCU[ayar.etiketlenmemis];
+    document.getElementById('kartEtiketlenmemis').classList.toggle('ilk-secim', ayar.etiketlenmemis === null);
+}
+
+function renderKonular() {
+    const izgara = document.getElementById('konuGrid');
+    izgara.textContent = '';
+    YTF.KONULAR.forEach(konu => {
+        const oge = el('div', 'konu-item');
+        oge.title = konu.aciklama;
+        oge.appendChild(el('span', 'konu-ad', konu.ad));
+        const anahtar = el('label', 'switch');
+        const kutu = el('input');
+        kutu.type = 'checkbox';
+        kutu.checked = ayar.konular[konu.id] !== 'engelli';
+        kutu.setAttribute('aria-label', konu.ad);
+        kutu.addEventListener('change', async () => {
+            ayar.konular[konu.id] = kutu.checked ? 'izinli' : 'engelli';
+            await ayarKaydet();
+            showToast(`${konu.ad}: ${kutu.checked ? 'izinli' : 'engelli'}`);
+        });
+        anahtar.append(kutu, el('span', 'slider'));
+        oge.appendChild(anahtar);
+        izgara.appendChild(oge);
+    });
+}
+
+function renderEtiketler() {
+    const liste = document.getElementById('etiketListe');
+    liste.textContent = '';
+    YTF.ETIKETLER.forEach(etiket => {
+        const oge = el('div', 'switch-item');
+        const grup = el('div', 'switch-label-group');
+        grup.append(el('span', 'switch-title', etiket.ad), el('span', 'switch-subtext', etiket.aciklama));
+
+        // 3'lü segment kontrolü: İzin ver / Bulanıklaştır / Kaldır
+        const segGrup = el('div', 'segment-group etiket-segment-group');
+        segGrup.setAttribute('role', 'radiogroup');
+        segGrup.setAttribute('aria-label', etiket.ad + ' eylemi');
+
+        const secenekler = [
+            ['izinli',       'İzin ver'],
+            ['bulaniklastir','Bulanıklaştır'],
+            ['kaldir',       'Kaldır']
+        ];
+        const guncelDeger = () => ayar.etiketler[etiket.id] || 'kaldir';
+
+        secenekler.forEach(([deger, etiketMetni]) => {
+            const lbl = el('label', 'segment');
+            const radio = el('input');
+            radio.type = 'radio';
+            radio.name = 'etiket-' + etiket.id;
+            radio.value = deger;
+            radio.checked = (guncelDeger() === deger);
+            radio.setAttribute('aria-label', etiket.ad + ': ' + etiketMetni);
+            radio.addEventListener('change', async () => {
+                if (!radio.checked) return;
+                ayar.etiketler[etiket.id] = deger;
+                await ayarKaydet();
+                const toastMesaj = deger === 'izinli' ? 'izin veriliyor' : deger === 'bulaniklastir' ? 'bulanıklaştırılıyor' : 'kaldırılıyor';
+                showToast(`${etiket.ad}: ${toastMesaj}`);
+            });
+            const span = el('span', '', etiketMetni);
+            lbl.append(radio, span);
+            segGrup.appendChild(lbl);
+        });
+
+        oge.append(grup, segGrup);
+        liste.appendChild(oge);
+    });
+}
+
+function tumKonulariAyarla(deger) {
+    YTF.KONULAR.forEach(k => { ayar.konular[k.id] = deger; });
+    renderKonular();
+    return ayarKaydet().then(() => showToast(deger === 'izinli' ? 'Tüm konulara izin verildi' : 'Tüm konular engellendi'));
+}
+
+// Arayüzü Verilerle Doldur
+function arayuzuDoldur() {
+    document.getElementById('chkShorts').checked = mevcutVeri.ayarlar.shortsGizle || false;
+    document.getElementById('chkYorum').checked = mevcutVeri.ayarlar.yorumGizle || false;
+    document.getElementById('chkOnerilen').checked = mevcutVeri.ayarlar.onerilenGizle || false;
+    document.getElementById('chkOtomatikOynatma').checked = mevcutVeri.ayarlar.otomatikOynatmaKapat || false;
+    document.getElementById('chkPinIptal').checked = mevcutVeri.ayarlar.pinIptal || false;
+    document.getElementById('chkRozetGoster').checked = ayar.rozetGoster !== false;
+    document.getElementById('selEngelEylemi').value = ayar.engelEylemi === 'bulaniklastir' ? 'bulaniklastir' : 'kaldir';
+
+    renderFiltreSekmesi();
+    renderListeler();
+
+    // İlk kurulumda "etiketlenmemiş içerik" seçimi yapılmadıysa kullanıcının dikkatini çek
+    if (ayar.etiketlenmemis === null) {
+        const kart = document.getElementById('kartEtiketlenmemis');
+        if (kart && kart.scrollIntoView) kart.scrollIntoView({ block: 'nearest' });
+    }
+}
+
+// ---- Olay dinleyicileri ----
+
 function initEvents() {
     // Tema Değiştirme
     document.getElementById('btnTemaGecis').addEventListener('click', async () => {
         document.body.classList.toggle('dark-theme');
         const isDark = document.body.classList.contains('dark-theme');
         document.getElementById('lblTemaIkon').innerText = isDark ? '☀️' : '🌙';
-        
+
         mevcutVeri.ayarlar.koyuTema = isDark;
         await setStorageData({ ayarlar: mevcutVeri.ayarlar });
     });
@@ -217,6 +609,29 @@ function initEvents() {
         });
     });
 
+    // Filtre modu kaydırıcısı: sürüklerken açıklama güncellenir, bırakınca kaydedilir
+    const kaydirici = document.getElementById('sliderMod');
+    kaydirici.addEventListener('input', () => modAciklamasiniGuncelle(Number(kaydirici.value)));
+    kaydirici.addEventListener('change', async () => {
+        ayar.mod = MODLAR[Number(kaydirici.value)] || 'orta';
+        await ayarKaydet();
+        showToast('Filtre modu güncellendi');
+    });
+
+    // Etiketlenmemiş içerik seçimi
+    document.querySelectorAll('input[name="etiketlenmemis"]').forEach(r => {
+        r.addEventListener('change', async () => {
+            if (!r.checked) return;
+            ayar.etiketlenmemis = r.value === 'ac' ? 'ac' : 'engelle';
+            await ayarKaydet();
+            renderEtiketlenmemis();
+            showToast('Seçiminiz kaydedildi');
+        });
+    });
+
+    document.getElementById('btnKonuHepsiIzin').addEventListener('click', () => tumKonulariAyarla('izinli'));
+    document.getElementById('btnKonuHepsiEngel').addEventListener('click', () => tumKonulariAyarla('engelli'));
+
     // Canlı Arama
     document.getElementById('txtArama').addEventListener('input', (e) => {
         aramaMetni = e.target.value.toLowerCase().trim();
@@ -229,22 +644,10 @@ function initEvents() {
         if (e.key === 'Enter') icerikEkle();
     });
 
-    // Yeni Kategori Oluştur
-    document.getElementById('btnKuralEkle').addEventListener('click', () => {
-        const orjinalYazim = document.getElementById('yeniKuralAdi').value.trim();
-        const etiketAnahtari = orjinalYazim.toLowerCase();
-        
-        if (orjinalYazim && !mevcutVeri.preferences[etiketAnahtari]) {
-            mevcutVeri.preferences[etiketAnahtari] = { 
-                visibility: "Show Badge", 
-                enforcement: "Allow Video", 
-                adi: orjinalYazim 
-            };
-            document.getElementById('yeniKuralAdi').value = '';
-            renderKurallar();
-            renderFilterChips();
-            showToast(`"${orjinalYazim}" kategorisi oluşturuldu`);
-        }
+    // Yeni Özel Liste Oluştur
+    document.getElementById('btnListeEkle').addEventListener('click', ozelListeOlustur);
+    document.getElementById('yeniListeAdi').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') ozelListeOlustur();
     });
 
     // Uyarı Banner'ından PIN Değiştirmeye Yönlendirme
@@ -276,13 +679,13 @@ function initEvents() {
         mevcutVeri.pinKodu = yeni;
         mevcutVeri.pinDegistirildi = true;
         mevcutVeri.ilkGirisYapildi = true;
-        await setStorageData({ 
+        await setStorageData({
             pinKodu: yeni,
             pinDegistirildi: true,
             ilkGirisYapildi: true
         });
         document.getElementById('yeniPin').value = '';
-        
+
         // Uyarı banner'ını ve ipucunu kapat
         const uyariBanner = document.getElementById('pinDegistirUyarisi');
         if (uyariBanner) uyariBanner.style.display = 'none';
@@ -308,7 +711,7 @@ function initEvents() {
         showToast("Yedek dosyası indirildi");
     });
 
-    // İçe Aktarma
+    // İçe Aktarma (yeni ve eski yedek biçimlerini kabul eder; üzerine yazar)
     document.getElementById('btnIceAktar').addEventListener('change', (e) => {
         const dosya = e.target.files[0];
         if (!dosya) return;
@@ -316,27 +719,39 @@ function initEvents() {
         okuyucu.onload = async (olay) => {
             try {
                 const yuklenen = JSON.parse(olay.target.result);
+                let yeniAyar;
+                if (yuklenen && yuklenen.surum >= 2 && yuklenen.ayar) {
+                    yeniAyar = YTF.ayarTemizle(yuklenen.ayar);
+                } else if (yuklenen && (yuklenen.customMapping || yuklenen.preferences)) {
+                    yeniAyar = YTF.ayarTemizle(YTF.migrate(yuklenen).ayar);
+                } else {
+                    throw new Error('tanınmayan yedek');
+                }
+                if (!confirm('Mevcut filtre ayarlarınızın ve listelerinizin üzerine yazılacak. Devam edilsin mi?')) return;
+
+                ayar = yeniAyar;
                 await setStorageData({
-                    customMapping: yuklenen.customMapping || mevcutVeri.customMapping,
+                    surum: 2,
+                    ayar,
                     ayarlar: yuklenen.ayarlar || mevcutVeri.ayarlar,
-                    preferences: yuklenen.preferences || mevcutVeri.preferences,
                     pinKodu: yuklenen.pinKodu || mevcutVeri.pinKodu,
                     pinDegistirildi: yuklenen.pinDegistirildi || mevcutVeri.pinDegistirildi,
                     ilkGirisYapildi: yuklenen.ilkGirisYapildi || mevcutVeri.ilkGirisYapildi
                 });
                 mevcutVeri = await getStorageData(null);
+                if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
                 arayuzuDoldur();
                 showToast("Yedek başarıyla yüklendi!");
-            } catch (hata) { 
-                alert("Geçersiz JSON yedek dosyası!"); 
+            } catch (hata) {
+                alert("Geçersiz JSON yedek dosyası!");
             }
         };
         okuyucu.readAsText(dosya);
     });
 
-    // Otomatik Anlık Kaydedilen Tweak Switch'leri
-    const tweakCheckboxes = ['chkShorts', 'chkYorum', 'chkOnerilen', 'chkOtomatikOynatma', 'chkPinIptal'];
-    tweakCheckboxes.forEach(id => {
+    // Otomatik Anlık Kaydedilen Tweak Switch'leri ve görünüm ayarları
+    const anlikKaydedilenler = ['chkShorts', 'chkYorum', 'chkOnerilen', 'chkOtomatikOynatma', 'chkPinIptal', 'chkRozetGoster', 'selEngelEylemi'];
+    anlikKaydedilenler.forEach(id => {
         document.getElementById(id).addEventListener('change', async () => {
             await kaydetTumAyarlar(false);
             showToast("Ayar güncellendi");
@@ -379,283 +794,29 @@ async function algilaAktifYouTubeSekmesi() {
 
             const titleEl = document.getElementById('quickTitle');
             const typeEl = document.getElementById('quickPageType');
-            
+
             if (titleEl) titleEl.textContent = tespit;
             if (typeEl) typeEl.textContent = tur;
 
             // DİKKAT: Burada banner display yapılmaz!
             // Sadece PIN açıldıktan sonra kilidiAc() fonksiyonunda görünür olur.
 
-            document.getElementById('btnQuickBlock').onclick = () => {
-                mevcutVeri.customMapping[tespit.toLowerCase()] = "violence"; // Varsayılan engelleme
-                setStorageData({ customMapping: mevcutVeri.customMapping });
-                renderItemList();
-                showToast(`${tespit} engellenenlere eklendi`);
+            const hizliEkle = async (hedef) => {
+                listeyeEkle(tespit.toLowerCase(), hedef);
+                await ayarKaydet();
+                renderListeler();
+                showToast(`${tespit} → ${hedefAdi(hedef)}`);
             };
-
-            document.getElementById('btnQuickAllow').onclick = () => {
-                mevcutVeri.customMapping[tespit.toLowerCase()] = "safe"; // Varsayılan izin
-                setStorageData({ customMapping: mevcutVeri.customMapping });
-                renderItemList();
-                showToast(`${tespit} güvenli listeye eklendi`);
-            };
+            document.getElementById('btnQuickBlock').onclick = () => hizliEkle('kara');
+            document.getElementById('btnQuickAllow').onclick = () => hizliEkle('beyaz');
         }
     } catch (e) {
         // Tab sorgulama hatası durumunda sessizce geç
     }
 }
 
-// Arayüzü Verilerle Doldur
-function arayuzuDoldur() {
-    document.getElementById('chkShorts').checked = mevcutVeri.ayarlar.shortsGizle || false;
-    document.getElementById('chkYorum').checked = mevcutVeri.ayarlar.yorumGizle || false;
-    document.getElementById('chkOnerilen').checked = mevcutVeri.ayarlar.onerilenGizle || false;
-    document.getElementById('chkOtomatikOynatma').checked = mevcutVeri.ayarlar.otomatikOynatmaKapat || false;
-    document.getElementById('chkPinIptal').checked = mevcutVeri.ayarlar.pinIptal || false;
-
-    renderFilterChips();
-    renderItemList();
-    renderKurallar();
-}
-
-// Kategori Filtre Çipleri
-function renderFilterChips() {
-    const container = document.getElementById('filterChipsContainer');
-    if (!container) return;
-
-    container.innerHTML = `
-        <button class="chip ${aktifFiltre === 'all' ? 'active' : ''}" data-filter="all">Tümü</button>
-    `;
-
-    for (let tag in mevcutVeri.preferences) {
-        const pref = mevcutVeri.preferences[tag];
-        const isCore = coreTags.includes(tag);
-        const displayName = isCore ? tagLabels[tag] : (pref.adi || tag);
-        
-        const btn = document.createElement('button');
-        btn.className = `chip ${aktifFiltre === tag ? 'active' : ''}`;
-        btn.setAttribute('data-filter', tag);
-        btn.textContent = displayName;
-        
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            aktifFiltre = tag;
-            renderItemList();
-        });
-        
-        container.appendChild(btn);
-    }
-
-    // "Tümü" çipi tıklaması
-    container.querySelector('[data-filter="all"]').addEventListener('click', (e) => {
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        e.target.classList.add('active');
-        aktifFiltre = 'all';
-        renderItemList();
-    });
-}
-
-// Tanımlı İçerik Listesini Render Et
-function renderItemList() {
-    const listContainer = document.getElementById('itemListContainer');
-    const countLabel = document.getElementById('lblToplamIcerik');
-    if (!listContainer) return;
-
-    listContainer.innerHTML = '';
-    const tumIdler = Object.keys(mevcutVeri.customMapping || {});
-    let gosterilenSayac = 0;
-
-    tumIdler.forEach(id => {
-        const tag = mevcutVeri.customMapping[id];
-        
-        // Kategori filtresi kontrolü
-        if (aktifFiltre !== 'all' && tag !== aktifFiltre) return;
-
-        // Arama filtresi kontrolü
-        if (aramaMetni && !id.toLowerCase().includes(aramaMetni)) return;
-
-        gosterilenSayac++;
-        const pref = mevcutVeri.preferences[tag] || {};
-        const isCore = coreTags.includes(tag);
-        const tagLabel = isCore ? tagLabels[tag] : (pref.adi || tag);
-        const isChannel = id.startsWith('@');
-
-        const row = document.createElement('div');
-        row.className = 'item-row';
-        row.innerHTML = `
-            <div class="item-info">
-                <div class="item-type-icon" title="${isChannel ? 'Kanal' : 'Video'}">
-                    ${isChannel ? `
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    ` : `
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    `}
-                </div>
-                <span class="item-identifier" title="${id}">${id}</span>
-                <span class="item-tag-badge">${tagLabel}</span>
-            </div>
-            <button class="btn-delete-item" data-id="${id}" title="Listeden Kaldır">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
-        `;
-
-        row.querySelector('.btn-delete-item').addEventListener('click', async () => {
-            delete mevcutVeri.customMapping[id];
-            await setStorageData({ customMapping: mevcutVeri.customMapping });
-            renderItemList();
-            showToast(`${id} silindi`);
-        });
-
-        listContainer.appendChild(row);
-    });
-
-    if (countLabel) {
-        countLabel.textContent = `${tumIdler.length} İçerik`;
-    }
-
-    if (gosterilenSayac === 0) {
-        listContainer.innerHTML = `
-            <div class="empty-state">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-                <p>Eşleşen içerik bulunamadı.</p>
-            </div>
-        `;
-    }
-}
-
-// İçerik Ekleme Fonksiyonu
-async function icerikEkle() {
-    let rawInput = document.getElementById('yeniEtiketId').value.trim();
-    const tag = document.getElementById('yeniEtiketTuru').value;
-    
-    if (rawInput !== "") {
-        let finalId = rawInput;
-        const videoMatch = rawInput.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([a-zA-Z0-9_-]{11})/);
-        const channelMatch = rawInput.match(/(@[a-zA-Z0-9._-]+)/);
-        
-        if (videoMatch && videoMatch[1]) {
-            finalId = videoMatch[1];
-        } else if (channelMatch && channelMatch[1]) {
-            finalId = channelMatch[1];
-        }
-        
-        finalId = finalId.toLowerCase();
-        mevcutVeri.customMapping[finalId] = tag;
-        await setStorageData({ customMapping: mevcutVeri.customMapping });
-        
-        document.getElementById('yeniEtiketId').value = '';
-        renderItemList();
-        showToast(`${finalId} listeye eklendi`);
-    }
-}
-
-// Kural Kartlarını Render Et
-function renderKurallar() {
-    const container = document.getElementById('settings-container');
-    const selectEkle = document.getElementById('yeniEtiketTuru');
-    if (!container || !selectEkle) return;
-    
-    container.innerHTML = "";
-    selectEkle.innerHTML = "";
-    
-    for (let tag in mevcutVeri.preferences) {
-        const pref = mevcutVeri.preferences[tag];
-        const isCore = coreTags.includes(tag);
-        const displayName = isCore ? tagLabels[tag] : (pref.adi || tag);
-        
-        // Ekleme Select Kutusu Seçeneği
-        const opt = document.createElement('option');
-        opt.value = tag;
-        opt.textContent = displayName;
-        selectEkle.appendChild(opt);
-
-        // Kural Kartı
-        const card = document.createElement('div');
-        card.className = 'kural-card';
-        
-        let silButonuHTML = isCore ? '' : `
-            <button class="btnSilKural btn-delete-item" data-tag="${tag}" title="Kategoriyi Sil">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
-        `;
-
-        card.innerHTML = `
-            <div class="kural-card-header">
-                <span class="kural-card-name">${displayName}</span>
-                ${silButonuHTML}
-            </div>
-            <div class="kural-options">
-                <div class="kural-field">
-                    <label>Rozet Görünümü</label>
-                    <select id="${tag}-visibility">
-                        <option value="Show Badge" ${pref.visibility === 'Show Badge' ? 'selected' : ''}>Rozet Göster</option>
-                        <option value="Hide Badge" ${pref.visibility === 'Hide Badge' ? 'selected' : ''}>Rozet Gizle</option>
-                    </select>
-                </div>
-                <div class="kural-field">
-                    <label>Video Eylemi</label>
-                    <select id="${tag}-enforcement">
-                        <option value="Allow Video" ${pref.enforcement === 'Allow Video' ? 'selected' : ''}>İzin Ver</option>
-                        <option value="Blur Thumbnail" ${pref.enforcement === 'Blur Thumbnail' ? 'selected' : ''}>Bulanıklaştır</option>
-                        <option value="Remove Video Entirely" ${pref.enforcement === 'Remove Video Entirely' ? 'selected' : ''}>Tamamen Kaldır</option>
-                    </select>
-                </div>
-            </div>
-        `;
-
-        // Canlı Değişiklik Dinleyicileri
-        card.querySelector(`#${tag}-visibility`).addEventListener('change', async (e) => {
-            mevcutVeri.preferences[tag].visibility = e.target.value;
-            await setStorageData({ preferences: mevcutVeri.preferences });
-            showToast("Görünüm güncellendi");
-        });
-
-        card.querySelector(`#${tag}-enforcement`).addEventListener('change', async (e) => {
-            mevcutVeri.preferences[tag].enforcement = e.target.value;
-            await setStorageData({ preferences: mevcutVeri.preferences });
-            showToast("Eylem kuralı güncellendi");
-        });
-
-        // Silme Butonu
-        if (!isCore) {
-            card.querySelector('.btnSilKural').addEventListener('click', async () => {
-                if (confirm(`"${displayName}" kategorisini silmek istediğinize emin misiniz?`)) {
-                    delete mevcutVeri.preferences[tag];
-                    for (let id in mevcutVeri.customMapping) {
-                        if (mevcutVeri.customMapping[id] === tag) delete mevcutVeri.customMapping[id];
-                    }
-                    await setStorageData({ 
-                        preferences: mevcutVeri.preferences,
-                        customMapping: mevcutVeri.customMapping
-                    });
-                    renderKurallar();
-                    renderFilterChips();
-                    renderItemList();
-                    showToast(`"${displayName}" silindi`);
-                }
-            });
-        }
-
-        container.appendChild(card);
-    }
-}
-
 // Tüm Ayarları Manuel Kaydet
 async function kaydetTumAyarlar(bildirimVer = true) {
-    for (let tag in mevcutVeri.preferences) {
-        const visEl = document.getElementById(`${tag}-visibility`);
-        const enfEl = document.getElementById(`${tag}-enforcement`);
-        if (visEl && enfEl) {
-            const isCore = coreTags.includes(tag);
-            mevcutVeri.preferences[tag] = {
-                visibility: visEl.value,
-                enforcement: enfEl.value,
-                adi: isCore ? tagLabels[tag] : (mevcutVeri.preferences[tag].adi || tag)
-            };
-        }
-    }
-
     mevcutVeri.ayarlar = {
         shortsGizle: document.getElementById('chkShorts').checked,
         yorumGizle: document.getElementById('chkYorum').checked,
@@ -664,10 +825,13 @@ async function kaydetTumAyarlar(bildirimVer = true) {
         pinIptal: document.getElementById('chkPinIptal').checked,
         koyuTema: document.body.classList.contains('dark-theme')
     };
+    ayar.rozetGoster = document.getElementById('chkRozetGoster').checked;
+    ayar.engelEylemi = document.getElementById('selEngelEylemi').value === 'bulaniklastir' ? 'bulaniklastir' : 'kaldir';
+    mevcutVeri.ayar = ayar;
 
     await setStorageData({
-        preferences: mevcutVeri.preferences,
-        customMapping: mevcutVeri.customMapping,
+        surum: 2,
+        ayar,
         ayarlar: mevcutVeri.ayarlar
     });
 

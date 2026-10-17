@@ -6,6 +6,9 @@
 const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
 
 let hafiza = {};
+let ayarMotor = null;      // çözümlenmiş ayar (core/engine.js)
+let veriTabani = null;     // indekslenmiş veritabanı (core/db.js)
+let paketliDbSozu = null;  // paketle gelen db.json, sayfa başına bir kez okunur
 let currentChannelContext = null;
 let stilElemani = document.createElement('style');
 document.head.appendChild(stilElemani);
@@ -47,6 +50,9 @@ async function loadData() {
     try {
         const storageData = await getStorageData(null);
         hafiza = storageData || {};
+        ayarMotor = YTF.ayarCoz(hafiza);
+        const paketli = await paketliDbyiYukle();
+        veriTabani = YTF.dbKur(YTF.dbSec(paketli, hafiza.dbOverride));
         arayuzAyarlariniUygula();
     } catch (e) {
         console.error("Veri yükleme hatası", e);
@@ -54,30 +60,8 @@ async function loadData() {
 }
 
 function arayuzAyarlariniUygula() {
-    let cssKurallari = `
-        .yt-filter-badge-container { position: absolute !important; top: 8px !important; left: 8px !important; display: flex !important; flex-direction: column !important; gap: 4px !important; z-index: 200 !important; pointer-events: none !important; }
-        .yt-filter-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
-        
-        .yt-filter-badge-safe { background-color: #2ecc71; border: 1px solid #27ae60; }
-        .yt-filter-badge-educational { background-color: #3498db; border: 1px solid #2980b9; }
-        .yt-filter-badge-warning { background-color: #e74c3c; border: 1px solid #c0392b; }
-        .yt-filter-badge-profanity { background-color: #e67e22; border: 1px solid #d35400; }
-        .yt-filter-badge-untagged { background-color: #7f8c8d; border: 1px solid #95a5a6; }
-        
-        /* Thumbnail Blur etkileri */
-        [data-yt-filter-blur="true"] img,
-        [data-yt-filter-blur="true"] yt-image,
-        [data-yt-filter-blur="true"] ytd-video-preview,
-        [data-yt-filter-blur="true"] #mouseover-overlay,
-        [data-yt-filter-blur="true"] #hover-overlays,
-        [data-yt-filter-blur="true"] ytd-moving-thumbnail-renderer,
-        [data-yt-filter-blur="true"] #inline-preview-player { 
-            filter: blur(25px) !important; 
-        }
-        
-        .yt-filter-hidden { display: none !important; }
-        ytd-thumbnail, ytd-rich-grid-media, ytd-rich-item-renderer, ytd-video-renderer { position: relative !important; }
-    `;
+    // Sabit rozet/blur/gizleme kuralları inject.css içinde. Burada yalnızca ayara bağlı kurallar var.
+    let cssKurallari = '';
 
     if (hafiza.ayarlar?.otomatikOynatmaKapat) {
         cssKurallari += `
@@ -110,6 +94,32 @@ function arayuzAyarlariniUygula() {
     stilElemani.textContent = cssKurallari;
 }
 
+
+// Paketle gelen veritabanını (data/db.json) bir kez okur. Yalnızca youtube.com sayfalarında (web_accessible_resources).
+function paketliDbyiYukle() {
+    if (paketliDbSozu) return paketliDbSozu;
+    paketliDbSozu = (async () => {
+        if (!/(^|\.)youtube\.com$/.test(location.hostname)) return null;
+        try {
+            const yanit = await fetch(browserAPI.runtime.getURL('data/db.json'));
+            return await yanit.json();
+        } catch (e) {
+            console.warn('YT Filter: db.json yüklenemedi', e);
+            return null;
+        }
+    })();
+    return paketliDbSozu;
+}
+
+// Tek karar noktası. Asıl mantık core/decision.js içinde; burada yalnızca mevcut ayar ve veritabanı verilir.
+function icerikKarari(videoId, channelHandle, channelId) {
+    return YTF.icerikKarari(
+        ayarMotor || YTF.varsayilanAyar(),
+        veriTabani || YTF.dbKur(null),
+        { videoId, handle: channelHandle, channelId }
+    );
+}
+
 // Oynatılan, Tıklanan ve Dış Sitedeki (Google) Embed Videoları için Kontrolcü
 function checkWatchPage() {
     const url = new URL(window.location.href);
@@ -136,29 +146,15 @@ function checkWatchPage() {
             }
         }
 
-        let etiketTuru = "untagged";
-        let safeVideoId = videoId.toLowerCase();
-        let safeChannelHandle = channelHandle ? channelHandle.toLowerCase() : "";
-        
-        if (hafiza.customMapping) {
-            if (safeVideoId && hafiza.customMapping[safeVideoId]) {
-                etiketTuru = hafiza.customMapping[safeVideoId];
-            } else if (safeChannelHandle && hafiza.customMapping[safeChannelHandle]) {
-                etiketTuru = hafiza.customMapping[safeChannelHandle];
-            }
-        }
-
-        const pref = (hafiza.preferences && hafiza.preferences[etiketTuru]) 
-            ? hafiza.preferences[etiketTuru] 
-            : { visibility: "Show Badge", enforcement: "Remove Video Entirely" };
+        const sonuc = icerikKarari(videoId, channelHandle, null);
 
         const ytdPlayer = document.querySelector('#ytd-player');
         const embedPlayer = document.querySelector('#player');
         const html5Player = document.querySelector('.html5-video-player');
         const videoElements = document.querySelectorAll('video');
         
-        let isBlocked = (pref.enforcement === "Remove Video Entirely");
-        let isBlurred = (pref.enforcement === "Blur Thumbnail");
+        let isBlocked = (sonuc.karar === 'engelle' && sonuc.engelEylemi !== 'bulaniklastir');
+        let isBlurred = (sonuc.karar === 'engelle' && sonuc.engelEylemi === 'bulaniklastir');
 
         // Shorts Videolar Gizliyse, URL'den Direkt Girmeyi De Kesin Engelle
         if (url.pathname.startsWith('/shorts/') && hafiza.ayarlar?.shortsGizle) {
@@ -269,12 +265,6 @@ function extractChannelHandle(element) {
     const exposedChannel = element.getAttribute('data-yt-exposed-channel');
     if (exposedChannel) return exposedChannel;
     
-    let kanalElemani = element.querySelector('.ytd-channel-name a, ytd-channel-name yt-formatted-string, #channel-name');
-    if (kanalElemani) {
-        let text = (kanalElemani.title || kanalElemani.innerText || kanalElemani.textContent || "").trim();
-        if (text) return text;
-    }
-
     const links = findAllLinks(element);
     for (const link of links) {
         const href = (link.getAttribute('href') || link.href || "");
@@ -287,71 +277,41 @@ function extractChannelHandle(element) {
 }
 
 function applyFilter(element, videoId, channelHandle) {
-    let etiketTuru = "untagged";
+    const channelId = element.getAttribute('data-yt-exposed-channel-id');
+    const sonuc = icerikKarari(videoId, channelHandle, channelId);
 
-    if (hafiza.customMapping) {
-        let safeVideoId = videoId ? videoId.toLowerCase() : "";
-        let safeChannelHandle = channelHandle ? channelHandle.toLowerCase() : "";
-        
-        if (safeVideoId && hafiza.customMapping[safeVideoId]) {
-            etiketTuru = hafiza.customMapping[safeVideoId];
-        } else if (safeChannelHandle && hafiza.customMapping[safeChannelHandle]) {
-            etiketTuru = hafiza.customMapping[safeChannelHandle];
+    if (sonuc.karar === 'engelle') {
+        if (sonuc.engelEylemi === 'bulaniklastir') {
+            element.dataset.ytFilterBlur = "true";
+        } else {
+            element.classList.add('yt-filter-hidden');
         }
     }
 
-    const pref = (hafiza.preferences && hafiza.preferences[etiketTuru]) 
-        ? hafiza.preferences[etiketTuru] 
-        : { visibility: "Show Badge", enforcement: "Remove Video Entirely" };
-
-    if (pref.enforcement === "Remove Video Entirely") {
-        element.classList.add('yt-filter-hidden');
-    } else if (pref.enforcement === "Blur Thumbnail") {
-        element.dataset.ytFilterBlur = "true";
-    }
-
-    if (pref.visibility === "Show Badge") {
-        addBadge(element, etiketTuru);
-    }
+    const rozet = YTF.rozetBilgisi(sonuc, ayarMotor || YTF.varsayilanAyar());
+    if (rozet) addBadge(element, rozet);
 }
 
-function addBadge(element, tag) {
+// rozet: { metin, sinif } ya da { metin, renkAnahtari } (özel listeler için metinden türetilen renk)
+function addBadge(element, rozet) {
     if (element.querySelector('.yt-filter-badge-container')) return;
     const container = document.createElement('div');
     container.className = 'yt-filter-badge-container';
-    
-    const badge = document.createElement('span');
-    const isCore = ["profanity", "violence", "educational", "safe", "untagged"].includes(tag);
-    const tagLabels = { "profanity": "Küfür/Argo", "violence": "Şiddet", "educational": "Eğitici", "safe": "Güvenli", "untagged": "Etiketlenmemiş" };
-    
-    let etiketAdi = tag;
-    if (isCore) {
-        etiketAdi = tagLabels[tag];
-    } else {
-        etiketAdi = (hafiza.preferences && hafiza.preferences[tag] && hafiza.preferences[tag].adi) 
-            ? hafiza.preferences[tag].adi 
-            : tag;
-    }
 
-    badge.textContent = etiketAdi.toLocaleUpperCase('tr-TR');
-    
-    if (isCore) {
-        let typeClass = 'yt-filter-badge-untagged';
-        if (tag === 'safe') typeClass = 'yt-filter-badge-safe';
-        else if (tag === 'educational') typeClass = 'yt-filter-badge-educational';
-        else if (tag === 'violence') typeClass = 'yt-filter-badge-warning';
-        else if (tag === 'profanity') typeClass = 'yt-filter-badge-profanity';
-        
-        badge.className = `yt-filter-badge ${typeClass}`;
+    const badge = document.createElement('span');
+    badge.textContent = rozet.metin.toLocaleUpperCase('tr-TR');
+
+    if (rozet.sinif) {
+        badge.className = `yt-filter-badge yt-filter-badge-${rozet.sinif}`;
     } else {
-        const renkler = etiketRengiUret(tag);
+        const renkler = etiketRengiUret(rozet.renkAnahtari || rozet.metin);
         badge.className = 'yt-filter-badge';
         badge.style.backgroundColor = renkler.bg;
         badge.style.border = `1px solid ${renkler.border}`;
     }
 
     container.appendChild(badge);
-    
+
     element.style.setProperty('position', 'relative', 'important');
     element.appendChild(container);
 }
@@ -375,15 +335,17 @@ const observer = new MutationObserver((mutations) => {
 async function processVideo(element) {
     const currentVideoId = extractVideoId(element);
     const currentChannelHandle = extractChannelHandle(element);
-    if (!currentVideoId && !currentChannelHandle) return;
-    
+    const currentChannelId = element.getAttribute('data-yt-exposed-channel-id');
+    if (!currentVideoId && !currentChannelHandle && !currentChannelId) return;
+
+    const kanalAnahtari = (currentChannelHandle || "") + "|" + (currentChannelId || "");
     const lastVideoId = element.dataset.ytFilterLastId;
-    const lastChannelId = element.dataset.ytFilterLastChannelId;
+    const lastChannelKey = element.dataset.ytFilterLastChannelId;
     
-    if (currentVideoId !== lastVideoId || currentChannelHandle !== lastChannelId) {
+    if (currentVideoId !== lastVideoId || kanalAnahtari !== lastChannelKey) {
         resetElement(element);
         element.dataset.ytFilterLastId = currentVideoId || "";
-        element.dataset.ytFilterLastChannelId = currentChannelHandle || "";
+        element.dataset.ytFilterLastChannelId = kanalAnahtari;
         finishProcessing(element, currentVideoId, currentChannelHandle);
     } else if (!element.dataset.ytFilterProcessed) {
         finishProcessing(element, currentVideoId, currentChannelHandle);
@@ -428,7 +390,7 @@ setInterval(() => {
 const storageObj = (typeof browser !== 'undefined' && browser.storage) ? browser.storage : chrome.storage;
 if (storageObj && storageObj.onChanged) {
     storageObj.onChanged.addListener(() => {
-        document.querySelectorAll('[data-yt-filter-processed="true"]').forEach(el => resetElement(el));
+        document.querySelectorAll(videoSelectors).forEach(el => { if (el.dataset.ytFilterProcessed) resetElement(el); });
         loadData().then(() => {
             document.querySelectorAll(videoSelectors).forEach(processVideo);
             checkWatchPage();

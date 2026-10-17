@@ -21,7 +21,7 @@
         "*://*.google.com/*", 
         "*://*.google.com.tr/*"
       ],
-      "js": ["content.js"],
+      "js": ["core/taxonomy.js", "core/decision.js", "core/migrate.js", "core/db.js", "core/engine.js", "content.js"],
       "css": ["inject.css"],
       "run_at": "document_idle",
       "all_frames": true
@@ -37,7 +37,7 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["inject_helper.js", "inject.css"],
+      "resources": ["inject_helper.js", "inject.css", "data/db.json"],
       "matches": ["*://*.youtube.com/*"]
     }
   ],
