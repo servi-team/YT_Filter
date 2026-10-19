@@ -126,6 +126,25 @@ test('PR5: eski "engelli" değeri genel engelEylemi\'ne göre çevrilir', () => 
     assert.strictEqual(a2.etiketler.kufur, 'bulaniklastir');
 });
 
+test('PR8E: kanalBilgileriTemizle yalnızca geçerli ad/avatarı saklar', () => {
+    const { kanalBilgileriTemizle } = require('../src/core/taxonomy.js');
+    const t = kanalBilgileriTemizle({
+        '@kanal': { ad: '  Kanal Adı  ', avatar: 'https://yt3.ggpht.com/abc=s88' },
+        '@kotuAvatar': { ad: 'X', avatar: 'https://evil.example.com/a.png' },
+        '@sadeceAd': { ad: 'Ad' },
+        '@bos': {},
+        '': { ad: 'Yok' },
+        '@metin': 'metin'
+    });
+    assert.deepStrictEqual(t, {
+        '@kanal': { ad: 'Kanal Adı', avatar: 'https://yt3.ggpht.com/abc=s88' },
+        '@kotuAvatar': { ad: 'X' }, // geçersiz avatar düşer, ad kalır
+        '@sadeceAd': { ad: 'Ad' }
+    });
+    assert.deepStrictEqual(kanalBilgileriTemizle(null), {});
+    assert.deepStrictEqual(kanalBilgileriTemizle({ '@a': { ad: 'x'.repeat(200) } })['@a'].ad.length <= 120, true);
+});
+
 test('veritabanı: kayıtlı kanalın konusu engelliyse (katı) kanalın videoları engellenir, rozet konuyu söyler', () => {
     const a = yeni({ mod: 'kati', konular: { spor: 'engelli' }, etiketlenmemis: 'ac' });
     const r = icerikKarari(a, DB, { videoId: 'rastgele001', handle: '@trtspor' });

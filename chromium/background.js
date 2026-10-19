@@ -30,6 +30,7 @@ browserAPI.runtime.onInstalled.addListener((details) => {
         const varsayilanVeriler = {
             kurulumTarihi: tarihSaat,
             pinKodu: "", // Yeni kurulumda PIN seçimini kullanıcı ilk açılışta yapar (options.js, "Hoş geldiniz" kartı)
+            kanalBilgileri: {}, // Kullanıcı eklerken sayfadan toplanan kanal adı/avatarı (PR 8E)
             ...modelVerisi,
             ayarlar: {
                 shortsGizle: true,

@@ -133,6 +133,35 @@
         return c;
     }
 
+    // Avatar adreslerine yalnızca YouTube'un görsel barındırma alan adları kabul edilir (depoya yalnızca doğrulanmış bilgi yazılır).
+    const AVATAR_ON_EKLERI = [
+        'https://yt3.ggpht.com/',
+        'https://yt3.googleusercontent.com/',
+        'https://lh3.googleusercontent.com/'
+    ];
+
+    /**
+     * Sayfadan toplanan kanal bilgilerini (ad + avatar) doğrular/temizler.
+     * Girdi: { "<anahtar>": { ad?, avatar? } }. Yalnızca görüntüleme amaçlıdır; liste kurallarını etkilemez.
+     */
+    function kanalBilgileriTemizle(girdi) {
+        const temiz = {};
+        if (!duzNesne(girdi)) return temiz;
+        Object.keys(girdi).slice(0, 1000).forEach(anahtar => {
+            if (typeof anahtar !== 'string' || anahtar.length === 0 || anahtar.length > 100) return;
+            const kayit = girdi[anahtar];
+            if (!duzNesne(kayit)) return;
+            const bilgi = {};
+            if (typeof kayit.ad === 'string' && kayit.ad.trim()) bilgi.ad = kayit.ad.trim().slice(0, 120);
+            if (typeof kayit.avatar === 'string' && kayit.avatar.length <= 2048
+                && AVATAR_ON_EKLERI.some(onek => kayit.avatar.startsWith(onek))) {
+                bilgi.avatar = kayit.avatar;
+            }
+            if (bilgi.ad || bilgi.avatar) temiz[anahtar] = bilgi;
+        });
+        return temiz;
+    }
+
     /**
      * Bir video/kanal kaydını doğrular. Hata mesajlarının listesini döndürür (boş = geçerli).
      * kayit: { anaKonu?, yanKonular[], etiketler[], kararsizKonular[], kararsizEtiketler[] }
@@ -173,5 +202,5 @@
         return hatalar;
     }
 
-    return { KONULAR, ETIKETLER, MODLAR, ENGEL_EYLEMLERI, KARARSIZ_SECENEKLERI, REZERVE_LISTE_ADLARI, varsayilanAyar, ayarTemizle, kayitDogrula };
+    return { KONULAR, ETIKETLER, MODLAR, ENGEL_EYLEMLERI, KARARSIZ_SECENEKLERI, REZERVE_LISTE_ADLARI, varsayilanAyar, ayarTemizle, kayitDogrula, kanalBilgileriTemizle };
 });

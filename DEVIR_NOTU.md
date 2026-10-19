@@ -1,9 +1,11 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-19 (PR 8A + 8B + 8C + 8D) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-19 (PR 8A + 8B + 8C + 8D + 8E) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
 
+> **PR 8E özeti (2026-10-19):** Kullanıcı pop-up'tan kanal eklerken sayfadaki kanal adı/avatarı toplanır ve İstisnalar listesinde gösterilir (avatar + `Ad (@handle)`). Yeni depo anahtarı `kanalBilgileri` (yalnızca görüntüleme; liste kurallarını etkilemez); `core/taxonomy.js`'te `kanalBilgileriTemizle` (avatar yalnızca YouTube görsel alan adları, ad ≤ 120); `content.js` `sayfaKimligi` artık `kanalAdi`/`avatar` döner; tam yedek bu anahtarı taşır. Toplam **112 test** yeşil (100 saf + 12 smoke). **Tarayıcıda kanal ekleme → avatar/ad görünümü denenmeli.**
+>
 > **PR 8D özeti (2026-10-19):** Yoklama azaltıldı. `content.js`'te 1 sn'lik `setInterval` yerine `yt-navigate-finish` / `yt-page-data-updated` / `popstate` olayları (200 ms birleştirme) + 5 sn yedek; `inject_helper.js`'te 2 sn'lik `setInterval(scan)` yerine `MutationObserver` (en fazla ~800 ms'de bir) + `yt-navigate-finish` + birleştirilmiş kaydırma + 5 sn yedek. Smoke'a SPA gezinme testi eklendi. Toplam **110 test** yeşil (99 saf + 11 smoke). Davranış aynı; boşta CPU uyanmaları azalır. **Tarayıcıda gezinme/geri tuşu denenmeli.**
 >
 > **PR 8C özeti (2026-10-19):** PIN artık depoda düz metin tutulmuyor; `pbkdf2-sha256$<iterasyon>$<tuz>$<ozet>` biçiminde **PBKDF2-SHA256 (120.000 iterasyon, 16 bayt rastgele tuz)** karması saklanıyor. Yeni `src/core/pin.js` (saf) + arayüz akışları (`options.js` kurulum/güncelleme/giriş) karma üretir/doğrular. **Eski düz metin PIN kaydı ilk başarılı girişte karma'ya yükseltilir.** PIN hâlâ yalnızca arayüz kilididir (şifreleme değil). `tests/pin.test.js` (3) + smoke'a yükseltme testi eklendi. Toplam **109 test** yeşil (99 saf + 10 smoke). Yeni karma yedeği eski sürümde PIN'i kilitleyebilir (uyumluluk notu CHANGELOG'da).
@@ -118,7 +120,7 @@ src/
 manifests/             manifest.chromium.json, manifest.firefox.json (yalnızca youtube.com; Chrome >= 111, Firefox >= 128)
 scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır)
 tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 + manifest + pin (Node'un yerleşik test koşucusu)
-tests/smoke/           jsdom + sahte chrome.* ile options.html (6 test) ve content.js (5 test) smoke testleri
+tests/smoke/           jsdom + sahte chrome.* ile options.html (7 test) ve content.js (5 test) smoke testleri
 docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözleşme), db.test-ornek.json,
                        db.test-ornek-kararsiz.json, DEVIR_NOTU.md
 ```
@@ -140,6 +142,7 @@ docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözl
 | `ayarlar` | arayüz anahtarları: `shortsGizle, yorumGizle, onerilenGizle, otomatikOynatmaKapat, pinIptal, koyuTema` |
 | `pinKodu`, `pinDegistirildi`, `ilkGirisYapildi`, `kurulumTarihi` | PIN ve kurulum bilgisi. **Yeni kurulumda `pinKodu` boştur** (PIN seçimi ilk açılışta). PR 8C'den itibaren değer **PBKDF2-SHA256 karması**dır (`pbkdf2-sha256$...`); eski düz metin kayıtlar ilk girişte yükseltilir |
 | `pinKurulumAtlandi` | kullanıcı "Şimdilik atla" dediyse `true` (PIN kartı bir daha çıkmaz) |
+| `kanalBilgileri` | sayfadan toplanan kanal adı/avatarı: `{ "@handle": { ad, avatar } }` (PR 8E; yalnızca görüntüleme, kurallara girmez) |
 | `dbOverride` | Kullanıcının içe aktardığı `db.json` (PR 7). `dbSec` paketli veriyle karşılaştırır; büyük `veriSurumu` kazanır, eşitlikte paketli. "Paketli veritabanına dön" anahtarı siler. |
 
 `ayar` şekli:
@@ -204,6 +207,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 8B | **jsdom smoke testleri repoda** (2026-10-19): `tests/smoke/ortak.js` + `options.test.js` (5) + `content.test.js` (4); `jsdom ^27` devDependency, `npm install` gerekir (Node >= 20) | ✅ `node --test` yeşil (**105 test**: 96 saf + 9 smoke); tarayıcı doğrulamasını değiştirmez |
 | 8C | **PIN karma saklama** (2026-10-19): `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon, rastgele tuz); `options.js` kurulum/güncelleme/giriş akışları karma üretir/doğrular; eski düz metin ilk girişte yükseltilir; `tests/pin.test.js` (3) + smoke yükseltme testi | ✅ `node --test` yeşil (**109 test**: 99 saf + 10 smoke); PIN akışı tarayıcıda denenmeli |
 | 8D | **Yoklama azaltma** (2026-10-19): `content.js` 1 sn yoklama → olay (`yt-navigate-finish`/`yt-page-data-updated`/`popstate`, 200 ms birleştirme) + 5 sn yedek; `inject_helper.js` 2 sn tarama → `MutationObserver` (~800 ms birleştirme) + gezinme/kaydırma + 5 sn yedek; smoke SPA gezinme testi | ✅ `node --test` yeşil (**110 test**: 99 saf + 11 smoke); tarayıcıda gezinme/geri tuşu denenmeli |
+| 8E | **Listelerde kanal adı/avatarı** (2026-10-19): yeni `kanalBilgileri` deposu; `kanalBilgileriTemizle` (taxonomy); `content.js` `kanalAdi`/`avatar` toplar; hızlı bant + manuel ekleme kaydeder; listede avatar + `Ad (@handle)`; tam yedek taşır | ✅ `node --test` yeşil (**112 test**: 100 saf + 12 smoke); tarayıcıda kanal ekleme denenmeli |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -252,7 +256,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 5. Veritabanı büyürse (~5–10 MB üstü) her sayfada okuma maliyeti artar; önbellek gerekir.
 6. ~~**PIN düz metin** saklanıyor ve yalnızca arayüz kilididir.~~ **Çözüldü (PR 8C):** PIN, rastgele tuzlu **PBKDF2-SHA256 (120.000 iterasyon)** karması olarak saklanır; eski düz metin kayıtlar ilk girişte yükseltilir. PIN yine yalnızca arayüz kilididir (şifreleme değil). Yeni karma PIN içeren yedek, eski eklenti sürümünde kilit açamaz.
 7. **Liste içe aktarma (PR 7)** çakışma diyaloğu sunar ve birleştirir. Tam yedek (`btnIceAktar`) ise hâlâ **üzerine yazar** (onay sorar); bu ayrım kasıtlıdır. `dbOverride` içe aktarma arayüzü vardır; tarayıcıda denenmedi. İçe aktarılan dosya `storage.local` kotasına tabidir (ek izin yok); ~10 MB üstü dosyalar kaydedilemeyebilir.
-8. Yalnızca veritabanında kaydı olan kanalların adı listede görünür; avatar yok.
+8. ~~Yalnızca veritabanında kaydı olan kanalların adı listede görünür; avatar yok.~~ **Kısmen çözüldü (PR 8E):** kullanıcı eklerken sayfadan toplanan ad/avatar (`kanalBilgileri`) listede gösterilir; veritabanı kaydı olmayan ve sayfadan eklenmemiş kanallarda yalnızca anahtar görünür.
 9. ~~Manifest `description` "otomatik senkronizasyon" diyor; `google.com` host izni geniş.~~ **Çözüldü (PR 8A):** açıklama gerçek özelliklere göre yazıldı, yalnızca `youtube.com` izni kaldı. Tarayıcıda yükleme doğrulaması bekliyor.
 10. ~~Firefox `strict_min_version: 109` ile `world: "MAIN"` çakışıyor.~~ **Çözüldü (PR 8A):** asgari sürüm 128'e çekildi. Yedek enjeksiyon yolu (MAIN world desteklemeyen tarayıcı) hâlâ test edilmedi.
 11. ~~`setInterval` ile yoklama (izleme sayfası 1 sn, helper 2 sn); `yt-navigate-finish` ile değiştirilebilir.~~ **Çözüldü (PR 8D):** sayfa kontrolü `yt-navigate-finish`/`yt-page-data-updated`/`popstate` olaylarıyla, kart taraması `MutationObserver` + gezinme + kaydırmayla; ikisinde de seyrek yedek zamanlayıcı (5 sn) var. Tarayıcı davranışı doğrulanmayı bekliyor. **Kalan:** veritabanı önbelleği (büyürse, #5) ve helper'ın sonradan yazdığı özniteliklerin izlenmesi (#4).
@@ -276,8 +280,8 @@ node --test tests/pr6c.test.js              # hızlı bant sebep/özet/istisna s
 node --test tests/pr7.test.js               # liste paketi/çakışma birleştirme (12 test)
 node --test tests/manifest.test.js          # açıklama/izin ve sürüm/script sırası (2 test)
 node --test tests/pin.test.js               # PIN karma biçimi/doğrulama, eski düz metin uyumu (3 test)
-node --test tests/smoke/options.test.js tests/smoke/content.test.js   # jsdom smoke (11 test)
-node --test                                  # tüm testler (Node 18+ saf testler; smoke için Node >= 20; klasör yolu vermeyin, Node 22'de hata verir) — 110 test
+node --test tests/smoke/options.test.js tests/smoke/content.test.js   # jsdom smoke (12 test)
+node --test                                  # tüm testler (Node 18+ saf testler; smoke için Node >= 20; klasör yolu vermeyin, Node 22'de hata verir) — 112 test
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.
 

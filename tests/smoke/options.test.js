@@ -124,6 +124,29 @@ test('options: liste çakışma modalı üç stratejiyi de döndürür', async (
     }
 });
 
+test('options: hızlı banttaki kanal eklenince ad/avatar depoya yazılır ve listede görünür', async () => {
+    const { dom, belge, chrome } = await arayuzuAc({
+        baslangic: temelBaslangic(),
+        sekmeler: [{ id: 9, url: 'https://www.youtube.com/@yasakkanal' }],
+        mesajYaniti: {
+            hazir: true, tur: 'Kanal', tespit: '@yasakkanal', handle: '@yasakkanal',
+            videoId: null, kanalId: null, kanalAdi: 'Yasak Kanal',
+            avatar: 'https://yt3.ggpht.com/avatar=s88', sebepler: []
+        }
+    });
+    try {
+        await bekle(() => belge.getElementById('quickTitle').textContent === '@yasakkanal');
+        belge.getElementById('btnQuickBlock').click();
+        await bekle(() => chrome.__depo.kanalBilgileri && chrome.__depo.kanalBilgileri['@yasakkanal']);
+        assert.strictEqual(chrome.__depo.kanalBilgileri['@yasakkanal'].ad, 'Yasak Kanal');
+        assert.match(chrome.__depo.kanalBilgileri['@yasakkanal'].avatar, /^https:\/\/yt3\.ggpht\.com\//);
+        await bekle(() => belge.querySelector('.item-avatar'));
+        assert.ok(belge.getElementById('itemListContainer').textContent.includes('Yasak Kanal (@yasakkanal)'));
+    } finally {
+        dom.window.close();
+    }
+});
+
 test('options: hızlı bant, içerik betiği yanıt vermezse URL yedeğiyle dolar', async () => {
     const baslangic = temelBaslangic();
     baslangic.ayar.etiketlenmemis = 'engelle';

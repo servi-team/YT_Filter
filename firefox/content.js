@@ -174,7 +174,36 @@ function sayfaKimligi() {
     else if (handle) { tur = 'Kanal'; tespit = handle; }
     else if (kanalId) { tur = 'Kanal'; tespit = kanalId; }
 
-    return { videoId, handle, kanalId, tur, tespit };
+    return { videoId, handle, kanalId, tur, tespit, ...sayfaKanalBilgisi() };
+}
+
+// Kullanıcı listelerinde göstermek için sayfadaki kanal adı/avatarını (varsa) toplar.
+// Doğrulama options.js tarafında YTF.kanalBilgileriTemizle ile yapılır.
+function ilkDeger(seciciler, ozellik) {
+    for (const secici of seciciler) {
+        const el = document.querySelector(secici);
+        if (!el) continue;
+        const deger = ozellik === 'src' ? (el.currentSrc || el.src || '') : (el.textContent || '').trim();
+        if (deger) return deger;
+    }
+    return null;
+}
+
+function sayfaKanalBilgisi() {
+    const kanalAdi = ilkDeger([
+        '#owner #channel-name a',
+        'ytd-c4-tabbed-header-renderer ytd-channel-name a',
+        'ytd-channel-name #text a',
+        'ytd-channel-name a'
+    ], 'metin');
+    const avatar = ilkDeger([
+        '#owner #avatar img',
+        'ytd-video-owner-renderer #avatar img',
+        'ytd-c4-tabbed-header-renderer #avatar img',
+        'ytd-c4-tabbed-header-renderer #img',
+        '#avatar img'
+    ], 'src');
+    return { kanalAdi, avatar };
 }
 
 function sayfaDurumuAl() {

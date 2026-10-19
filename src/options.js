@@ -16,6 +16,7 @@ let veriTabani = YTF.dbKur(null);
 let aktifFiltre = 'all';      // 'all' | 'beyaz' | 'kara' | 'ozel:<liste adı>'
 let aramaMetni = '';
 let aktifYouTubeIcerigi = null;
+let kanalBilgileri = {};      // sayfadan toplanan kanal adı/avatarı (yalnızca görüntüleme)
 
 const trKucuk = (x) => String(x == null ? '' : x).toLocaleLowerCase('tr-TR');
 
@@ -166,6 +167,7 @@ function jsonIndir(veri, dosyaAdi) {
 document.addEventListener('DOMContentLoaded', async () => {
     const veri = await getStorageData(null);
     mevcutVeri = veri || {};
+    kanalBilgileri = YTF.kanalBilgileriTemizle(mevcutVeri.kanalBilgileri);
     if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
 
     await ayariHazirla();
@@ -335,6 +337,15 @@ function hedefAdi(hedef) {
     return hedef.startsWith('ozel:') ? hedef.slice(5) : hedef;
 }
 
+// Sayfa kimliğinden gelen kanal adı/avatarını (varsa) depoya yazar; liste kurallarını etkilemez.
+async function kanalBilgisiKaydet(anahtar, durum) {
+    if (!durum || durum.tur !== 'Kanal' || !durum.kanalAdi) return;
+    const temiz = YTF.kanalBilgileriTemizle({ [anahtar]: { ad: durum.kanalAdi, avatar: durum.avatar } });
+    if (!temiz[anahtar]) return;
+    kanalBilgileri[anahtar] = temiz[anahtar];
+    await setStorageData({ kanalBilgileri });
+}
+
 function tumKayitlar() {
     const kayitlar = [];
     Object.keys(ayar.listeler.beyaz).forEach(id => kayitlar.push({ id, hedef: 'beyaz' }));
@@ -364,6 +375,9 @@ async function icerikEkle() {
     if (anahtar.length > 100) { showToast('Geçersiz giriş'); return; }
     if (!listeyeEkle(anahtar, hedef)) { showToast('Hedef liste bulunamadı'); return; }
     await ayarKaydet();
+    if (aktifYouTubeIcerigi && aktifYouTubeIcerigi.tespit && aktifYouTubeIcerigi.tespit.toLowerCase() === anahtar) {
+        await kanalBilgisiKaydet(anahtar, aktifYouTubeIcerigi);
+    }
     girdi.value = '';
     renderListeler();
     showToast(`${anahtar} → ${hedefAdi(hedef)}`);
@@ -539,20 +553,31 @@ function renderItemList() {
     hepsi.forEach(({ id, hedef }) => {
         if (aktifFiltre !== 'all' && hedef !== aktifFiltre) return;
         const kanalKaydi = veriTabani.anahtarBul(id);
-        const ad = kanalKaydi && kanalKaydi.ad;
+        const sayfaBilgisi = kanalBilgileri[id];
+        const ad = (sayfaBilgisi && sayfaBilgisi.ad) || (kanalKaydi && kanalKaydi.ad);
         if (aramaMetni && !id.includes(aramaMetni) && !(ad && ad.toLowerCase().includes(aramaMetni))) return;
         gosterilen++;
 
         const kanalMi = id.startsWith('@') || id.startsWith('uc');
         const satir = el('div', 'item-row');
         const bilgi = el('div', 'item-info');
-        const ikon = el('div', 'item-type-icon');
-        ikon.title = kanalMi ? 'Kanal' : 'Video';
-        ikon.innerHTML = kanalMi ? SVG_KANAL : SVG_VIDEO; // sabit SVG, kullanıcı verisi içermez
+        const avatarUrl = kanalMi && sayfaBilgisi && sayfaBilgisi.avatar;
+        if (avatarUrl) {
+            const avatar = el('img', 'item-avatar');
+            avatar.src = avatarUrl;
+            avatar.alt = '';
+            avatar.addEventListener('error', () => avatar.remove());
+            bilgi.append(avatar);
+        } else {
+            const ikon = el('div', 'item-type-icon');
+            ikon.title = kanalMi ? 'Kanal' : 'Video';
+            ikon.innerHTML = kanalMi ? SVG_KANAL : SVG_VIDEO; // sabit SVG, kullanıcı verisi içermez
+            bilgi.append(ikon);
+        }
         const tanim = el('span', 'item-identifier', ad ? `${ad} (${id})` : id);
         tanim.title = ad ? `${ad} (${id})` : id;
         const rozet = el('span', 'item-tag-badge' + (hedef === 'beyaz' ? ' badge-beyaz' : hedef === 'kara' ? ' badge-kara' : ''), hedefAdi(hedef));
-        bilgi.append(ikon, tanim, rozet);
+        bilgi.append(tanim, rozet);
 
         const sil = el('button', 'btn-delete-item');
         sil.title = 'Listeden Kaldır';
@@ -1017,11 +1042,13 @@ function initEvents() {
                     surum: 2,
                     ayar,
                     ayarlar: yuklenen.ayarlar || mevcutVeri.ayarlar,
+                    kanalBilgileri: yuklenen.kanalBilgileri ? YTF.kanalBilgileriTemizle(yuklenen.kanalBilgileri) : kanalBilgileri,
                     pinKodu: yuklenen.pinKodu || mevcutVeri.pinKodu,
                     pinDegistirildi: yuklenen.pinDegistirildi || mevcutVeri.pinDegistirildi,
                     ilkGirisYapildi: yuklenen.ilkGirisYapildi || mevcutVeri.ilkGirisYapildi
                 });
                 mevcutVeri = await getStorageData(null);
+                kanalBilgileri = YTF.kanalBilgileriTemizle(mevcutVeri.kanalBilgileri);
                 if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
                 arayuzuDoldur();
                 showToast("Yedek başarıyla yüklendi!");
@@ -1106,6 +1133,7 @@ function hizliBandiDoldur(durum) {
     const hizliEkle = async (hedef) => {
         listeyeEkle(durum.tespit.toLowerCase(), hedef);
         await ayarKaydet();
+        await kanalBilgisiKaydet(durum.tespit.toLowerCase(), durum);
         renderListeler();
         showToast(`${durum.tespit} → ${hedefAdi(hedef)}`);
         const yenilenen = YTF.icerikKarari(ayar, veriTabani, {
