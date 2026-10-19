@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-19 (PR 8C: PIN karma saklama; öncesi 8B smoke testleri, 8A manifest)
+> Son güncelleme: 2026-10-19 (PR 8D: yoklama azaltma; öncesi 8C PIN karma, 8B smoke, 8A manifest)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -28,7 +28,8 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **8A** | **Manifest sertleştirmesi:** açıklama düzeltildi, `google.com` izni kaldırıldı, Firefox ≥128 / Chrome ≥111 | ✅ kodlandı, `node --test` yeşil (96 test); tarayıcıda yalnızca yükleme denemesi kaldı |
 | **8B** | **jsdom smoke testleri repoda:** `tests/smoke/` (options 5 + content 4), `jsdom ^27` devDependency | ✅ kodlandı, `node --test` yeşil (105 test) |
 | **8C** | **PIN karma saklama:** `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon), arayüz akışları, eski düz metin yükseltme | ✅ kodlandı, `node --test` yeşil (109 test); tarayıcıda PIN akışı denenmeli |
-| 8 | Sağlamlaştırma ve mağaza hazırlığı (manifest ✅ 8A, smoke ✅ 8B, PIN ✅ 8C) | ⏳ sürüyor: performans, kanal adı/avatar, mağaza |
+| **8D** | **Yoklama azaltma:** `content.js` olay tabanlı sayfa kontrolü, `inject_helper.js` MutationObserver taraması | ✅ kodlandı, `node --test` yeşil (110 test); tarayıcıda gezinme/geri tuşu denenmeli |
+| 8 | Sağlamlaştırma ve mağaza hazırlığı (manifest ✅ 8A, smoke ✅ 8B, PIN ✅ 8C, performans ✅ 8D) | ⏳ sürüyor: kanal adı/avatar, mağaza |
 | S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir) |
 
 ### Önce yapılacak: PR 6 / 6B / 6C / 7 / 8A / 8C gerçek tarayıcı doğrulaması
@@ -43,6 +44,7 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 7. `docs/db.test-ornek-kararsiz.json`'u `src/data/db.json`'a koyup (derleyin) mod/kararsız/kanal kontrol ayarlarını deneyin (`DEVIR_NOTU` bölüm 7).
 8. Pop-up 430 px'te taşmıyor mu? (konu menüleri, kanal kontrol anahtarı, kararsız seçimi)
 9. PIN (8C): PIN kaydet → uygulamayı kapat/aç → kilidi doğru PIN açar, yanlış PIN açmaz. Depoda `pinKodu` `pbkdf2-sha256$` ile başlamalı (DevTools → Application → Storage). Eski düz metin kayıtlı bir profilde ilk girişten sonra depo karma'ya dönmeli.
+10. Gezinme (8D): ana sayfa → video → geri tuşu; her adımda banner/kart kararı doğru mu, konsolda hata var mı? (Eski 1 sn yoklama kaldırıldı.)
 
 ## 3. Mantık çerçevesi: üç katman
 
@@ -120,6 +122,11 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 - Firefox `strict_min_version` **128** (MAIN world), Chromium `minimum_chrome_version` **111**.
 - `tests/manifest.test.js` (2 test) kararları koruyor. **Kalan:** tarayıcıda yükleme denemesi.
 
+### PR 8D — ✅ Yoklama azaltma (2026-10-19)
+- `content.js`: 1 sn'lik `setInterval` yerine `yt-navigate-finish` / `yt-page-data-updated` / `popstate` (200 ms birleştirme) + 5 sn yedek.
+- `inject_helper.js`: 2 sn'lik `setInterval(scan)` yerine `MutationObserver` (childList, ~800 ms birleştirme) + `yt-navigate-finish` + birleştirilmiş kaydırma + 5 sn yedek; ilk tarama gövde hazır olur olmaz.
+- Smoke: `history.pushState` + `yt-navigate-finish` ile SPA gezinme testi. Toplam **110 test** (99 saf + 11 smoke). **Kalan:** tarayıcıda gezinme/geri tuşu doğrulaması; #4 (helper öznitelik izleme) ve #5 (db önbelleği) hâlâ açık.
+
 ### PR 8C — ✅ PIN karma saklama (2026-10-19)
 - `src/core/pin.js` (saf): `pinKarmala` (PBKDF2-SHA256, 120.000 iterasyon, 16 bayt rastgele tuz, `pbkdf2-sha256$...` biçimi), `pinKarmaliMi`, `pinDogrulaGirdi` (eski düz metin uyumu), `pinDuzMetinMi`.
 - `options.js`: kurulum ve "PIN güncelle" karma üretir; giriş doğrulaması asenkron; başarılı girişte eski düz metin kayıt karma'ya yükseltilir. `options.html`'e `core/pin.js` eklendi (manifest'e girmez).
@@ -134,7 +141,7 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 
 ### PR 8 — Sağlamlaştırma ve yayın hazırlığı
 - ~~Manifest açıklaması düzelt, izinleri daralt, Firefox `strict_min_version`/MAIN world testi.~~ ✅ 8A'da yapıldı; tarayıcıda yükleme denemesi kaldı.
-- Performans: `yt-navigate-finish` ile yoklamanın azaltılması; veritabanı önbelleği (büyürse); helper özniteliklerinin izlenmesi.
+- Performance: `yt-navigate-finish` ile yoklamanın azaltılması; veritabanı önbelleği (büyürse); helper özniteliklerinin izlenmesi. (PR 8D'de sayfa/kart taraması olay tabanlı oldu; önbellek ve öznitelik izleme hâlâ açık.)
 - Kanal adı/avatarını kullanıcı listelerinde göstermek (kullanıcı eklerken sayfadan toplama).
 - ~~Arayüz ve içerik betiği smoke testlerinin repoya alınması (`tests/smoke/`, jsdom devDependency).~~ ✅ 8B'de yapıldı.
 - ~~PIN: düz metin yerine karma saklama (hâlâ yalnızca arayüz kilidi olduğu belgelenir).~~ ✅ 8C'de yapıldı (PBKDF2-SHA256, eski kayıt yükseltme).

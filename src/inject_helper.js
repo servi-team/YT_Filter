@@ -177,6 +177,31 @@
         return sonuc;
     };
 
-    setInterval(scan, 2000);
-    document.addEventListener('scroll', scan, { passive: true });
+    let taramaZamanlayici = null;
+    let sonTarama = 0;
+
+    // DOM değişiklikleri art arda gelir; taramaları birleştir, en fazla ~800 ms'de bir çalıştır.
+    function taramaPlanla() {
+        if (taramaZamanlayici) return;
+        const kalan = Math.max(150, 800 - (Date.now() - sonTarama));
+        taramaZamanlayici = setTimeout(() => {
+            taramaZamanlayici = null;
+            sonTarama = Date.now();
+            scan();
+        }, kalan);
+    }
+
+    function gozlemBaslat() {
+        if (!document.body) {
+            document.addEventListener('DOMContentLoaded', gozlemBaslat, { once: true });
+            return;
+        }
+        new MutationObserver(taramaPlanla).observe(document.body, { childList: true, subtree: true });
+        scan(); // ilk kartları hemen işle
+    }
+
+    document.addEventListener('yt-navigate-finish', taramaPlanla);
+    document.addEventListener('scroll', taramaPlanla, { capture: true, passive: true });
+    setInterval(scan, 5000); // yedek: olay/gözlem kaçarsa
+    gozlemBaslat();
 })();

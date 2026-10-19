@@ -58,6 +58,23 @@ test('content: kara listedeki kanalın ana sayfa kartı gizlenir', async () => {
     }
 });
 
+test('content: yt-navigate-finish ile SPA gezinmesinde banner çıkar', async () => {
+    const { dom, belge, pencere } = icerikArayuzuAc({
+        html: ANA_SAYFA_HTML,
+        url: 'https://www.youtube.com/',
+        baslangic: karaVideo()
+    });
+    try {
+        await bekle(() => belge.querySelector('ytd-rich-item-renderer'));
+        pencere.history.pushState({}, '', '/watch?v=aaaaaaaaaaa');
+        belge.dispatchEvent(new pencere.Event('yt-navigate-finish'));
+        await bekle(() => belge.getElementById('yt-filter-engel-banner'), { sure: 4000 });
+        assert.ok(belge.getElementById('yt-filter-engel-banner').textContent.includes('Bu video engellendi'));
+    } finally {
+        dom.window.close();
+    }
+});
+
 test('content: "Bulanıklaştır" eylemi kartı bulanıklaştırır', async () => {
     const { dom, belge } = icerikArayuzuAc({
         html: ANA_SAYFA_HTML,

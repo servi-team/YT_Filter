@@ -550,7 +550,23 @@ async function init() {
 }
 
 let lastUrl = location.href;
-setInterval(() => {
+let sonSayfaKontrolu = 0;
+let sayfaKontrolZamanlayici = null;
+
+// YouTube tek sayfa uygulaması; olaylar art arda gelebilir. En fazla 200 ms'de bir
+// kontrol et, kaçan durum varsa kuyruğa al. 1 sn'lik yoklama yerine olay + 5 sn yedek.
+function sayfaGuncelle() {
+    const kalan = 200 - (Date.now() - sonSayfaKontrolu);
+    if (kalan > 0) {
+        if (!sayfaKontrolZamanlayici) {
+            sayfaKontrolZamanlayici = setTimeout(() => {
+                sayfaKontrolZamanlayici = null;
+                sayfaGuncelle();
+            }, kalan);
+        }
+        return;
+    }
+    sonSayfaKontrolu = Date.now();
     checkWatchPage();
     if (location.href !== lastUrl) {
         lastUrl = location.href;
@@ -558,7 +574,12 @@ setInterval(() => {
         document.querySelectorAll(videoSelectors).forEach(el => resetElement(el));
         setTimeout(() => document.querySelectorAll(videoSelectors).forEach(processVideo), 1000);
     }
-}, 1000);
+}
+
+document.addEventListener('yt-navigate-finish', sayfaGuncelle);
+document.addEventListener('yt-page-data-updated', sayfaGuncelle);
+window.addEventListener('popstate', sayfaGuncelle);
+setInterval(sayfaGuncelle, 5000);
 
 const storageObj = (typeof browser !== 'undefined' && browser.storage) ? browser.storage : chrome.storage;
 if (storageObj && storageObj.onChanged) {

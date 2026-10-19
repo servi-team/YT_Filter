@@ -5,8 +5,18 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 ## [Yayınlanmamış] — 2.0 geliştirme dalı
 
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
-PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)**, **PR 8B (jsdom smoke testleri repoda)** ve **PR 8C (PIN karma saklama, 2026-10-19)** kodlandı.
-PR 6, 6B, 6C, 7, 8A, 8B ve 8C **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**
+PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)**, **PR 8B (jsdom smoke testleri repoda)**, **PR 8C (PIN karma saklama)** ve **PR 8D (yoklama azaltma, 2026-10-19)** kodlandı.
+PR 6, 6B, 6C, 7, 8A, 8B, 8C ve 8D **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**
+
+### PR 8D — Yoklamanın azaltılması (2026-10-19)
+
+#### Değişenler
+- **`content.js`:** 1 sn'lik `setInterval` kaldırıldı. Sayfa kontrolü artık `yt-navigate-finish`, `yt-page-data-updated` ve `popstate` olaylarıyla (200 ms birleştirme) çalışır; 5 sn'lik yedek zamanlayıcı yalnızca olaylar kaçarsa devreye girer.
+- **`inject_helper.js`:** 2 sn'lik `setInterval(scan)` kaldırıldı. Tarama artık `MutationObserver` (childList, en fazla ~800 ms'de bir) + `yt-navigate-finish` + kaydırma (birleştirilmiş) ile yapılır; 5 sn'lik yedek zamanlayıcı korunur. İlk tarama gövde hazır olur olmaz çalışır.
+- **`tests/smoke/content.test.js` (+1 test):** SPA gezinmesinde (`history.pushState` + `yt-navigate-finish`) banner'ın olayla çıktığını doğrular. Toplam **110 test** yeşil (99 saf + 11 smoke).
+
+#### Neden
+- Boşta CPU uyanmalarını azaltmak (sayfa başına saniyede bir yerine yalnızca değişiklikte); davranış aynı kalır.
 
 ### PR 8C — PIN karma saklama (2026-10-19)
 
@@ -164,8 +174,8 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Bilinen sınırlar (henüz yapılmadı / çözülüyor)
 - **Veritabanı neredeyse boş ve düzenleme sitesi yok:** çoğu içerik "bilinmeyen" kalıyor; konu/etiket kuralları test verisi veya PR 7'deki `db.json` içe aktarma ile görülebilir.
-- **PR 6, 6B, 6C, 7, 8A, 8B ve 8C gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır; 8C'de PIN akışı tarayıcıda denenmeli (kaydet → kilitle → eski düz metin yükseltme).
-- **Testler** `node --test` ile yeşil (**109 test**: 99 saf + 10 jsdom smoke).
+- **PR 6, 6B, 6C, 7, 8A, 8B, 8C ve 8D gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır; 8C'de PIN akışı (kaydet → kilitle → eski düz metin yükseltme), 8D'de YouTube gezinmesi/geri tuşu sonrası işleme tarayıcıda denenmeli.
+- **Testler** `node --test` ile yeşil (**110 test**: 99 saf + 11 jsdom smoke).
 - **Hızlı ekleme bandının mesajlaşması** gerçek pop-up'ta denenmedi; içerik betiği yoksa URL yedeği kullanılır.
 - **Lider onayı bekleyen yorumlar:** ana konu ölçütü (net puan mı upvote mu), beraberlikte sıra, Serbest'te kararsız konu, Orta/Katı'da kararsız "engelle" anlamı, asgari oy eşiği — `docs/SISTEM_TASARIMI.md` bölüm 6.
 - **Tam yedek içe aktarma** hâlâ mevcut ayarların üzerine yazar (onay sorar); liste içe aktarma ise birleştirir/çakışma sorar.
@@ -176,6 +186,6 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Geliştirici notları
 - **Derleme:** `node scripts/build.js` → `chromium/` ve `firefox/`. Tarayıcıya bu klasörler yüklenir; kaynak `src/`'dir. **Her değişiklikten sonra yeniden derleyin.**
-- **Test:** `node --test` — 109 test (99 saf + 10 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
+- **Test:** `node --test` — 110 test (99 saf + 11 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
 - **Uyumluluk:** eski yedek dosyaları yeni sürümde içe aktarılabilir; yeni yedekler eski sürümde **çalışmaz.** Yeni `db.json` alanları isteğe bağlıdır; ancak ana konusuz kayıtları eski eklenti sürümleri atlar.
 - **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `docs/DEVIR_NOTU.md`, plan: `PLAN.md`.

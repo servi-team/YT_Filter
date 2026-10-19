@@ -1,9 +1,11 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-19 (PR 8A + 8B + 8C) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-19 (PR 8A + 8B + 8C + 8D) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
 
+> **PR 8D özeti (2026-10-19):** Yoklama azaltıldı. `content.js`'te 1 sn'lik `setInterval` yerine `yt-navigate-finish` / `yt-page-data-updated` / `popstate` olayları (200 ms birleştirme) + 5 sn yedek; `inject_helper.js`'te 2 sn'lik `setInterval(scan)` yerine `MutationObserver` (en fazla ~800 ms'de bir) + `yt-navigate-finish` + birleştirilmiş kaydırma + 5 sn yedek. Smoke'a SPA gezinme testi eklendi. Toplam **110 test** yeşil (99 saf + 11 smoke). Davranış aynı; boşta CPU uyanmaları azalır. **Tarayıcıda gezinme/geri tuşu denenmeli.**
+>
 > **PR 8C özeti (2026-10-19):** PIN artık depoda düz metin tutulmuyor; `pbkdf2-sha256$<iterasyon>$<tuz>$<ozet>` biçiminde **PBKDF2-SHA256 (120.000 iterasyon, 16 bayt rastgele tuz)** karması saklanıyor. Yeni `src/core/pin.js` (saf) + arayüz akışları (`options.js` kurulum/güncelleme/giriş) karma üretir/doğrular. **Eski düz metin PIN kaydı ilk başarılı girişte karma'ya yükseltilir.** PIN hâlâ yalnızca arayüz kilididir (şifreleme değil). `tests/pin.test.js` (3) + smoke'a yükseltme testi eklendi. Toplam **109 test** yeşil (99 saf + 10 smoke). Yeni karma yedeği eski sürümde PIN'i kilitleyebilir (uyumluluk notu CHANGELOG'da).
 >
 > **PR 8B özeti (2026-10-19):** PR 6B'de kullanılan jsdom harness'i repoya alındı. `tests/smoke/ortak.js` (sahte `chrome.*`, `bekle`) + `tests/smoke/options.test.js` (5 test: ilk açılış/db durumu, PIN kurulum-kilit-giriş, liste ekle/sil, çakışma modalı üç strateji, hızlı bant URL yedeği) + `tests/smoke/content.test.js` (4 test: video banner, beyaz listeye ekle, kart gizleme, bulanıklaştırma). `jsdom ^27` artık `devDependencies`'te (`npm install` gerekir; Node >= 20). Toplam **105 test** yeşil (96 saf + 9 smoke). **Tarayıcı doğrulamasını değiştirmez.**
@@ -116,7 +118,7 @@ src/
 manifests/             manifest.chromium.json, manifest.firefox.json (yalnızca youtube.com; Chrome >= 111, Firefox >= 128)
 scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır)
 tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 + manifest + pin (Node'un yerleşik test koşucusu)
-tests/smoke/           jsdom + sahte chrome.* ile options.html (6 test) ve content.js (4 test) smoke testleri
+tests/smoke/           jsdom + sahte chrome.* ile options.html (6 test) ve content.js (5 test) smoke testleri
 docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözleşme), db.test-ornek.json,
                        db.test-ornek-kararsiz.json, DEVIR_NOTU.md
 ```
@@ -201,6 +203,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 8A | **Manifest sertleştirmesi** (2026-10-19): mağaza açıklaması düzeltildi; `google.com`/`google.com.tr` host izni ve eşleşmeleri kaldırıldı; Firefox `strict_min_version` 128 (MAIN world), Chromium `minimum_chrome_version` 111; `tests/manifest.test.js` (2 test) | ✅ `node --test` yeşil (96 test); **tarayıcıda yalnızca yeniden yükleme denemesi kaldı** |
 | 8B | **jsdom smoke testleri repoda** (2026-10-19): `tests/smoke/ortak.js` + `options.test.js` (5) + `content.test.js` (4); `jsdom ^27` devDependency, `npm install` gerekir (Node >= 20) | ✅ `node --test` yeşil (**105 test**: 96 saf + 9 smoke); tarayıcı doğrulamasını değiştirmez |
 | 8C | **PIN karma saklama** (2026-10-19): `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon, rastgele tuz); `options.js` kurulum/güncelleme/giriş akışları karma üretir/doğrular; eski düz metin ilk girişte yükseltilir; `tests/pin.test.js` (3) + smoke yükseltme testi | ✅ `node --test` yeşil (**109 test**: 99 saf + 10 smoke); PIN akışı tarayıcıda denenmeli |
+| 8D | **Yoklama azaltma** (2026-10-19): `content.js` 1 sn yoklama → olay (`yt-navigate-finish`/`yt-page-data-updated`/`popstate`, 200 ms birleştirme) + 5 sn yedek; `inject_helper.js` 2 sn tarama → `MutationObserver` (~800 ms birleştirme) + gezinme/kaydırma + 5 sn yedek; smoke SPA gezinme testi | ✅ `node --test` yeşil (**110 test**: 99 saf + 11 smoke); tarayıcıda gezinme/geri tuşu denenmeli |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -252,7 +255,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 8. Yalnızca veritabanında kaydı olan kanalların adı listede görünür; avatar yok.
 9. ~~Manifest `description` "otomatik senkronizasyon" diyor; `google.com` host izni geniş.~~ **Çözüldü (PR 8A):** açıklama gerçek özelliklere göre yazıldı, yalnızca `youtube.com` izni kaldı. Tarayıcıda yükleme doğrulaması bekliyor.
 10. ~~Firefox `strict_min_version: 109` ile `world: "MAIN"` çakışıyor.~~ **Çözüldü (PR 8A):** asgari sürüm 128'e çekildi. Yedek enjeksiyon yolu (MAIN world desteklemeyen tarayıcı) hâlâ test edilmedi.
-11. `setInterval` ile yoklama (izleme sayfası 1 sn, helper 2 sn); `yt-navigate-finish` ile değiştirilebilir.
+11. ~~`setInterval` ile yoklama (izleme sayfası 1 sn, helper 2 sn); `yt-navigate-finish` ile değiştirilebilir.~~ **Çözüldü (PR 8D):** sayfa kontrolü `yt-navigate-finish`/`yt-page-data-updated`/`popstate` olaylarıyla, kart taraması `MutationObserver` + gezinme + kaydırmayla; ikisinde de seyrek yedek zamanlayıcı (5 sn) var. Tarayıcı davranışı doğrulanmayı bekliyor. **Kalan:** veritabanı önbelleği (büyürse, #5) ve helper'ın sonradan yazdığı özniteliklerin izlenmesi (#4).
 12. ~~Arayüz (jsdom) smoke testleri repoda değil.~~ **Çözüldü (PR 8B):** harness `tests/smoke/` altında; `jsdom` devDependency (`npm install`, Node >= 20). Kapsam: ilk açılış, PIN akışı, liste ekle/sil, çakışma modalı, hızlı bant, banner/beyaz liste/kart gizleme/bulanıklaştırma. Gerçek tarayıcı doğrulamasının yerini tutmaz.
 13. Rozet metinleri değişti ("GÜVENLİ/EĞİTİCİ" → "BEYAZ LİSTE" vb.).
 14. **Banner/filtre gerçek tarayıcıda doğrulanmadı.** jsdom'da engelli video ve kanal sayfasında banner çıkıyor, istisna butonu çalışıyor, yeniden çizim yok. Tarayıcıda test için: derleyin, uzantıyı yenileyin, YouTube'u F5 ile yenileyin, konsolu açıp **"YT Filter" ile filtreleyin**: `YT Filter: hazır {mod, etiketlenmemis, beyaz, kara, dbKanal, dbVideo, dbHatalar}` ve her sayfa için `YT Filter: sayfa kararı …` satırı görünmeli. Satır yoksa betik çalışmıyordur (yükleme/derleme); satır var ama banner yoksa karar/CSS sorunudur.
@@ -273,8 +276,8 @@ node --test tests/pr6c.test.js              # hızlı bant sebep/özet/istisna s
 node --test tests/pr7.test.js               # liste paketi/çakışma birleştirme (12 test)
 node --test tests/manifest.test.js          # açıklama/izin ve sürüm/script sırası (2 test)
 node --test tests/pin.test.js               # PIN karma biçimi/doğrulama, eski düz metin uyumu (3 test)
-node --test tests/smoke/options.test.js tests/smoke/content.test.js   # jsdom smoke (10 test)
-node --test                                  # tüm testler (Node 18+ saf testler; smoke için Node >= 20; klasör yolu vermeyin, Node 22'de hata verir) — 109 test
+node --test tests/smoke/options.test.js tests/smoke/content.test.js   # jsdom smoke (11 test)
+node --test                                  # tüm testler (Node 18+ saf testler; smoke için Node >= 20; klasör yolu vermeyin, Node 22'de hata verir) — 110 test
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.
 
