@@ -140,23 +140,55 @@ function icerikKarari(videoId, channelHandle, channelId) {
 const BANNER_ID = 'yt-filter-engel-banner';
 
 function sebepiMetne(sebep) {
-    if (!sebep) return '';
-    const nerede = sebep.kaynak === 'video' ? ' (video)' : sebep.kaynak === 'kanal' ? ' (kanal)' : '';
-    const ad = (liste, id) => { const x = (liste || []).find(o => o.id === id); return x ? x.ad : id; };
-    switch (sebep.tur) {
-        case 'liste':
-            if (sebep.liste === 'beyaz') return `Beyaz listede${nerede}`;
-            if (sebep.liste === 'kara') return `Kara listede${nerede}`;
-            return `"${sebep.liste}" listesinde${nerede}`;
-        case 'etiketlenmemis': return 'Etiketlenmemiş içerik (veritabanında kaydı yok)';
-        case 'etiket': return `Etiket: ${ad(YTF.ETIKETLER, sebep.id)}${nerede}`;
-        case 'konu': return `Engelli konu: ${ad(YTF.KONULAR, sebep.id)}${nerede}`;
-        case 'kararsiz-etiket': return `Etiket (kararsız): ${ad(YTF.ETIKETLER, sebep.id)}${nerede}`;
-        case 'kararsiz-konu': return `Engelli konu (kararsız): ${ad(YTF.KONULAR, sebep.id)}${nerede}`;
-        case 'izinli-konu-yok': return 'İzinli konu yok';
-        case 'shorts': return 'Shorts gizleme ayarı açık';
-        default: return sebep.tur || '';
+    return YTF.sebepMetni(sebep);
+}
+
+function sayfaKimligi() {
+    const url = new URL(window.location.href);
+    let videoId = null;
+    if (url.pathname === '/watch') videoId = url.searchParams.get('v');
+    else if (url.pathname.startsWith('/embed/')) {
+        videoId = url.pathname.split('/')[2];
+        if (videoId && videoId.includes('?')) videoId = videoId.split('?')[0];
+    } else if (url.pathname.startsWith('/shorts/')) {
+        videoId = url.pathname.split('/')[2];
     }
+
+    const yol = url.pathname;
+    const hm = yol.match(/^\/(@[a-zA-Z0-9._-]+)/);
+    const im = yol.match(/^\/channel\/(UC[A-Za-z0-9_-]{22})/);
+    let handle = hm ? hm[1] : currentChannelContext;
+    const kanalId = im ? im[1] : null;
+
+    if (videoId && !url.pathname.startsWith('/embed/')) {
+        const channelLink = document.querySelector('ytd-watch-metadata #owner a[href^="/@"]');
+        if (channelLink) {
+            const match = channelLink.href.match(/\/(@[a-zA-Z0-9._-]+)/);
+            if (match) handle = match[1];
+        }
+    }
+
+    let tur = null;
+    let tespit = null;
+    if (videoId) { tur = 'Video'; tespit = videoId; }
+    else if (handle) { tur = 'Kanal'; tespit = handle; }
+    else if (kanalId) { tur = 'Kanal'; tespit = kanalId; }
+
+    return { videoId, handle, kanalId, tur, tespit };
+}
+
+function sayfaDurumuAl() {
+    const kimlik = sayfaKimligi();
+    if (!kimlik.tespit) return { hazir: motorHazir, tespit: null };
+    if (!motorHazir) return { hazir: false, ...kimlik };
+    const sonuc = icerikKarari(kimlik.videoId, kimlik.handle, kimlik.kanalId);
+    return {
+        hazir: true,
+        ...kimlik,
+        karar: sonuc.karar,
+        sebepler: sonuc.sebepler,
+        ozet: YTF.kararOzeti(sonuc)
+    };
 }
 
 function engelBanneriniKaldir() {
@@ -536,6 +568,14 @@ if (storageObj && storageObj.onChanged) {
             document.querySelectorAll(videoSelectors).forEach(processVideo);
             checkWatchPage();
         });
+    });
+}
+
+if (window === window.top && browserAPI.runtime && browserAPI.runtime.onMessage) {
+    browserAPI.runtime.onMessage.addListener((mesaj, _gonderen, sendResponse) => {
+        if (!mesaj || mesaj.tur !== 'sayfaDurumu') return;
+        sendResponse(sayfaDurumuAl());
+        return true;
     });
 }
 

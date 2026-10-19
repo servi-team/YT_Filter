@@ -5,8 +5,21 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 ## [Yayınlanmamış] — 2.0 geliştirme dalı
 
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
-PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)** ve **PR 6C (hızlı ekleme bandı + istisna çerçevesi, 2026-10-19)** kodlandı.
-PR 6, 6B ve 6C **Node birim testleri ve jsdom ile doğrulandı; gerçek tarayıcıda henüz denenmedi.**
+PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)** ve **PR 7 (içe/dışa aktarma, 2026-10-19)** kodlandı.
+PR 6, 6B, 6C ve 7 **Node birim testleriyle doğrulandı** (6B/6C arayüzü ayrıca jsdom ile denendi); **gerçek tarayıcıda henüz denenmedi.**
+
+### PR 7 — İçe/dışa aktarma (2026-10-19)
+
+#### Kullanıcıya görünen değişiklikler
+- **Liste dışa aktarma:** İstisnalar sekmesinde "Listeleri dışa / içe aktar" kartı. Açılır listeden **tüm listeler**, beyaz liste, kara liste veya tek bir özel liste seçilip JSON olarak indirilir (`yt_filter_listeler.json` / listeye özel dosya adı).
+- **Liste içe aktarma:** Paket mevcut listelerle birleştirilir. Aynı adlı özel liste varsa üç seçenekli modal çıkar: **Birleştir (varsayılan) / Üzerine yaz / Yeniden adlandır**. Yeniden adlandırma TR-duyarsız benzersiz ad üretir (`Okul (2)`). Beyaz/kara listelerde üyeler birleşir; bir anahtar her zaman tek listede kalır (sonraki liste taşır).
+- **`db.json` içe aktarma:** Yedek sekmesinde "Veritabanı (db.json)" kartı. `sema 1` ve `veriSurumu` doğrulanır; kaç kanal/video alınacağı ve kaç geçersiz kaydın atlanacağı onaydan önce gösterilir. Paketli veriden daha eski veya eşit sürüm için uyarı verilir (saklanır ama eşitlikte paketli veri kullanılır). "Paketli veritabanına dön" ile içe aktarılan veritabanı silinir.
+- **Veritabanı durumu** kartta özetlenir: paketli sürüm, içe aktarılan sürüm (aktif/pasif), kanal/video sayısı, atlanan kayıt sayısı.
+
+#### Eklendi (geliştiriciler için)
+- **`src/core/listeler.js` (yeni, saf):** `listePaketiOlustur(ayar, secim)`, `listePaketiCoz(json)` (liste paketi + tam yedek biçimi; üye/liste adı doğrulaması, TR-duyarsız yinelenen ad birleştirme), `listeleriBirlestir(mevcut, gelen, strateji)` (`birlestir | uzerine | yeniden`; mevcut nesneyi değiştirmez, anahtarın tek listede kalmasını sağlar).
+- **`options.js`:** dosya indirme yardımcısı `jsonIndir`, `removeStorageData`; liste paketi dışa/içe aktarma, çakışma modalı; `dbOverride` içe aktarma/sıfırlama ve `renderDbDurumu`; `veriTabaniniYukle` artık paketli + override seçimini raporluyor.
+- **`tests/pr7.test.js`:** 12 test (paket oluşturma, temizleme, bozuk girdi, tam yedek, üç birleştirme stratejisi, liste taşıma, TR-duyarsız benzersiz ad). Toplam **94 test** yeşil.
 
 ### PR 6C — Hızlı ekleme bandı ve istisna çerçevesi (2026-10-19)
 PR 5'te planlanıp dosyalarda bulunmayan dört parça tamamlandı.
@@ -117,12 +130,12 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 - **PIN:** yeni kurulumda herkesçe bilinen varsayılan PIN (`1234`) artık atanmıyor. PIN hâlâ düz metin saklanır ve yalnızca arayüz kilididir.
 
 ### Bilinen sınırlar (henüz yapılmadı / çözülüyor)
-- **Veritabanı boş ve düzenleme sitesi yok:** her içerik "bilinmeyen" kalıyor; konu/etiket kuralları yalnızca test verisiyle görülebilir.
-- **PR 6, 6B ve 6C gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16.
-- **Eski birim testleri 6B kurallarına uyduruldu** (`node --test` yeşil, 82 test).
+- **Veritabanı neredeyse boş ve düzenleme sitesi yok:** çoğu içerik "bilinmeyen" kalıyor; konu/etiket kuralları test verisi veya PR 7'deki `db.json` içe aktarma ile görülebilir.
+- **PR 6, 6B, 6C ve 7 gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü.
+- **Birim testleri** `node --test` ile yeşil (**94 test**).
 - **Hızlı ekleme bandının mesajlaşması** gerçek pop-up'ta denenmedi; içerik betiği yoksa URL yedeği kullanılır.
 - **Lider onayı bekleyen yorumlar:** ana konu ölçütü (net puan mı upvote mu), beraberlikte sıra, Serbest'te kararsız konu, Orta/Katı'da kararsız "engelle" anlamı, asgari oy eşiği — `docs/SISTEM_TASARIMI.md` bölüm 6.
-- İçe aktarmada ad çakışması diyaloğu (üzerine yaz / yeniden adlandır / birleştir) ve siteden indirilen `db.json`'u içe aktarma.
+- **Tam yedek içe aktarma** hâlâ mevcut ayarların üzerine yazar (onay sorar); liste içe aktarma ise birleştirir/çakışma sorar.
 - Düzenleme sitesi ve oylama sistemi.
 - İzleme sayfasında kanal ID'si yok (yalnızca handle ile eşleşir).
 - Listelerde yalnızca veritabanında kayıtlı kanalların adı görünür; avatar yok.
@@ -131,6 +144,6 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Geliştirici notları
 - **Derleme:** `node scripts/build.js` → `chromium/` ve `firefox/`. Tarayıcıya bu klasörler yüklenir; kaynak `src/`'dir. **Her değişiklikten sonra yeniden derleyin.**
-- **Test:** `node --test` (Node 18+; klasör yolu vermeyin) — 82 test. Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`. Arayüz ve içerik betiği jsdom + sahte `chrome.*` ile denendi; bu harness henüz repoda değil.
+- **Test:** `node --test` (Node 18+; klasör yolu vermeyin) — 94 test. Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`. Arayüz ve içerik betiği jsdom + sahte `chrome.*` ile denendi; bu harness henüz repoda değil.
 - **Uyumluluk:** eski yedek dosyaları yeni sürümde içe aktarılabilir; yeni yedekler eski sürümde **çalışmaz.** Yeni `db.json` alanları isteğe bağlıdır; ancak ana konusuz kayıtları eski eklenti sürümleri atlar.
 - **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `docs/DEVIR_NOTU.md`, plan: `PLAN.md`.

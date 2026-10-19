@@ -11,10 +11,13 @@ const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser
 
 let mevcutVeri = {};          // storage içeriği (ayarlar, PIN, ...)
 let ayar = null;              // yeni model; mevcutVeri.ayar ile aynı nesne
+let paketliDb = null;         // paketle gelen data/db.json (ham)
 let veriTabani = YTF.dbKur(null);
 let aktifFiltre = 'all';      // 'all' | 'beyaz' | 'kara' | 'ozel:<liste adı>'
 let aramaMetni = '';
 let aktifYouTubeIcerigi = null;
+
+const trKucuk = (x) => String(x == null ? '' : x).toLocaleLowerCase('tr-TR');
 
 const MODLAR = YTF.MODLAR;    // ['serbest', 'orta', 'kati']
 const MOD_BILGI = {
@@ -38,7 +41,7 @@ const EYLEM_SECENEKLERI = [
 const ETIKETLENMEMIS_IPUCU = {
     null: 'Henüz seçmediniz. Siz seçene kadar etiketlenmemiş içerikler engellenir.',
     ac: 'Veritabanında olmayan kanal ve videolar normal şekilde açılır.',
-    engelle: 'Veritabanında olmayan kanal ve videolar engellenir. Listelere ekleyerek tek tek açabilirsiniz.'
+    engelle: 'Veritabanında olmayan kanal ve videolar engellenir. Bilinmeyen içerikte elinizde yalnızca istisna vardır; “Her zaman izin ver” ile tek tek açabilirsiniz.'
 };
 
 const SVG_COP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
@@ -68,6 +71,15 @@ async function setStorageData(items) {
     }
     return new Promise((resolve) => {
         chrome.storage.local.set(items, () => resolve());
+    });
+}
+
+async function removeStorageData(keys) {
+    if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+        return await browser.storage.local.remove(keys);
+    }
+    return new Promise((resolve) => {
+        chrome.storage.local.remove(keys, () => resolve());
     });
 }
 
@@ -106,14 +118,48 @@ async function ayarKaydet() {
     await setStorageData({ surum: 2, ayar });
 }
 
-// Paketle gelen veritabanını (yalnızca kanal adı göstermek için) okur. Hata olursa boş veritabanıyla devam eder.
+// Paketle gelen veritabanını ve varsa kullanıcının içe aktardığı veritabanını okur.
+// Hata olursa boş veritabanıyla devam eder.
 async function veriTabaniniYukle() {
     try {
         const yanit = await fetch(browserAPI.runtime.getURL('data/db.json'));
-        veriTabani = YTF.dbKur(YTF.dbSec(await yanit.json(), mevcutVeri.dbOverride));
+        paketliDb = await yanit.json();
     } catch (e) {
-        veriTabani = YTF.dbKur(null);
+        paketliDb = null;
     }
+    const secilen = YTF.dbSec(paketliDb, mevcutVeri.dbOverride);
+    veriTabani = YTF.dbKur(secilen);
+    renderDbDurumu();
+}
+
+function renderDbDurumu() {
+    const kutu = document.getElementById('dbDurum');
+    const sifirla = document.getElementById('btnDbSifirla');
+    if (!kutu) return;
+
+    const paketSurum = Number(paketliDb && paketliDb.veriSurumu) || 0;
+    const override = mevcutVeri.dbOverride;
+    const overrideSurum = Number(override && override.veriSurumu) || 0;
+    const overrideAktif = !!override && YTF.dbSec(paketliDb, override) === override;
+    const sayac = veriTabani.sayac;
+
+    let metin = override
+        ? `Paketli: v${paketSurum} · İçe aktarılan: v${overrideSurum}${overrideAktif ? ' (kullanılıyor)' : ' (paketli veri daha yeni)'}`
+        : `Paketli veritabanı: v${paketSurum}`;
+    metin += ` · ${sayac.kanal} kanal, ${sayac.video} video`;
+    if (sayac.atlanan) metin += ` · ${sayac.atlanan} geçersiz kayıt atlandı`;
+    kutu.textContent = metin;
+    if (sifirla) sifirla.style.display = override ? 'block' : 'none';
+}
+
+function jsonIndir(veri, dosyaAdi) {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(veri, null, 2));
+    const indirmeLinki = document.createElement('a');
+    indirmeLinki.setAttribute("href", dataStr);
+    indirmeLinki.setAttribute("download", dosyaAdi);
+    document.body.appendChild(indirmeLinki);
+    indirmeLinki.click();
+    indirmeLinki.remove();
 }
 
 // Başlangıç Yüklemesi
@@ -277,8 +323,8 @@ function listeyeEkle(anahtar, hedef) {
 }
 
 function hedefAdi(hedef) {
-    if (hedef === 'beyaz') return 'Beyaz liste';
-    if (hedef === 'kara') return 'Kara liste';
+    if (hedef === 'beyaz') return 'Her zaman izin ver';
+    if (hedef === 'kara') return 'Her zaman engelle';
     return hedef.startsWith('ozel:') ? hedef.slice(5) : hedef;
 }
 
@@ -337,16 +383,19 @@ async function ozelListeOlustur() {
 function renderListeler() {
     if (aktifFiltre.startsWith('ozel:') && !ozelListeBul(aktifFiltre.slice(5))) aktifFiltre = 'all';
     renderHedefSecimi();
+    renderListeDisaAktarSecimi();
     renderFilterChips();
     renderItemList();
     renderOzelListeler();
+    const uyari = document.getElementById('istisnaUyarisi');
+    if (uyari) uyari.style.display = YTF.istisnaSayisi(ayar) >= YTF.ISTISNA_UYARI_ESIGI ? 'flex' : 'none';
 }
 
 function renderHedefSecimi() {
     const secim = document.getElementById('yeniEtiketTuru');
     const onceki = secim.value;
     secim.textContent = '';
-    const secenekler = [['beyaz', 'Beyaz liste'], ['kara', 'Kara liste'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
+    const secenekler = [['beyaz', 'Her zaman izin ver (Beyaz liste)'], ['kara', 'Her zaman engelle (Kara liste)'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
     secenekler.forEach(([deger, ad]) => {
         const o = el('option', '', ad);
         o.value = deger;
@@ -355,11 +404,111 @@ function renderHedefSecimi() {
     if (secenekler.some(([d]) => d === onceki)) secim.value = onceki;
 }
 
+function renderListeDisaAktarSecimi() {
+    const secim = document.getElementById('selListeDisaAktar');
+    if (!secim) return;
+    const onceki = secim.value;
+    secim.textContent = '';
+    const secenekler = [
+        ['hepsi', 'Tüm listeler'],
+        ['beyaz', 'Her zaman izin ver (Beyaz liste)'],
+        ['kara', 'Her zaman engelle (Kara liste)'],
+        ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])
+    ];
+    secenekler.forEach(([deger, ad]) => {
+        const o = el('option', '', ad);
+        o.value = deger;
+        secim.appendChild(o);
+    });
+    if (secenekler.some(([d]) => d === onceki)) secim.value = onceki;
+}
+
+function listeDisiAktar() {
+    const secim = document.getElementById('selListeDisaAktar');
+    const hedef = secim ? secim.value : 'hepsi';
+    const paket = YTF.listePaketiOlustur(ayar, hedef);
+    const ad = hedef === 'hepsi' ? 'yt_filter_listeler.json'
+        : 'yt_filter_liste_' + hedef.replace(/^ozel:/, '').replace(/[^a-zA-Z0-9_-]+/g, '_') + '.json';
+    jsonIndir(paket, ad);
+    showToast('Liste dosyası indirildi');
+}
+
+function cakismaSor(adlar) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('listeCakismaModal');
+        const liste = document.getElementById('listeCakismaListesi');
+        const vazgec = document.getElementById('btnCakismaVazgec');
+        const uygula = document.getElementById('btnCakismaUygula');
+        if (!modal || !liste || !vazgec || !uygula) {
+            resolve(confirm(`Şu listeler zaten var: ${adlar.join(', ')}. Birleştirilsin mi?`) ? 'birlestir' : null);
+            return;
+        }
+        liste.textContent = `Şu özel listeler zaten var: ${adlar.join(', ')}. İçe aktarılan kayıtlar için ne yapılsın?`;
+        const varsayilan = document.querySelector('input[name="listeCakisma"][value="birlestir"]');
+        if (varsayilan) varsayilan.checked = true;
+        modal.style.display = 'flex';
+        const bitir = (deger) => {
+            modal.style.display = 'none';
+            uygula.onclick = null;
+            vazgec.onclick = null;
+            resolve(deger);
+        };
+        uygula.onclick = () => {
+            const secili = document.querySelector('input[name="listeCakisma"]:checked');
+            bitir(secili ? secili.value : 'birlestir');
+        };
+        vazgec.onclick = () => bitir(null);
+    });
+}
+
+async function listeleriIceAktarUygula(gelen, strateji) {
+    const { listeler, rapor } = YTF.listeleriBirlestir(ayar.listeler, gelen, strateji);
+    ayar.listeler = listeler;
+    await ayarKaydet();
+    renderListeler();
+    let mesaj = `Listeler içe aktarıldı: ${rapor.eklenen} yeni kayıt`;
+    if (rapor.tasinan) mesaj += `, ${rapor.tasinan} taşındı`;
+    if (rapor.atlanan) mesaj += `, ${rapor.atlanan} atlandı`;
+    showToast(mesaj);
+}
+
+function listeIceAktarDosya(dosya) {
+    if (!dosya) return;
+    const okuyucu = new FileReader();
+    okuyucu.onload = async (olay) => {
+        let paket;
+        try {
+            paket = JSON.parse(olay.target.result);
+        } catch (e) {
+            alert('Geçersiz JSON dosyası!');
+            return;
+        }
+        const cozum = YTF.listePaketiCoz(paket);
+        if (!cozum.gecerli) {
+            alert('Liste paketi okunamadı: ' + (cozum.hatalar[0] || 'bilinmeyen biçim'));
+            return;
+        }
+        const cakisanlar = cozum.listeler.ozel
+            .filter(g => ayar.listeler.ozel.some(l => trKucuk(l.ad) === trKucuk(g.ad)))
+            .map(g => g.ad);
+
+        if (cakisanlar.length) {
+            const strateji = await cakismaSor(cakisanlar);
+            if (strateji) await listeleriIceAktarUygula(cozum.listeler, strateji);
+            return;
+        }
+        if (confirm('İçe aktarılan kayıtlar mevcut listelerle birleştirilecek. Devam edilsin mi?')) {
+            await listeleriIceAktarUygula(cozum.listeler, 'birlestir');
+        }
+    };
+    okuyucu.readAsText(dosya);
+}
+
 function renderFilterChips() {
     const konteyner = document.getElementById('filterChipsContainer');
     if (!konteyner) return;
     konteyner.textContent = '';
-    const cipler = [['all', 'Tümü'], ['beyaz', 'Beyaz liste'], ['kara', 'Kara liste'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
+    const cipler = [['all', 'Tümü'], ['beyaz', 'İzin ver'], ['kara', 'Engelle'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
     cipler.forEach(([deger, ad]) => {
         const b = el('button', 'chip' + (aktifFiltre === deger ? ' active' : ''), ad);
         b.setAttribute('data-filter', deger);
@@ -768,14 +917,72 @@ function initEvents() {
     // Dışa Aktarma
     document.getElementById('btnDisaAktar').addEventListener('click', async () => {
         const veri = await getStorageData(null);
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(veri, null, 2));
-        const indirmeLinki = document.createElement('a');
-        indirmeLinki.setAttribute("href", dataStr);
-        indirmeLinki.setAttribute("download", "yt_filter_yedek.json");
-        document.body.appendChild(indirmeLinki);
-        indirmeLinki.click();
-        indirmeLinki.remove();
+        jsonIndir(veri, "yt_filter_yedek.json");
         showToast("Yedek dosyası indirildi");
+    });
+
+    // Liste dışa / içe aktarma
+    document.getElementById('btnListeDisaAktar').addEventListener('click', listeDisiAktar);
+    const listeIceInput = document.getElementById('btnListeIceAktar');
+    listeIceInput.addEventListener('change', (e) => {
+        const dosya = e.target.files[0];
+        e.target.value = '';
+        listeIceAktarDosya(dosya);
+    });
+
+    // db.json içe aktarma / paketli veriye dönüş
+    const dbIceInput = document.getElementById('btnDbIceAktar');
+    dbIceInput.addEventListener('change', (e) => {
+        const dosya = e.target.files[0];
+        e.target.value = '';
+        if (!dosya) return;
+        const okuyucu = new FileReader();
+        okuyucu.onload = async (olay) => {
+            let json;
+            try {
+                json = JSON.parse(olay.target.result);
+            } catch (hata) {
+                alert('Geçersiz JSON dosyası!');
+                return;
+            }
+            if (!json || json.sema !== YTF.DB_SEMA) {
+                alert(`Desteklenmeyen şema: ${json && json.sema}. Bu sürüm yalnızca sema ${YTF.DB_SEMA} okur.`);
+                return;
+            }
+            const surum = Number(json.veriSurumu);
+            if (!Number.isInteger(surum) || surum < 0) {
+                alert('veriSurumu geçersiz.');
+                return;
+            }
+            const db = YTF.dbKur(json);
+            if (db.sayac.kanal + db.sayac.video === 0) {
+                alert('Dosyada geçerli kanal/video kaydı yok.');
+                return;
+            }
+            const paketSurum = Number(paketliDb && paketliDb.veriSurumu) || 0;
+            let mesaj = `${db.sayac.kanal} kanal, ${db.sayac.video} video içe aktarılacak.`;
+            if (db.sayac.atlanan) mesaj += ` ${db.sayac.atlanan} geçersiz kayıt atlanacak.`;
+            if (surum <= paketSurum) {
+                mesaj += `\n\nUyarı: veriSurumu (v${surum}) paketli veriden (v${paketSurum}) yeni değil; paketli veri kullanılmaya devam eder.`;
+            }
+            if (!confirm(mesaj + '\n\nDevam edilsin mi?')) return;
+
+            mevcutVeri.dbOverride = json;
+            await setStorageData({ dbOverride: json });
+            await veriTabaniniYukle();
+            renderListeler();
+            showToast('Veritabanı içe aktarıldı');
+        };
+        okuyucu.readAsText(dosya);
+    });
+
+    document.getElementById('btnDbSifirla').addEventListener('click', async () => {
+        if (!confirm('İçe aktarılan veritabanı kaldırılsın ve paketli veri kullanılsın mı?')) return;
+        delete mevcutVeri.dbOverride;
+        await removeStorageData(['dbOverride']);
+        await veriTabaniniYukle();
+        renderListeler();
+        showToast('Paketli veritabanına dönüldü');
     });
 
     // İçe Aktarma (yeni ve eski yedek biçimlerini kabul eder; üzerine yazar)
@@ -826,7 +1033,81 @@ function initEvents() {
     });
 }
 
-// Aktif YouTube Sekmesini Algılama (Quick Action)
+async function sekmeyeSor(tabId) {
+    try {
+        if (typeof browser !== 'undefined' && browser.tabs && browser.tabs.sendMessage) {
+            return await browser.tabs.sendMessage(tabId, { tur: 'sayfaDurumu' });
+        }
+        return await new Promise(resolve => {
+            chrome.tabs.sendMessage(tabId, { tur: 'sayfaDurumu' }, yanit => {
+                if (chrome.runtime.lastError) resolve(null);
+                else resolve(yanit || null);
+            });
+        });
+    } catch (e) {
+        return null;
+    }
+}
+
+function urlKimligi(url) {
+    if (!url || !url.includes('youtube.com')) return null;
+    const videoMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || url.match(/\/(?:shorts|embed)\/([a-zA-Z0-9_-]{11})/);
+    const channelMatch = url.match(/youtube\.com\/(@[a-zA-Z0-9._-]+)/);
+    const kanalIdMatch = url.match(/\/channel\/(UC[A-Za-z0-9_-]{22})/);
+    if (videoMatch && videoMatch[1]) return { tespit: videoMatch[1], tur: 'Video', videoId: videoMatch[1], handle: null, kanalId: null };
+    if (channelMatch && channelMatch[1]) return { tespit: channelMatch[1], tur: 'Kanal', videoId: null, handle: channelMatch[1], kanalId: null };
+    if (kanalIdMatch && kanalIdMatch[1]) return { tespit: kanalIdMatch[1], tur: 'Kanal', videoId: null, handle: null, kanalId: kanalIdMatch[1] };
+    return null;
+}
+
+function hizliBandiDoldur(durum) {
+    if (!durum || !durum.tespit) {
+        aktifYouTubeIcerigi = null;
+        return;
+    }
+    aktifYouTubeIcerigi = durum;
+    const titleEl = document.getElementById('quickTitle');
+    const typeEl = document.getElementById('quickPageType');
+    const kararEl = document.getElementById('quickKarar');
+    const sebepEl = document.getElementById('quickSebep');
+    const notEl = document.getElementById('quickBilinmeyenNot');
+    if (titleEl) titleEl.textContent = durum.tespit;
+    if (typeEl) typeEl.textContent = durum.tur || '';
+
+    let ozet = durum.ozet;
+    if (!ozet && ayar && durum.hazir !== false) {
+        const sonuc = YTF.icerikKarari(ayar, veriTabani, {
+            videoId: durum.videoId, handle: durum.handle, channelId: durum.kanalId
+        });
+        ozet = YTF.kararOzeti(sonuc);
+        durum.sebepler = sonuc.sebepler;
+    }
+    if (kararEl && ozet) {
+        kararEl.textContent = `Şu an: ${ozet.etiket}`;
+        kararEl.classList.toggle('engelleniyor', ozet.engelleniyor);
+        kararEl.classList.toggle('acik', !ozet.engelleniyor);
+    } else if (kararEl) {
+        kararEl.textContent = 'Şu an: karar bekleniyor';
+        kararEl.classList.remove('engelleniyor', 'acik');
+    }
+    if (sebepEl) sebepEl.textContent = ozet ? ozet.sebep : '';
+    const bilinmeyen = (durum.sebepler || []).some(s => s.tur === 'etiketlenmemis');
+    if (notEl) notEl.style.display = bilinmeyen ? 'block' : 'none';
+
+    const hizliEkle = async (hedef) => {
+        listeyeEkle(durum.tespit.toLowerCase(), hedef);
+        await ayarKaydet();
+        renderListeler();
+        showToast(`${durum.tespit} → ${hedefAdi(hedef)}`);
+        const yenilenen = YTF.icerikKarari(ayar, veriTabani, {
+            videoId: durum.videoId, handle: durum.handle, channelId: durum.kanalId
+        });
+        hizliBandiDoldur({ ...durum, hazir: true, sebepler: yenilenen.sebepler, ozet: YTF.kararOzeti(yenilenen) });
+    };
+    document.getElementById('btnQuickBlock').onclick = () => hizliEkle('kara');
+    document.getElementById('btnQuickAllow').onclick = () => hizliEkle('beyaz');
+}
+
 async function algilaAktifYouTubeSekmesi() {
     try {
         const tabs = await new Promise(resolve => {
@@ -836,47 +1117,12 @@ async function algilaAktifYouTubeSekmesi() {
                 resolve([]);
             }
         });
-
-        if (!tabs || !tabs[0] || !tabs[0].url) return;
-        const url = tabs[0].url;
-
-        if (!url.includes("youtube.com")) return;
-
-        let tespit = null;
-        let tur = "Kanal";
-
-        const channelMatch = url.match(/youtube\.com\/(@[a-zA-Z0-9._-]+)/);
-        const videoMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-
-        if (videoMatch && videoMatch[1]) {
-            tespit = videoMatch[1];
-            tur = "Video ID";
-        } else if (channelMatch && channelMatch[1]) {
-            tespit = channelMatch[1];
-            tur = "Kanal";
-        }
-
-        if (tespit) {
-            aktifYouTubeIcerigi = { tespit, tur };
-
-            const titleEl = document.getElementById('quickTitle');
-            const typeEl = document.getElementById('quickPageType');
-
-            if (titleEl) titleEl.textContent = tespit;
-            if (typeEl) typeEl.textContent = tur;
-
-            // DİKKAT: Burada banner display yapılmaz!
-            // Sadece PIN açıldıktan sonra kilidiAc() fonksiyonunda görünür olur.
-
-            const hizliEkle = async (hedef) => {
-                listeyeEkle(tespit.toLowerCase(), hedef);
-                await ayarKaydet();
-                renderListeler();
-                showToast(`${tespit} → ${hedefAdi(hedef)}`);
-            };
-            document.getElementById('btnQuickBlock').onclick = () => hizliEkle('kara');
-            document.getElementById('btnQuickAllow').onclick = () => hizliEkle('beyaz');
-        }
+        if (!tabs || !tabs[0]) return;
+        const tab = tabs[0];
+        const yedek = urlKimligi(tab.url || '');
+        const yanit = tab.id != null ? await sekmeyeSor(tab.id) : null;
+        const durum = (yanit && yanit.tespit) ? yanit : yedek;
+        hizliBandiDoldur(durum);
     } catch (e) {
         // Tab sorgulama hatası durumunda sessizce geç
     }

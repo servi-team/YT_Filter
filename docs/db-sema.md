@@ -86,3 +86,4 @@ Ham oylar sitede kalır; **eklentiye yalnızca sonuç gelir.** Kurallar `docs/SI
 ## Sürümleme
 - Yeni **isteğe bağlı** alan eklemek şema numarasını değiştirmez. Eski eklenti sürümleri bilinmeyen alanı yok sayar; ancak **ana konusuz kaydı** eski doğrulama (“Ana konu zorunludur”) atlar.
 - Alanı kaldırmak/anlamını değiştirmek → `sema` artırılır; eklenti eski/yeni şemayı ayırt eder (`DB_SEMA`).
+- Eklentide içe aktarma (PR 7): dosya `sema` ve tam sayı `veriSurumu` için doğrulanır; geçersiz kayıtlar atlanır ve sayısı kullanıcıya gösterilir. `veriSurumu` paketli sürümden büyük değilse uyarı verilir (dosya saklanır; eşitlikte paketli kullanılır).

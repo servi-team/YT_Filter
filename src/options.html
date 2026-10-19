@@ -282,6 +282,30 @@
 
                 <div id="ozelListelerKonteyner"></div>
             </div>
+
+            <!-- Liste dışa / içe aktarma -->
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Listeleri dışa / içe aktar
+                </div>
+                <div class="card-desc">Seçili listeyi veya tüm listeleri JSON olarak indirin. İçe aktarmada kayıtlar mevcut listelerle birleştirilir; aynı adlı özel listeler için birleştir / üzerine yaz / yeniden adlandır seçilir.</div>
+
+                <div class="input-row" style="margin-bottom: 10px;">
+                    <select id="selListeDisaAktar" aria-label="Dışa aktarılacak liste">
+                        <option value="hepsi">Tüm listeler</option>
+                        <option value="beyaz">Her zaman izin ver (Beyaz liste)</option>
+                        <option value="kara">Her zaman engelle (Kara liste)</option>
+                    </select>
+                    <button id="btnListeDisaAktar" class="btn btn-secondary">Dışa aktar</button>
+                </div>
+
+                <label class="btn btn-secondary btn-full" style="cursor: pointer; position: relative; overflow: hidden;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Liste içe aktar (JSON)
+                    <input type="file" id="btnListeIceAktar" accept=".json" style="position: absolute; opacity: 0; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer;">
+                </label>
+            </div>
         </div>
 
         <!-- SEKME 2: YouTube Görünüm Ayarları -->
@@ -431,6 +455,21 @@
                 </label>
             </div>
 
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><ellipse cx="12" cy="5" rx="9" ry="3"></ellipse><path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path><path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path></svg>
+                    Veritabanı (db.json)
+                </div>
+                <div class="card-desc">Siteden indirilen konu/etiket veritabanını içe aktarın. <code>veriSurumu</code> daha büyük olan kullanılır; eşitlikte paketli veri kazanır. Geçersiz kayıtlar atlanır.</div>
+                <div id="dbDurum" class="db-durum">Yükleniyor…</div>
+                <label class="btn btn-secondary btn-full" style="cursor: pointer; position: relative; overflow: hidden; margin-bottom: 6px;">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="17 8 12 3 7 8"></polyline><line x1="12" y1="3" x2="12" y2="15"></line></svg>
+                    Veritabanı içe aktar (db.json)
+                    <input type="file" id="btnDbIceAktar" accept=".json" style="position: absolute; opacity: 0; left: 0; top: 0; width: 100%; height: 100%; cursor: pointer;">
+                </label>
+                <button id="btnDbSifirla" class="btn btn-secondary btn-full" style="display: none;">Paketli veritabanına dön</button>
+            </div>
+
             <button id="btnKaydet" class="btn btn-primary btn-full" style="padding: 10px; margin-top: 4px;">
                 Tüm Değişiklikleri Kaydet
             </button>
@@ -438,6 +477,23 @@
             <div class="footer-note">
                 Öneri ve Destek Bildirimleriniz İçin:<br>
                 <a href="https://serviekibi.com/iletisim" target="_blank">serviekibi.com/iletisim</a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Liste adı çakışması -->
+    <div id="listeCakismaModal" class="modal-overlay" style="display: none;" role="dialog" aria-modal="true" aria-labelledby="listeCakismaBaslik">
+        <div class="modal-kutu">
+            <div id="listeCakismaBaslik" class="modal-baslik">Liste adı çakışması</div>
+            <div id="listeCakismaListesi" class="modal-metin"></div>
+            <div class="modal-secenekler">
+                <label><input type="radio" name="listeCakisma" value="birlestir" checked> Birleştir (önerilen)</label>
+                <label><input type="radio" name="listeCakisma" value="uzerine"> Üzerine yaz</label>
+                <label><input type="radio" name="listeCakisma" value="yeniden"> Yeniden adlandır</label>
+            </div>
+            <div class="modal-butonlar">
+                <button id="btnCakismaVazgec" class="btn btn-secondary" type="button">Vazgeç</button>
+                <button id="btnCakismaUygula" class="btn btn-primary" type="button">Uygula</button>
             </div>
         </div>
     </div>
@@ -451,6 +507,7 @@
     <script src="core/taxonomy.js"></script>
     <script src="core/decision.js"></script>
     <script src="core/migrate.js"></script>
+    <script src="core/listeler.js"></script>
     <script src="core/db.js"></script>
     <script src="core/engine.js"></script>
     <script src="options.js"></script>

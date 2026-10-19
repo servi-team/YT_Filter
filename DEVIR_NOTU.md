@@ -1,9 +1,11 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-19 (PR 6C) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-19 (PR 7) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
 
+> **PR 7 özeti (2026-10-19):** İçe/dışa aktarma tamamlandı. İstisnalar sekmesinde **tek liste veya tüm listeler** JSON olarak indirilebilir; içe aktarmada özel liste adı çakışırsa **Birleştir / Üzerine yaz / Yeniden adlandır** seçilir (varsayılan birleştir; yeniden adlandır `Ad (2)` üretir). Yedek sekmesinde **`db.json` içe aktarma** var: `sema` ve `veriSurumu` doğrulanır, geçersiz kayıt sayısı gösterilir, daha eski/eşit sürüm uyarısı verilir, `storage.local.dbOverride` olarak saklanır ve "Paketli veritabanına dön" ile kaldırılır. `core/listeler.js` saf modül + `tests/pr7.test.js` (12 test); toplam **94 test** yeşil. **Tarayıcıda denenmedi.**
+>
 > **PR 6C özeti (2026-10-19):** PR 5'te eksik kalan parçalar tamamlandı: hızlı ekleme bandı artık **"Şu an: ENGELLENİYOR/AÇIK" + sebep** gösteriyor (karar pop-up'ta içerik betiğine sorulur, olmazsa URL'den hesaplanır); düğmeler **"Her zaman izin ver / Her zaman engelle"**; Listeler sekmesi **İstisnalar** oldu; ~50 kayıtta çok-istisna uyarısı çıkıyor; "Bildir" düğmesi site hazır olana kadar gizli/pasif. `node --test` yeşil (82 test). **Tarayıcıda denenmedi.**
 >
 > **2026-10-19 özeti (PR 6B):** Ekip lideri tasarım dökümanını gönderdi. Karar algoritması ona göre yeniden yazıldı (PR 6B): *önce video, video verisi yoksa kanal*; **kanal kontrol ayarı**; **kararsız** kavramı; konu ve etiket başına **Gizle / Bulanıklaştır / Uyarı sayfası**; ilk açılışta **PIN seçimi**. Bu değişiklikler Node birim testleriyle (28 yeni test) ve jsdom ile doğrulandı; **gerçek tarayıcıda henüz denenmedi.** Aşağıdaki 2.5, 3.3, 3.4, 5. ve 6. bölümler buna göre güncellendi; eski kararlardan geçersiz kalanlar işaretlendi.
@@ -19,9 +21,9 @@ Eski sürümde her kanal/video elle bir "kategoriye" atanıyordu. Yeni sürümde
 1. **Eklenti:** İçeriği, bir **veritabanındaki konu/etiket kayıtlarına** ve kullanıcının ayarlarına göre filtreler.
 2. **Düzenleme sitesi — "YouTube Filter Store" (henüz yazılmadı):** Editörlerin ve topluluğun kanal/video başına konu ve etiketi **oylayarak** girdiği, ziyaretçilerin JSON indirip rapor gönderebildiği web sitesi. Çıktısı eklentinin okuduğu `db.json`.
 
-Veritabanı aylık güncellemelerle eklenti paketiyle (Chrome Web Mağazası) gelir; eklenti ağdan veri çekmez. İsteyen kullanıcı siteden JSON indirip elle içe aktarabilir (bu kısım henüz yok).
+Veritabanı aylık güncellemelerle eklenti paketiyle (Chrome Web Mağazası) gelir; eklenti ağdan veri çekmez. İsteyen kullanıcı siteden JSON indirip elle içe aktarabilir (PR 7 ile eklentide `dbOverride` arayüzü var).
 
-> **Önemli (neden "konular işe yaramıyor?"):** Konu ve etiketleri **kullanıcı atamaz**; veriyi site üretir. `data/db.json` şu an boş ve site yok, bu yüzden her içerik "bilinmeyen" kalır ve kullanıcıya yalnızca listeler görünür. Bu bir kod hatası değil, **sıralama sorunu**: önce tüketen taraf (eklenti) yapıldı, üreten taraf (site) yapılmadı. Bkz. `PLAN.md` "Veri köprüsü" kararı.
+> **Önemli (neden "konular işe yaramıyor?"):** Konu ve etiketleri **kullanıcı atamaz**; veriyi site üretir. `data/db.json` şu an neredeyse boş (yalnızca bir örnek kanal) ve site yok, bu yüzden çoğu içerik "bilinmeyen" kalır ve kullanıcıya yalnızca listeler görünür. Bu bir kod hatası değil, **sıralama sorunu**: önce tüketen taraf (eklenti) yapıldı, üreten taraf (site) yapılmadı. Bkz. `PLAN.md` "Veri köprüsü" kararı.
 
 ---
 
@@ -53,7 +55,7 @@ Veritabanı aylık güncellemelerle eklenti paketiyle (Chrome Web Mağazası) ge
 - **Listeler konu/etiket kurallarını her zaman geçer** (istisna). Önce video düzeyi, sonra kanal düzeyi; aynı düzeyde beyaz > kara > özel.
 - **Bilinmeyen içerik:** ilk açılışta kullanıcı seçer (aç/engelle) ve "veritabanı yeni bir proje, raporlarla gelişecek" diye bilgilendirilir. Seçilene kadar engellenir.
 - Varsayılan konu/etiket tanımlarını kullanıcı değiştiremez.
-- Dışarıdan içe aktarmada aynı liste adı çakışırsa "üzerine yaz / yeniden adlandır / birleştir" sorulmalı (**henüz yapılmadı**).
+- Dışarıdan içe aktarmada aynı liste adı çakışırsa "üzerine yaz / yeniden adlandır / birleştir" sorulur (PR 7 ✅). Varsayılan birleştirmedir; yeniden adlandırma TR-duyarsız benzersiz ad üretir (`Ad (2)`). Beyaz/kara listeler her zaman birleştirilir; yalnızca özel liste adları çakışma sayılır.
 - Kanallar **ID ile** tanınmalı (handle değişebilir); arayüzde kanal adı ve avatar gösterilmesi istendi (ad: yalnızca DB'dekiler, avatar: yok).
 - **Hızlı ekleme bandı (PR 6C):** aktif sayfanın kararını ve sebebini gösterir; istisna düğmeleri "Her zaman izin ver / Her zaman engelle". Listeler sekmesi bu çerçevede **İstisnalar** olarak adlandırıldı; kayıt sayısı ~50'yi geçince "çok istisna" uyarısı çıkar.
 
@@ -100,19 +102,20 @@ src/
     decision.js        kararVer(ayar, video, kanal)  — SAF fonksiyon, asıl algoritma
     migrate.js         eski modelden (customMapping+preferences) yeni modele çeviri — saf
     db.js              db.json doğrulama/indeksleme (dbKur, dbSec)
+    listeler.js        liste paketi oluştur/çöz + çakışma stratejisiyle birleştir (saf)
     engine.js          ayarCoz, icerikKarari (db araması+karar+eylem çözümleme), rozetBilgisi,
                        sebepMetni / kararOzeti (hızlı bant), istisnaSayisi + ISTISNA_UYARI_ESIGI
-  data/db.json         paketle gelen veritabanı (şimdilik boş)
+  data/db.json         paketle gelen veritabanı (şimdilik yalnızca bir örnek kanal)
 manifests/             manifest.chromium.json, manifest.firefox.json
 scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır)
-tests/                 decision/migrate/db/engine .test.js + karar-v2.test.js (Node'un yerleşik test koşucusu)
+tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 (Node'un yerleşik test koşucusu)
 docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözleşme), db.test-ornek.json,
                        db.test-ornek-kararsiz.json, DEVIR_NOTU.md
 ```
 **Önemli:** Tarayıcıya `chromium/` klasörü yüklenir; kaynak her zaman `src/`. `node scripts/build.js` ile derlenir, `--watch` ile izlenir. Doğrudan `chromium/` içini düzenlemeyin. **Eski bir `chromium/` klasörünün yüklü kalması, "değişiklik görünmüyor" şikâyetinin ilk sebebidir.**
 
 ### 3.2 Modül kuralları
-- Bundler yok. `core/*.js` UMD biçimindedir: tarayıcıda `YTF` global nesnesine eklenir, Node'da `require` edilir. Yükleme sırası manifestlerde: `taxonomy → decision → migrate → db → engine → content`.
+- Bundler yok. `core/*.js` UMD biçimindedir: tarayıcıda `YTF` global nesnesine eklenir, Node'da `require` edilir. Yükleme sırası manifestlerde: `taxonomy → decision → migrate → db → engine → content`; `options.html` ayrıca `migrate` ile `db` arasında `listeler.js` yükler.
 - `core/` içindeki dosyalar **DOM veya `chrome.*` kullanmaz** (test edilebilirlik için). DOM işi `content.js`/`options.js`'tedir.
 - İçerik betiğinin global değişkenleri (`YTF` dahil) sayfa konsolunda **görünmez** (izole dünya). Konsolda `typeof YTF` denemesi anlamsızdır; bunun yerine `content.js`'in yazdığı `YT Filter: …` günlüklerine bakın (6/#14).
 - Kod, yorum ve arayüz Türkçedir; tanımlayıcılar Türkçe (`kararVer`, `ayarCoz`).
@@ -127,7 +130,7 @@ docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözl
 | `ayarlar` | arayüz anahtarları: `shortsGizle, yorumGizle, onerilenGizle, otomatikOynatmaKapat, pinIptal, koyuTema` |
 | `pinKodu`, `pinDegistirildi`, `ilkGirisYapildi`, `kurulumTarihi` | PIN ve kurulum bilgisi. **Yeni kurulumda `pinKodu` boştur** (PIN seçimi ilk açılışta) |
 | `pinKurulumAtlandi` | kullanıcı "Şimdilik atla" dediyse `true` (PIN kartı bir daha çıkmaz) |
-| `dbOverride` | (planlı) elle içe aktarılan veritabanı |
+| `dbOverride` | Kullanıcının içe aktardığı `db.json` (PR 7). `dbSec` paketli veriyle karşılaştırır; büyük `veriSurumu` kazanır, eşitlikte paketli. "Paketli veritabanına dön" anahtarı siler. |
 
 `ayar` şekli:
 ```json
@@ -186,6 +189,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 6 | Tam sayfa engel banner'ı | ⚠️ kodlandı (commit 0b2272b). Gerçek tarayıcıda "tetiklenmiyor" bildirildi. Sonradan: jsdom'da çalıştığı doğrulandı; bulunan hatalar düzeltildi (aşağıda). **Gerçek YouTube'da hâlâ doğrulanmadı** |
 | 6B | **Lider dökümanına uyum** (2026-10-19): video-yoksa-kanal kaynak seçimi, `kanalKontrol`, kararsız (şema+karar+arayüz), konu/etiket başına eylem + "Uyarı sayfası", kanal sayfası banner'ı, ilk açılışta PIN seçimi, banner/`content.js` düzeltmeleri; `tests/karar-v2.test.js` (28 test) + jsdom arayüz (26 kontrol) ve içerik betiği denemeleri | ✅ **Node/jsdom'da doğrulandı; tarayıcıda denenmedi.** Eski birim testleri yeni kurala uyduruldu (6/#15) |
 | 6C | **Hızlı ekleme bandı + istisna çerçevesi** (2026-10-19): `content.js`'te `sayfaDurumu` mesajı; pop-up önce içerik betiğine sorar, olmazsa URL'den hesaplar; bantta karar+sebep; "Her zaman izin ver / Her zaman engelle"; Listeler → **İstisnalar**; ~50 kayıtta uyarı; "Bildir" gizli/pasif; `tests/pr6c.test.js` (3 test) | ✅ `node --test` yeşil (82 test); **gerçek pop-up'ta denenmedi** |
+| 7 | **İçe/dışa aktarma** (2026-10-19): `core/listeler.js` (paket oluştur/çöz/birleştir); İstisnalar sekmesinde liste dışa/içe aktarma + TR-duyarsız çakışma modalı; Yedek sekmesinde `db.json` içe aktarma/sıfırlama (`dbOverride`, `veriSurumu` kontrolü); `tests/pr7.test.js` (12 test) | ✅ `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -221,18 +225,19 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 17. **Şema numarası değişmedi.** Yeni alanlar isteğe bağlı ve geriye uyumlu. Eski eklenti ana konusuz kaydı atlar (kabul edilebilir).
 18. **PIN:** yeni kurulumda önceden atanmaz; ilk açılışta tam 4 rakam seçtirilir, atlanabilir. Eski kullanıcı `1234` + değiştirme uyarısıyla devam eder.
 19. **Veri köprüsü (açık):** konu/etiket atamasının tek kaynağı site; site yokken eklenti fiilen "iki listeli filtre". Seçenekler `PLAN.md` 4.2'de.
+20. **Liste içe aktarma varsayılanı "birleştir".** Gerekçe: veri kaybı riski yok; kullanıcı isterse modaldan üzerine yaz/yeniden adlandır seçer. Beyaz/kara listelerde ad çakışması kavramı yoktur, üyeler birleşir; çakışma yalnızca özel listelerde sorulur. Bir anahtar her zaman tek listede kalır (sonraki liste taşır). `db.json` içe aktarmada daha eski veya eşit `veriSurumu` saklanır ama etkisizdir (eşitlikte paketli kullanılır); kullanıcı uyarılır.
 
 ---
 
 ## 6. Bilinen sorunlar ve sınırlar
 
-1. **Veritabanı boş ve site yok:** her içerik "bilinmeyen". Konu/etiket mantığı yalnızca `docs/db.test-ornek*.json` ile denenebilir.
+1. **Veritabanı neredeyse boş ve site yok:** çoğu içerik "bilinmeyen". Konu/etiket mantığı `docs/db.test-ornek*.json` veya PR 7'deki `db.json` içe aktarma ile denenebilir.
 2. 5 sekmenin 430 px'e sığması **doğrulanmadı.** Yeni kontroller (kanal kontrol anahtarı, kararsız seçimi, konu başına menü) arayüzü uzattı; konu ızgarasında menü satır yüksekliğini artırır — gerçek pop-up'ta bakılmalı. Taşarsa: `options.css` sonuna `.tab-btn svg{display:none}`.
 3. İzleme sayfasında kanal ID'si yok; yalnızca handle ile eşleşir.
 4. Helper'ın kart işlendikten **sonra** yazdığı öznitelikler izlenmiyor.
 5. Veritabanı büyürse (~5–10 MB üstü) her sayfada okuma maliyeti artar; önbellek gerekir.
 6. **PIN düz metin** saklanıyor ve yalnızca arayüz kilididir.
-7. İçe aktarma üzerine yazar (çakışma diyaloğu yok); `dbOverride` içe aktarma arayüzü yok.
+7. **Liste içe aktarma (PR 7)** çakışma diyaloğu sunar ve birleştirir. Tam yedek (`btnIceAktar`) ise hâlâ **üzerine yazar** (onay sorar); bu ayrım kasıtlıdır. `dbOverride` içe aktarma arayüzü vardır; tarayıcıda denenmedi. İçe aktarılan dosya `storage.local` kotasına tabidir (ek izin yok); ~10 MB üstü dosyalar kaydedilemeyebilir.
 8. Yalnızca veritabanında kaydı olan kanalların adı listede görünür; avatar yok.
 9. Manifest `description` hâlâ "otomatik senkronizasyon" diyor (yok). `google.com` host izni geniş.
 10. Firefox `strict_min_version: 109` ile `world: "MAIN"` çakışıyor (~128'de geldi); yedek enjeksiyon test edilmedi.
@@ -253,9 +258,12 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 node scripts/build.js                       # chromium/ ve firefox/ üretir  (--target chromium | --watch)
 node --test tests/karar-v2.test.js          # yeni kurallar (28 test)
 node --test tests/pr6c.test.js              # hızlı bant sebep/özet/istisna sayısı (3 test)
-node --test                                  # tüm birim testleri (Node 18+; klasör yolu vermeyin, Node 22'de hata verir)
+node --test tests/pr7.test.js               # liste paketi/çakışma birleştirme (12 test)
+node --test                                  # tüm birim testleri (Node 18+; klasör yolu vermeyin, Node 22'de hata verir) — 94 test
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.
+
+Geri alma: PR sonları annotated tag ile işaretlenir — PR 6C `checkpoint-pr6c` (`214944e`), PR 7 `checkpoint-pr7`. İncelemek için `git show checkpoint-pr7`; tek dosyayı eski hâline döndürmek için `git checkout checkpoint-pr6c -- <dosya>`. Tüm çalışmayı geri almak gerekirse önce yeni bir checkpoint tag atın, sonra `git revert` kullanın.
 
 Elle deneme ipuçları:
 - İlk açılış seçimini yeniden görmek: pop-up konsolunda `chrome.storage.local.get('ayar', r => { r.ayar.etiketlenmemis = null; chrome.storage.local.set({ayar: r.ayar}) })`

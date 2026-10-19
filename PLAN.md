@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-19 (PR 6C: hızlı ekleme bandında karar+sebep, İstisnalar sekmesi, çok-istisna uyarısı)
+> Son güncelleme: 2026-10-19 (PR 7: liste + db.json içe/dışa aktarma, çakışma diyaloğu)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -24,11 +24,11 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | 6 | Engel sayfası (tam sayfa banner) | ⚠️ kodlandı (0b2272b). jsdom'da çalışıyor; **gerçek tarayıcıda doğrulanmadı** (aşağıdaki test listesi) |
 | **6B** | **Lider dökümanına uyum:** video-yoksa-kanal, kanal kontrol ayarı, kararsız, konu/etiket başına eylem + Uyarı sayfası, kanal sayfası banner'ı, PIN seçimi, banner düzeltmeleri | ✅ **Node birim testleri yeşil (eski testler güncellendi); tarayıcıda denenmedi** |
 | **6C** | **Hızlı ekleme bandı: karar + sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı** | ✅ kodlandı, `node --test` yeşil; **tarayıcıda denenmedi** |
-| 7 | İçe/dışa aktarma: çakışma diyaloğu, veritabanı JSON'u içe aktarma | ⏳ |
+| **7** | **İçe/dışa aktarma:** liste paketi (tek/tümü), çakışma diyaloğu (birleştir/üzerine yaz/yeniden adlandır), `db.json` içe aktarma + `dbOverride` | ✅ kodlandı, `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
 | 8 | Sağlamlaştırma ve mağaza hazırlığı | ⏳ |
 | S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir) |
 
-### Önce yapılacak: PR 6 / 6B gerçek tarayıcı doğrulaması
+### Önce yapılacak: PR 6 / 6B / 6C / 7 gerçek tarayıcı doğrulaması
 **Hazırlık:** `node scripts/build.js`, `chrome://extensions` → eklentiyi yenile, YouTube'u F5 ile yenile, **eski `chromium/` klasörü yüklü kalmasın.** Konsolu açıp **"YT Filter"** ile filtreleyin. Beklenen: sayfa başına bir `YT Filter: hazır {…}` ve her sayfa için `YT Filter: sayfa kararı …` satırı. (`typeof YTF` konsolda anlamsız; içerik betiği izole dünyada.)
 
 1. Kara listedeki **video** sayfası → tam sayfa banner (titremiyor).
@@ -54,7 +54,7 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 
 **İlke:** *Önce kural çalışır. Liste, kuralın yanlış kaldığı yerde istisnadır; istisna her zaman kuralı geçer.*
 
-### Arayüze etkisi (PR 6C'de yapılacak)
+### Arayüze etkisi (PR 6C'de yapıldı)
 1. **Hızlı ekleme bandı önce kararı ve sebebini gösterir:** "Şu an: ENGELLENİYOR — Konu: Oyun (engelli)" / "Bilinmeyen içerik". Sonra istisna seçenekleri: **Her zaman izin ver / Her zaman engelle.** (Pop-up, sayfadaki kanal/video bilgisini içerik betiğinden mesajla ister; `content.js`'te `onMessage` dinleyicisi eklenecek.)
 2. **Yanlış etiket olabilir mi?** → "Bildir" düğmesi (site hazır olana kadar pasif/gizli). Veritabanının düzelmesi istisnadan daha kalıcı bir çözümdür.
 3. **Listeler sekmesi "İstisnalar"** diye adlandırılır; açıklaması "kuralları geçersiz kılar" der. Beyaz liste = "Her zaman izin ver", Kara liste = "Her zaman engelle". (Spec'teki adlar parantezle korunur.)
@@ -89,7 +89,7 @@ Mevcut yorumla kodlandı; liderin cevabına göre tek satır değişir. Her biri
 Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli filtre" ve konu/etiket kuralları denenemiyor. İki yol:
 - **A) Siteyi öne al (S).** İstek listesine en sadık yol; tek geliştiriciyle uzun sürer. O zamana kadar `docs/db.test-ornek*.json` ile elle test.
 - **B) Köprü: eklentide küçük yerel düzenleyici.** Kullanıcı hızlı ekleme alanından bir kanalı/videoyu konu ve etikete atar; kayıtlar `db.json` ile aynı şemada `storage.local`'de tutulur ve veritabanı kaydını geçer (şema artık aynı: ana konu, yan konular, etiketler, kararsızlar). Site hazır olunca aynı şema sayesinde atıl kalmaz. İstek listesine ekleme sayılır.
-- **Öneri:** PR 6C ile birlikte B'nin tasarımına geçmek (`engine.icerikKarari`'nın veritabanı arama adımına yerel kayıtlar eklenir; `decision.js`'e dokunulmaz).
+- **Durum (2026-10-19):** PR 6C ve 7 tamamlandı; B'ye geçilmedi. A/B kararı hâlâ Talha'da. B seçilirse `engine.icerikKarari`'nın veritabanı arama adımına yerel kayıtlar eklenir; `decision.js`'e dokunulmaz.
 
 ## 5. Yol haritası
 
@@ -104,11 +104,12 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 - Testler: `tests/pr6c.test.js` (sebep metni, özet, istisna sayısı). Mesajlaşma Node'da yok; tarayıcıda denenmedi.
 - **Kalan:** gerçek pop-up'ta YouTube sekmesiyle doğrulama.
 
-### PR 7 — İçe/dışa aktarma
-- Liste içe aktarırken ad çakışması: **üzerine yaz / yeniden adlandır / birleştir.**
-- Siteden indirilen `db.json`'u içe aktarma (`dbOverride`, `veriSurumu` kontrolü, hatalı kayıt sayısı gösterimi; yeni `kararsiz*` alanları dahil).
-- Liste dışa aktarma (tek liste / hepsi).
-- **Kabul:** aynı adlı liste hiçbir yolla ikiye çıkmıyor; bozuk dosya veriyi bozmuyor.
+### PR 7 — ✅ kodlandı (2026-10-19)
+- **`core/listeler.js` (yeni, saf):** `listePaketiOlustur(ayar, secim)` — `hepsi | beyaz | kara | ozel:<ad>`; `listePaketiCoz(json)` — paket + tam yedek biçimini kabul eder, üyeleri/liste adlarını doğrular, geçersizleri sayar; `listeleriBirlestir(mevcut, gelen, strateji)` — `birlestir | uzerine | yeniden`, mevcut nesneyi değiştirmez, bir anahtarın tek listede kalmasını sağlar.
+- **Arayüz (İstisnalar sekmesi):** "Listeleri dışa / içe aktar" kartı; tek liste veya tümü indirilebilir; içe aktarmada özel liste adı çakışırsa **Birleştir (varsayılan) / Üzerine yaz / Yeniden adlandır** modalı; "yeniden adlandır" `Ad (2)` üretir.
+- **Arayüz (Yedek sekmesi):** "Veritabanı (db.json)" kartı; `sema === 1` ve `veriSurumu` doğrulaması, `dbKur` ile geçerli/geçersiz kayıt sayısı, paketli veriden daha eski veya eşit sürüm uyarısı, `dbOverride` olarak saklama, "Paketli veritabanına dön".
+- **Testler:** `tests/pr7.test.js` — 12 test (paket oluşturma/çözme, üç birleştirme stratejisi, liste taşıma, TR harf duyarlılığı, bozuk girdi). Toplam **94 test** yeşil.
+- **Kabul:** aynı adlı özel liste ikiye çıkmıyor (çözüm+birleştirme adı TR-duyarsız benzersizleştirir); bozuk JSON/dosya hiçbir listeyi değiştirmiyor (parse/merge mevcutu klonlar). **Kalan:** gerçek tarayıcıda dosya seçici + modal doğrulaması.
 
 ### PR 8 — Sağlamlaştırma ve yayın hazırlığı
 - Manifest açıklaması düzelt ("otomatik senkronizasyon" yok), izinleri daralt (`google.com` ihtiyacı gözden geçir), Firefox `strict_min_version`/MAIN world testi.
