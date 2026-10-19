@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-19 (PR 8A: manifest sertleştirmesi; öncesi PR 7 liste + db.json aktarma)
+> Son güncelleme: 2026-10-19 (PR 8B: jsdom smoke testleri repoda; öncesi 8A manifest sertleştirmesi)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -26,7 +26,8 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **6C** | **Hızlı ekleme bandı: karar + sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı** | ✅ kodlandı, `node --test` yeşil; **tarayıcıda denenmedi** |
 | **7** | **İçe/dışa aktarma:** liste paketi (tek/tümü), çakışma diyaloğu (birleştir/üzerine yaz/yeniden adlandır), `db.json` içe aktarma + `dbOverride` | ✅ kodlandı, `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
 | **8A** | **Manifest sertleştirmesi:** açıklama düzeltildi, `google.com` izni kaldırıldı, Firefox ≥128 / Chrome ≥111 | ✅ kodlandı, `node --test` yeşil (96 test); tarayıcıda yalnızca yükleme denemesi kaldı |
-| 8 | Sağlamlaştırma ve mağaza hazırlığı (manifest kısmı ✅ 8A) | ⏳ |
+| **8B** | **jsdom smoke testleri repoda:** `tests/smoke/` (options 5 + content 4), `jsdom ^27` devDependency | ✅ kodlandı, `node --test` yeşil (105 test) |
+| 8 | Sağlamlaştırma ve mağaza hazırlığı (manifest ✅ 8A, smoke ✅ 8B) | ⏳ sürüyor: PIN karma, performans, kanal adı/avatar, mağaza |
 | S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir) |
 
 ### Önce yapılacak: PR 6 / 6B / 6C / 7 / 8A gerçek tarayıcı doğrulaması
@@ -117,11 +118,17 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 - Firefox `strict_min_version` **128** (MAIN world), Chromium `minimum_chrome_version` **111**.
 - `tests/manifest.test.js` (2 test) kararları koruyor. **Kalan:** tarayıcıda yükleme denemesi.
 
+### PR 8B — ✅ jsdom smoke testleri repoda (2026-10-19)
+- `tests/smoke/ortak.js`: sahte `chrome.*` (storage/onChanged/runtime/tabs) + `bekle()`; `options.html` gerçek betik sırasıyla jsdom'da çalışır, `content.js` verilen sayfa HTML'i üzerinde.
+- `tests/smoke/options.test.js` (5): ilk açılış + db durumu, PIN kurulum/kilit/giriş, liste ekle-sil, çakışma modalı (birleştir/yeniden/vazgeç), hızlı bant URL yedeği.
+- `tests/smoke/content.test.js` (4): video banner + oynatıcı gizleme, beyaz listeye ekle, kart gizleme, bulanıklaştırma.
+- `jsdom ^27` devDependency + `npm test`; `.gitignore` eklendi. Smoke için `npm install` (Node >= 20). Toplam **105 test**.
+
 ### PR 8 — Sağlamlaştırma ve yayın hazırlığı
 - ~~Manifest açıklaması düzelt, izinleri daralt, Firefox `strict_min_version`/MAIN world testi.~~ ✅ 8A'da yapıldı; tarayıcıda yükleme denemesi kaldı.
 - Performans: `yt-navigate-finish` ile yoklamanın azaltılması; veritabanı önbelleği (büyürse); helper özniteliklerinin izlenmesi.
 - Kanal adı/avatarını kullanıcı listelerinde göstermek (kullanıcı eklerken sayfadan toplama).
-- **Arayüz ve içerik betiği smoke testlerinin repoya alınması** (`tests/smoke/`, jsdom devDependency) — PR 6B'de kullanılan harness'ler (`options.html`: 26 kontrol; `content.js`: banner/kart) temel alınır.
+- ~~Arayüz ve içerik betiği smoke testlerinin repoya alınması (`tests/smoke/`, jsdom devDependency).~~ ✅ 8B'de yapıldı.
 - PIN: düz metin yerine karma saklama (hâlâ yalnızca arayüz kilidi olduğu belgelenir).
 - Mağaza: gizlilik metni, ekran görüntüleri, sürüm akışı.
 

@@ -1,9 +1,11 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-19 (PR 8A) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-19 (PR 8A + 8B) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
 
+> **PR 8B özeti (2026-10-19):** PR 6B'de kullanılan jsdom harness'i repoya alındı. `tests/smoke/ortak.js` (sahte `chrome.*`, `bekle`) + `tests/smoke/options.test.js` (5 test: ilk açılış/db durumu, PIN kurulum-kilit-giriş, liste ekle/sil, çakışma modalı üç strateji, hızlı bant URL yedeği) + `tests/smoke/content.test.js` (4 test: video banner, beyaz listeye ekle, kart gizleme, bulanıklaştırma). `jsdom ^27` artık `devDependencies`'te (`npm install` gerekir; Node >= 20). Toplam **105 test** yeşil (96 saf + 9 smoke). **Tarayıcı doğrulamasını değiştirmez.**
+>
 > **PR 8A özeti (2026-10-19):** Manifest sertleştirildi. Mağaza açıklaması gerçek özellikleri anlatıyor ("video etiketleme"/"otomatik senkronizasyon" kaldırıldı); kullanılmayan `google.com`/`google.com.tr` host izni ve içerik betiği eşleşmeleri silindi; Firefox `strict_min_version` **128** (MAIN world desteği), Chromium `minimum_chrome_version` **111**. `tests/manifest.test.js` (2 test) bu kararları koruyor; toplam **96 test** yeşil. **Tarayıcıda yalnızca yeniden yükleme denemesi kaldı.**
 >
 > **PR 7 özeti (2026-10-19):** İçe/dışa aktarma tamamlandı. İstisnalar sekmesinde **tek liste veya tüm listeler** JSON olarak indirilebilir; içe aktarmada özel liste adı çakışırsa **Birleştir / Üzerine yaz / Yeniden adlandır** seçilir (varsayılan birleştir; yeniden adlandır `Ad (2)` üretir). Yedek sekmesinde **`db.json` içe aktarma** var: `sema` ve `veriSurumu` doğrulanır, geçersiz kayıt sayısı gösterilir, daha eski/eşit sürüm uyarısı verilir, `storage.local.dbOverride` olarak saklanır ve "Paketli veritabanına dön" ile kaldırılır. `core/listeler.js` saf modül + `tests/pr7.test.js` (12 test); toplam **94 test** yeşil. **Tarayıcıda denenmedi.**
@@ -111,6 +113,7 @@ src/
 manifests/             manifest.chromium.json, manifest.firefox.json (yalnızca youtube.com; Chrome >= 111, Firefox >= 128)
 scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır)
 tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 + manifest (Node'un yerleşik test koşucusu)
+tests/smoke/           jsdom + sahte chrome.* ile options.html (5 test) ve content.js (4 test) smoke testleri
 docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözleşme), db.test-ornek.json,
                        db.test-ornek-kararsiz.json, DEVIR_NOTU.md
 ```
@@ -193,6 +196,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 6C | **Hızlı ekleme bandı + istisna çerçevesi** (2026-10-19): `content.js`'te `sayfaDurumu` mesajı; pop-up önce içerik betiğine sorar, olmazsa URL'den hesaplar; bantta karar+sebep; "Her zaman izin ver / Her zaman engelle"; Listeler → **İstisnalar**; ~50 kayıtta uyarı; "Bildir" gizli/pasif; `tests/pr6c.test.js` (3 test) | ✅ `node --test` yeşil (82 test); **gerçek pop-up'ta denenmedi** |
 | 7 | **İçe/dışa aktarma** (2026-10-19): `core/listeler.js` (paket oluştur/çöz/birleştir); İstisnalar sekmesinde liste dışa/içe aktarma + TR-duyarsız çakışma modalı; Yedek sekmesinde `db.json` içe aktarma/sıfırlama (`dbOverride`, `veriSurumu` kontrolü); `tests/pr7.test.js` (12 test) | ✅ `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
 | 8A | **Manifest sertleştirmesi** (2026-10-19): mağaza açıklaması düzeltildi; `google.com`/`google.com.tr` host izni ve eşleşmeleri kaldırıldı; Firefox `strict_min_version` 128 (MAIN world), Chromium `minimum_chrome_version` 111; `tests/manifest.test.js` (2 test) | ✅ `node --test` yeşil (96 test); **tarayıcıda yalnızca yeniden yükleme denemesi kaldı** |
+| 8B | **jsdom smoke testleri repoda** (2026-10-19): `tests/smoke/ortak.js` + `options.test.js` (5) + `content.test.js` (4); `jsdom ^27` devDependency, `npm install` gerekir (Node >= 20) | ✅ `node --test` yeşil (**105 test**: 96 saf + 9 smoke); tarayıcı doğrulamasını değiştirmez |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -245,7 +249,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 9. ~~Manifest `description` "otomatik senkronizasyon" diyor; `google.com` host izni geniş.~~ **Çözüldü (PR 8A):** açıklama gerçek özelliklere göre yazıldı, yalnızca `youtube.com` izni kaldı. Tarayıcıda yükleme doğrulaması bekliyor.
 10. ~~Firefox `strict_min_version: 109` ile `world: "MAIN"` çakışıyor.~~ **Çözüldü (PR 8A):** asgari sürüm 128'e çekildi. Yedek enjeksiyon yolu (MAIN world desteklemeyen tarayıcı) hâlâ test edilmedi.
 11. `setInterval` ile yoklama (izleme sayfası 1 sn, helper 2 sn); `yt-navigate-finish` ile değiştirilebilir.
-12. Arayüz (jsdom) smoke testleri repoda değil. PR 6B'de yazılan harness'ler (içerik betiği ve `options.html`) bu sohbette kullanıldı; `tests/smoke/` altına alınmalı (`PLAN.md` PR 8).
+12. ~~Arayüz (jsdom) smoke testleri repoda değil.~~ **Çözüldü (PR 8B):** harness `tests/smoke/` altında; `jsdom` devDependency (`npm install`, Node >= 20). Kapsam: ilk açılış, PIN akışı, liste ekle/sil, çakışma modalı, hızlı bant, banner/beyaz liste/kart gizleme/bulanıklaştırma. Gerçek tarayıcı doğrulamasının yerini tutmaz.
 13. Rozet metinleri değişti ("GÜVENLİ/EĞİTİCİ" → "BEYAZ LİSTE" vb.).
 14. **Banner/filtre gerçek tarayıcıda doğrulanmadı.** jsdom'da engelli video ve kanal sayfasında banner çıkıyor, istisna butonu çalışıyor, yeniden çizim yok. Tarayıcıda test için: derleyin, uzantıyı yenileyin, YouTube'u F5 ile yenileyin, konsolu açıp **"YT Filter" ile filtreleyin**: `YT Filter: hazır {mod, etiketlenmemis, beyaz, kara, dbKanal, dbVideo, dbHatalar}` ve her sayfa için `YT Filter: sayfa kararı …` satırı görünmeli. Satır yoksa betik çalışmıyordur (yükleme/derleme); satır var ama banner yoksa karar/CSS sorunudur.
 15. **Eski testler:** PR 2–5 testleri 2026-10-19'da yeni kurala uyduruldu (video-yoksa-kanal, `kararsiz*` alanları, eski `"engelli"` → genel eylem). `node --test` bu düzeltmeyle birlikte yeşil.
@@ -259,15 +263,17 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 
 ```
 node scripts/build.js                       # chromium/ ve firefox/ üretir  (--target chromium | --watch)
+npm install                                  # yalnızca smoke testleri için (jsdom devDependency, Node >= 20)
 node --test tests/karar-v2.test.js          # yeni kurallar (28 test)
 node --test tests/pr6c.test.js              # hızlı bant sebep/özet/istisna sayısı (3 test)
 node --test tests/pr7.test.js               # liste paketi/çakışma birleştirme (12 test)
 node --test tests/manifest.test.js          # açıklama/izin ve sürüm/script sırası (2 test)
-node --test                                  # tüm birim testleri (Node 18+; klasör yolu vermeyin, Node 22'de hata verir) — 96 test
+node --test tests/smoke/options.test.js tests/smoke/content.test.js   # jsdom smoke (9 test)
+node --test                                  # tüm testler (Node 18+ saf testler; smoke için Node >= 20; klasör yolu vermeyin, Node 22'de hata verir) — 105 test
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.
 
-Geri alma: PR sonları annotated tag ile işaretlenir — PR 6C `checkpoint-pr6c` (`214944e`), PR 7 `checkpoint-pr7`. İncelemek için `git show checkpoint-pr7`; tek dosyayı eski hâline döndürmek için `git checkout checkpoint-pr6c -- <dosya>`. Tüm çalışmayı geri almak gerekirse önce yeni bir checkpoint tag atın, sonra `git revert` kullanın.
+Geri alma: PR sonları annotated tag ile işaretlenir — PR 6C `checkpoint-pr6c` (`214944e`), PR 7 `checkpoint-pr7`, PR 8A `checkpoint-pr8a`. İncelemek için `git show checkpoint-pr7`; tek dosyayı eski hâline döndürmek için `git checkout checkpoint-pr6c -- <dosya>`. Tüm çalışmayı geri almak gerekirse önce yeni bir checkpoint tag atın, sonra `git revert` kullanın.
 
 Elle deneme ipuçları:
 - İlk açılış seçimini yeniden görmek: pop-up konsolunda `chrome.storage.local.get('ayar', r => { r.ayar.etiketlenmemis = null; chrome.storage.local.set({ayar: r.ayar}) })`
@@ -275,7 +281,7 @@ Elle deneme ipuçları:
 - **Konu/etiket mantığını denemek:** `docs/db.test-ornek-kararsiz.json` içeriğini geçici olarak `src/data/db.json`'a koyup derleyin. İçinde: `@trtspor` (spor), `@oyuncukanal` (oyun + küfür etiketi + kararsız şiddet), video `AAAAAAAAAAA` (teknoloji+AI, kararsız küfür), `BBBBBBBBBBB` (yalnızca argo etiketi), `CCCCCCCCCCC` (yalnızca kararsız spor). Mod/kararsız/kanal kontrol ayarlarıyla farklı sonuçlar alınır.
 - Helper tanılaması: YouTube konsolunda `__ytFilterDiag()`.
 
-Test yaklaşımı: saf modüller Node'da test edilir. Arayüz ve içerik betiği, jsdom + sahte `chrome.*` API'siyle denendi (harness repoya alınmadı).
+Test yaklaşımı: saf modüller Node'da test edilir. Arayüz ve içerik betiği, jsdom + sahte `chrome.*` API'siyle test edilir (`tests/smoke/ortak.js`); gerçek tarayıcı doğrulamasının yerini tutmaz.
 
 ---
 
