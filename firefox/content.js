@@ -10,10 +10,13 @@ let ayarMotor = null;      // çözümlenmiş ayar (core/engine.js)
 let veriTabani = null;     // indekslenmiş veritabanı (core/db.js)
 let paketliDbSozu = null;  // paketle gelen db.json, sayfa başına bir kez okunur
 let currentChannelContext = null;
+let motorHazir = false;     // loadData bitmeden karar verilmez (varsayılan ayarla geçici engel/banner çıkmasın)
+let sonKararAnahtari = '';  // tanılama günlüğü yalnızca karar değişince yazılsın
 let stilElemani = document.createElement('style');
 document.head.appendChild(stilElemani);
 
 function ensureHelperInjected() {
+    if (window !== window.top) return; // iframe/embed'de gerekmez; orada chrome-extension:// yüklemesi hata verir
     if (!document.querySelector('script[data-yt-filter-helper]')) {
         try {
             const script = document.createElement('script');
@@ -46,6 +49,13 @@ async function getStorageData(keys = null) {
     });
 }
 
+async function setStorageData(items) {
+    if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+        return await browser.storage.local.set(items);
+    }
+    return new Promise((resolve) => chrome.storage.local.set(items, () => resolve()));
+}
+
 async function loadData() {
     try {
         const storageData = await getStorageData(null);
@@ -53,6 +63,12 @@ async function loadData() {
         ayarMotor = YTF.ayarCoz(hafiza);
         const paketli = await paketliDbyiYukle();
         veriTabani = YTF.dbKur(YTF.dbSec(paketli, hafiza.dbOverride));
+        if (!motorHazir) {
+            console.info('YT Filter: hazır', { mod: ayarMotor.mod, etiketlenmemis: ayarMotor.etiketlenmemis,
+                beyaz: Object.keys(ayarMotor.listeler.beyaz).length, kara: Object.keys(ayarMotor.listeler.kara).length,
+                dbKanal: veriTabani.sayac.kanal, dbVideo: veriTabani.sayac.video, dbHatalar: veriTabani.hatalar });
+        }
+        motorHazir = true;
         arayuzAyarlariniUygula();
     } catch (e) {
         console.error("Veri yükleme hatası", e);
@@ -125,15 +141,20 @@ const BANNER_ID = 'yt-filter-engel-banner';
 
 function sebepiMetne(sebep) {
     if (!sebep) return '';
+    const nerede = sebep.kaynak === 'video' ? ' (video)' : sebep.kaynak === 'kanal' ? ' (kanal)' : '';
+    const ad = (liste, id) => { const x = (liste || []).find(o => o.id === id); return x ? x.ad : id; };
     switch (sebep.tur) {
         case 'liste':
-            if (sebep.liste === 'beyaz') return 'Beyaz listede';
-            if (sebep.liste === 'kara') return 'Kara listede';
-            return `"${sebep.liste}" listesinde`;
-        case 'etiketlenmemis': return 'Etiketlenmemiş içerik';
-        case 'etiket': return `Etiket: ${sebep.id}`;
-        case 'konu': return `Konu: ${sebep.id}`;
+            if (sebep.liste === 'beyaz') return `Beyaz listede${nerede}`;
+            if (sebep.liste === 'kara') return `Kara listede${nerede}`;
+            return `"${sebep.liste}" listesinde${nerede}`;
+        case 'etiketlenmemis': return 'Etiketlenmemiş içerik (veritabanında kaydı yok)';
+        case 'etiket': return `Etiket: ${ad(YTF.ETIKETLER, sebep.id)}${nerede}`;
+        case 'konu': return `Engelli konu: ${ad(YTF.KONULAR, sebep.id)}${nerede}`;
+        case 'kararsiz-etiket': return `Etiket (kararsız): ${ad(YTF.ETIKETLER, sebep.id)}${nerede}`;
+        case 'kararsiz-konu': return `Engelli konu (kararsız): ${ad(YTF.KONULAR, sebep.id)}${nerede}`;
         case 'izinli-konu-yok': return 'İzinli konu yok';
+        case 'shorts': return 'Shorts gizleme ayarı açık';
         default: return sebep.tur || '';
     }
 }
@@ -143,65 +164,93 @@ function engelBanneriniKaldir() {
     if (b) b.remove();
 }
 
-function engelBanneriniGoster(sonuc, videoId, channelHandle) {
-    engelBanneriniKaldir();
-
+// tur: 'video' | 'kanal'. anahtar: "İstisna" butonunun beyaz listeye yazacağı kimlik. Aynı sebep için banner yeniden çizilmez.
+function engelBanneriniGoster(sonuc, anahtar, tur, beyazGoster = true) {
     const sebepler = (sonuc.sebepler || []).map(sebepiMetne).filter(Boolean);
-    const sebepler_metin = sebepler.length ? sebepler.join(' · ') : 'Filtre kuralı';
+    const sebepMetni = sebepler.length ? sebepler.join(' · ') : 'Filtre kuralı';
+
+    const imza = `${tur}:${anahtar}:${sebepMetni}:${beyazGoster}`;
+    const mevcut = document.getElementById(BANNER_ID);
+    if (mevcut && mevcut.dataset.ytfImza === imza) return;
+    engelBanneriniKaldir();
 
     const banner = document.createElement('div');
     banner.id = BANNER_ID;
     banner.setAttribute('data-yt-filter-banner', 'true');
+    banner.dataset.ytfImza = imza;
 
-    // Sebep satırı
     const baslik = document.createElement('div');
     baslik.className = 'ytf-banner-baslik';
-    baslik.textContent = '🚫 Bu içerik engellendi';
+    baslik.textContent = tur === 'kanal' ? '🚫 Bu kanal engellendi' : '🚫 Bu video engellendi';
 
     const sebepEl = document.createElement('div');
     sebepEl.className = 'ytf-banner-sebep';
-    sebepEl.textContent = sebepler_metin;
+    sebepEl.textContent = sebepMetni;
 
-    // Butonlar
     const butonlar = document.createElement('div');
     butonlar.className = 'ytf-banner-butonlar';
 
     const geriBtn = document.createElement('button');
     geriBtn.className = 'ytf-btn ytf-btn-geri';
     geriBtn.textContent = '← Geri dön';
-    geriBtn.addEventListener('click', () => { history.back(); });
-
-    const beyazBtn = document.createElement('button');
-    beyazBtn.className = 'ytf-btn ytf-btn-beyaz';
-    beyazBtn.textContent = '✓ İstisna: Beyaz listeye ekle';
-    beyazBtn.addEventListener('click', async () => {
-        const anahtar = (videoId || channelHandle || '').toLowerCase();
-        if (!anahtar) return;
-        // Storage'dan ayarı oku, beyaz listeye ekle, geri yaz
-        const storageData = await getStorageData(null);
-        const mevcut = storageData || {};
-        const a = YTF.ayarCoz(mevcut);
-        // Tüm listelerden çıkar, beyaza ekle
-        delete a.listeler.kara[anahtar];
-        (a.listeler.ozel || []).forEach(l => { delete l.uyeler[anahtar]; });
-        a.listeler.beyaz[anahtar] = true;
-        await (new Promise(res => {
-            const s = (typeof browser !== 'undefined' && browser.storage) ? browser.storage : chrome.storage;
-            s.local.set({ surum: 2, ayar: a }, res);
-        }));
-        engelBanneriniKaldir();
-        // Veriyi yenile ve sayfayı kontrol et
-        await loadData();
-        checkWatchPage();
+    geriBtn.addEventListener('click', () => {
+        // Geçmişte önceki sayfa yoksa (doğrudan link) YouTube ana sayfasına git
+        if (history.length > 1) history.back(); else location.href = '/';
     });
+    butonlar.appendChild(geriBtn);
 
-    butonlar.append(geriBtn, beyazBtn);
+    if (beyazGoster) {
+        const beyazBtn = document.createElement('button');
+        beyazBtn.className = 'ytf-btn ytf-btn-beyaz';
+        beyazBtn.textContent = '✓ İstisna: Beyaz listeye ekle';
+        beyazBtn.addEventListener('click', async () => {
+            const k = String(anahtar || '').toLowerCase();
+            if (!k) return;
+            const a = YTF.ayarCoz((await getStorageData(null)) || {});
+            delete a.listeler.kara[k];
+            (a.listeler.ozel || []).forEach(l => { delete l.uyeler[k]; });
+            a.listeler.beyaz[k] = true;
+            await setStorageData({ surum: 2, ayar: a });
+            engelBanneriniKaldir();
+            await loadData();
+            checkWatchPage();
+        });
+        butonlar.appendChild(beyazBtn);
+    }
+
     banner.append(baslik, sebepEl, butonlar);
     document.body.appendChild(banner);
 }
 
+function kararGunlugu(tur, ayrinti, sonuc) {
+    const anahtar = tur + JSON.stringify(ayrinti) + sonuc.karar + JSON.stringify(sonuc.sebepler);
+    if (anahtar === sonKararAnahtari) return;
+    sonKararAnahtari = anahtar;
+    console.info('YT Filter: sayfa kararı', tur, ayrinti, sonuc.karar, sonuc.sebepler);
+}
+
+// Kanal sayfası (/@handle, /channel/UC...): engelliyse tam sayfa banner.
+function kanalSayfasiniKontrolEt() {
+    const yol = window.location.pathname;
+    const hm = yol.match(/^\/(@[a-zA-Z0-9._-]+)/);
+    const im = yol.match(/^\/channel\/(UC[A-Za-z0-9_-]{22})/);
+    const handle = hm ? hm[1] : null;
+    const kanalId = im ? im[1] : null;
+    if (!handle && !kanalId) { engelBanneriniKaldir(); return; }
+
+    const sonuc = icerikKarari(null, handle, kanalId);
+    kararGunlugu('kanal', { handle, kanalId }, sonuc);
+    if (sonuc.karar === 'engelle') {
+        document.querySelectorAll('video').forEach(v => { if (!v.paused) v.pause(); }); // kanal vitrini videosu sesi kesilsin
+        engelBanneriniGoster(sonuc, handle || kanalId, 'kanal');
+    } else {
+        engelBanneriniKaldir();
+    }
+}
+
 // Oynatılan, Tıklanan ve Dış Sitedeki (Google) Embed Videoları için Kontrolcü
 function checkWatchPage() {
+    if (!motorHazir) return;
     const url = new URL(window.location.href);
     let videoId = null;
     let isEmbed = false;
@@ -216,9 +265,9 @@ function checkWatchPage() {
         videoId = url.pathname.split('/')[2];
     }
 
-    // İzleme sayfası değilse banner'ı kaldır (sayfa değişti)
+    // İzleme sayfası değilse: kanal sayfası mı diye bak (değilse banner'ı kaldırır)
     if (!videoId) {
-        engelBanneriniKaldir();
+        kanalSayfasiniKontrolEt();
         return;
     }
 
@@ -232,6 +281,7 @@ function checkWatchPage() {
     }
 
     const sonuc = icerikKarari(videoId, channelHandle, null);
+    kararGunlugu('video', { videoId, channelHandle }, sonuc);
 
     const ytdPlayer = document.querySelector('#ytd-player');
     const embedPlayer = document.querySelector('#player');
@@ -242,8 +292,10 @@ function checkWatchPage() {
     let isBlurred = (sonuc.karar === 'engelle' && sonuc.engelEylemi === 'bulaniklastir');
 
     // Shorts Videolar Gizliyse, URL'den Direkt Girmeyi De Kesin Engelle
+    let shortsZorla = false;
     if (url.pathname.startsWith('/shorts/') && hafiza.ayarlar?.shortsGizle) {
         isBlocked = true;
+        shortsZorla = true;
     }
 
     if (isBlocked) {
@@ -258,7 +310,10 @@ function checkWatchPage() {
             if (v.src) v.removeAttribute('src');
         });
         // PR 6: Tam sayfa engel banner'ı göster (embed'de değil)
-        if (!isEmbed) engelBanneriniGoster(sonuc, videoId, channelHandle);
+        if (!isEmbed) {
+            if (shortsZorla) engelBanneriniGoster({ sebepler: [{ tur: 'shorts' }] }, videoId, 'video', false);
+            else engelBanneriniGoster(sonuc, videoId, 'video');
+        }
     } else if (isBlurred) {
         engelBanneriniKaldir();
         if (ytdPlayer) ytdPlayer.style.setProperty('filter', 'blur(35px)', 'important');
@@ -346,6 +401,9 @@ function applyFilter(element, videoId, channelHandle) {
     if (sonuc.karar === 'engelle') {
         if (sonuc.engelEylemi === 'bulaniklastir') {
             element.dataset.ytFilterBlur = "true";
+        } else if (sonuc.engelEylemi === 'uyari') {
+            uyariKapagiEkle(element, sonuc);
+            return; // kapak sebebi zaten yazıyor; ayrıca rozet gösterilmez
         } else {
             element.classList.add('yt-filter-hidden');
         }
@@ -353,6 +411,23 @@ function applyFilter(element, videoId, channelHandle) {
 
     const rozet = YTF.rozetBilgisi(sonuc, ayarMotor || YTF.varsayilanAyar());
     if (rozet) addBadge(element, rozet);
+}
+
+// "Üstünü uyarı sayfasıyla kapat": kartın üzerine sebebi yazan opak bir kapak çizer (tıklamayı da engeller).
+function uyariKapagiEkle(element, sonuc) {
+    if (element.querySelector('.ytf-uyari-kapak')) return;
+    const kapak = document.createElement('div');
+    kapak.className = 'ytf-uyari-kapak';
+    const baslik = document.createElement('div');
+    baslik.className = 'ytf-uyari-baslik';
+    baslik.textContent = '🚫 Engellendi';
+    const sebep = document.createElement('div');
+    sebep.className = 'ytf-uyari-sebep';
+    sebep.textContent = (sonuc.sebepler || []).map(sebepiMetne).filter(Boolean).slice(0, 2).join(' · ');
+    kapak.append(baslik, sebep);
+    kapak.addEventListener('click', (e) => { e.preventDefault(); e.stopPropagation(); }, true);
+    element.style.setProperty('position', 'relative', 'important');
+    element.appendChild(kapak);
 }
 
 // rozet: { metin, sinif } ya da { metin, renkAnahtari } (özel listeler için metinden türetilen renk)
@@ -396,6 +471,7 @@ const observer = new MutationObserver((mutations) => {
 });
 
 async function processVideo(element) {
+    if (!motorHazir) return;
     const currentVideoId = extractVideoId(element);
     const currentChannelHandle = extractChannelHandle(element);
     const currentChannelId = element.getAttribute('data-yt-exposed-channel-id');
@@ -423,6 +499,8 @@ function resetElement(element) {
     element.classList.remove('yt-filter-hidden');
     const badge = element.querySelector('.yt-filter-badge-container');
     if (badge) badge.remove();
+    const kapak = element.querySelector('.ytf-uyari-kapak');
+    if (kapak) kapak.remove();
 }
 
 function finishProcessing(element, videoId, channelHandle) {

@@ -1,100 +1,88 @@
-# db.json şema sözleşmesi (sema: 1)
+# `db.json` şeması (sema 1)
 
-Bu belge, **düzenleme sitesinin ürettiği** ve **eklentinin okuduğu** `db.json` dosyasının tek referansıdır.
-Eklenti tarafı: `src/core/db.js` (okuma/doğrulama) · Dosya yeri: `src/data/db.json` (pakete girer).
+> Düzenleme sitesi ile eklenti arasındaki **tek sözleşme**. Bu dosya `src/core/db.js` ve `src/core/taxonomy.js → kayitDogrula` ile birebir uyumlu tutulmalıdır.
+> Güncelleme: 2026-10-19 — **kararsız alanları eklendi** (`kararsizKonular`, `kararsizEtiketler`) ve **ana konu isteğe bağlı** oldu. Her ikisi de **geriye uyumludur**, bu yüzden `sema` numarası değişmedi (1).
+> Not: Bu belge `db.js`'ten yeniden yazıldı; önceki sürümde ayrıca açıklama/örnek varsa birleştirin.
 
-## Genel yapı
+## Üst düzey yapı
 
 ```json
 {
   "sema": 1,
   "veriSurumu": 12,
-  "olusturma": "2026-11-01",
   "kanallar": [
     {
-      "id": "UCfYNqluOf8EbQkL44otydMw",
-      "handle": "@trtspor",
-      "ad": "TRT Spor",
-      "avatar": "https://yt3.googleusercontent.com/...",
-      "anaKonu": "spor",
-      "yanKonular": ["haber"],
-      "etiketler": []
+      "id": "UCxxxxxxxxxxxxxxxxxxxxxx",
+      "handle": "@ornekkanal",
+      "ad": "Örnek Kanal",
+      "avatar": "https://…",
+      "anaKonu": "teknoloji",
+      "yanKonular": ["oyun", "haber"],
+      "etiketler": ["ai", "argo"],
+      "kararsizKonular": ["eglence"],
+      "kararsizEtiketler": ["kufur"]
     }
   ],
   "videolar": [
     {
-      "id": "Dj4Zn4HwnrM",
-      "anaKonu": "oyun",
-      "yanKonular": ["eglence"],
-      "etiketler": ["kufur", "argo"]
+      "id": "dQw4w9WgXcQ",
+      "anaKonu": "muzik",
+      "yanKonular": [],
+      "etiketler": [],
+      "kararsizKonular": [],
+      "kararsizEtiketler": []
     }
   ]
 }
 ```
 
-## Alanlar
-
-| Alan | Zorunlu | Kural |
+| Alan | Zorunlu | Açıklama |
 |---|---|---|
-| `sema` | evet | Tam sayı `1`. Başka değerde eklenti dosyayı tamamen yok sayar (eski eklenti yeni şemayı yanlış okumasın diye). |
-| `veriSurumu` | evet | Her dışa aktarımda artan tam sayı. Kullanıcı elle içe aktarma yaparsa, yalnızca paketteki sürümden **büyükse** geçerli olur. |
-| `olusturma` | hayır | Bilgi amaçlı tarih (`YYYY-MM-DD`). Eklenti kullanmaz. |
-| `kanallar[].id` | evet | `UC` + 22 karakter (`A-Za-z0-9_-`). Kanalın asıl kimliği. |
-| `kanallar[].handle` | hayır | `@` ile başlar (`A-Za-z0-9._-`). Değişebilir; yalnızca yardımcı eşleştirme anahtarıdır. Büyük/küçük harf duyarsız aranır. |
-| `kanallar[].ad`, `avatar` | hayır | Yalnızca eklenti arayüzünde gösterim için. Karar vermeyi etkilemez. |
-| `videolar[].id` | evet | 11 karakter (`A-Za-z0-9_-`). Büyük/küçük harf **duyarlı**. |
-| `anaKonu` | evet | Tam olarak **1** adet, aşağıdaki konu ID'lerinden biri. Yoksa kayıt geçersizdir. |
-| `yanKonular` | hayır | Konu ID'leri listesi, sınırsız. `anaKonu` burada tekrar edemez. |
-| `etiketler` | hayır | Etiket ID'leri listesi, sınırsız. Boş liste = "incelendi, zararlı bir bayrak yok". |
+| `sema` | ✅ | Şema numarası. Şu an yalnızca `1` kabul edilir; başka değer → tüm dosya yok sayılır. |
+| `veriSurumu` | ✅ | Tam sayı. Paketli ve kullanıcının içe aktardığı (`dbOverride`) veritabanından **büyük olan** kazanır; eşitlikte paketli kazanır. |
+| `kanallar[]`, `videolar[]` | – | Eksikse boş sayılır. |
 
-## Anlam kuralları (en önemli kısım)
+## Kayıt alanları (kanal ve video için ortak)
 
-- **Kaydı olan video/kanal = incelenmiş.** Kaydı olmayan = etiketlenmemiş. Bu yüzden her kayıtta `anaKonu` zorunludur.
-- **Boş `etiketler` = zararsız.** Etiket listesi boşsa içerik incelenmiş ve hiçbir bayrak konmamış demektir.
-- Bir video veya kanalın aynı ID ile iki kaydı olmamalı. Olursa eklenti **sonuncuyu** kullanır.
-- Geçersiz kayıt (bozuk ID, bilinmeyen konu/etiket, ana konu yok) eklenti tarafından **tek tek atlanır**, dosyanın geri kalanı yüklenir.
-- Kanal kaydında `handle` değişirse `id` aynı kalır. Site, kanalı daima `id` ile tanımalı.
-
-## Konu ID'leri (`anaKonu`, `yanKonular`)
-
-| ID | Ad | Kapsam |
+| Alan | Zorunlu | Açıklama |
 |---|---|---|
-| `ders-okul` | Ders / Okul | okul müfredatı, konu anlatımı, sınav hazırlığı, üniversite dersleri |
-| `egitici` | Eğitici | belgesel, nasıl yapılır videoları, ders harici kurslar (dil dahil) |
-| `bilim` | Bilim | akademik/araştırma içeriği, popüler bilim, uzay, doğa bilimleri |
-| `teknoloji` | Teknoloji | yazılım, donanım, yapay zeka, inceleme kanalları |
-| `haber` | Haber / Güncel olaylar | haber kanalları, siyasi yorum, gündem |
-| `din` | Din / Maneviyat | dini sohbetler, vaazlar, manevi içerik |
-| `eglence` | Eğlence / Mizah | komedi, skeç, meme, tepki videoları |
-| `oyun` | Oyun | oyun oynanışı, oyun incelemeleri, espor |
-| `spor` | Spor | futbol, basketbol, fitness, spor haberleri |
-| `muzik` | Müzik | müzik videoları, cover, müzik analizi |
-| `film-dizi-sanat` | Film / Dizi / Sanat | sinema, dizi, çizim, sanat |
-| `yasam-vlog` | Yaşam / Vlog | günlük vlog, yemek, seyahat, yaşam tarzı |
-| `finans` | Finans / Girişim | borsa, kripto, iş, ekonomi |
-| `saglik-gelisim` | Sağlık / Kişisel gelişim | sağlık, psikoloji, motivasyon, kişisel gelişim |
-| `cocuk` | Çocuk içerikleri | çocuklara yönelik animasyon/şarkı kanalları |
+| `id` | ✅ | **Kanal:** `UC` + 22 karakter (`[A-Za-z0-9_-]`). **Video:** 11 karakter. Geçersizse kayıt atlanır. |
+| `handle` | – | Yalnızca kanal. `@` ile başlar, `[A-Za-z0-9._-]`. Yanlış biçimliyse kayıt atlanır. Eşleşmede küçük harfe çevrilir. |
+| `ad`, `avatar` | – | Yalnızca kanal; arayüzde gösterilir (avatar henüz kullanılmıyor). |
+| `anaKonu` | koşullu | Konu kimliği (`taxonomy.KONULAR`). **Düzenleme sitesi her zaman girer.** Oylamada hiçbir konu pozitif çıkmazsa boş olabilir. |
+| `yanKonular[]` | – | Konu kimlikleri. **Doluysa `anaKonu` zorunludur.** `anaKonu` burada tekrar edilemez. |
+| `etiketler[]` | – | Kesinleşmiş (aktif) etiket kimlikleri (`taxonomy.ETIKETLER`). |
+| `kararsizKonular[]` | – | Oylamada sonuç çıkmamış (toplam oy 0, en az bir oy) konular. |
+| `kararsizEtiketler[]` | – | Aynı, etiketler için. |
 
-## Etiket ID'leri (`etiketler`)
+### Doğrulama kuralları (`kayitDogrula`)
+1. Bilinmeyen konu/etiket kimliği → hata.
+2. `yanKonular` doluyken `anaKonu` yok → hata.
+3. `anaKonu` `yanKonular` içinde → hata.
+4. Bir konu hem kesin (ana/yan) hem `kararsizKonular` içinde → hata. Etiket için de aynı.
+5. Kayıtta hiçbir bilgi yok (ana konu, etiket, kararsız hepsi boş) → hata (“Kayıt boş”). Boş kayıt zaten “bilinmeyen” demektir, kayıt sayılmaz.
 
-| ID | Ad | Kapsam |
-|---|---|---|
-| `kufur` | Küfürlü içerik | küfür içeren videolar |
-| `argo` | Argolu içerik | hakaret içeren (aptal, salak vb.) |
-| `ai` | AI ile üretilmiş içerik | YZ ile yapılmış videolar (emin değilseniz eklemeyin) |
-| `kumar` | Kumar / bahis | kumar ve bahis içeren içerikler |
-| `siddet` | Şiddet | dövüş, savaş, gerçekçi öldürmeli oyunlar; arada kalırsanız buraya |
-| `zararli` | Zararlı / uygunsuz içerik | sigara, alkol, uyuşturucu, cinsel içerik, kanun ihlali |
-| `olumsuz-ornek` | Olumsuz örnek | zorbalama, taciz, dinî açıdan uygun olmayan davranışlar |
-| `spam` | Spam / sahte içerik | gerçekmiş gibi duran aldatıcı içerikler, çoğu trading/coin videosu |
+Geçersiz kayıt **tek başına atlanır**, dosyanın kalanı yüklenir. `dbKur(json).sayac` = `{kanal, video, atlanan}`; ilk 10 hata `hatalar[]` içinde tutulur.
+Aynı `id` iki kez gelirse **sonuncusu** geçerlidir.
 
-Konu ve etiket listesi **kodda** (`src/core/taxonomy.js`) tanımlıdır, `db.json` içinde yoktur. Yeni konu/etiket eklemek eklenti sürümü gerektirir; site ve eklenti aynı `taxonomy.js` ID'lerini kullanmalıdır.
+## Eklentinin kaydı nasıl yorumladığı
+
+| Kayıt durumu | Anlamı |
+|---|---|
+| Kayıt yok, ya da kayıt boş | **Bilinmeyen** |
+| Herhangi bir bilgi var (ana konu, etiket **veya** yalnızca kararsız) | **İncelenmiş** — video ise kanala bakılmaz |
+| `etiketler` boş ama konu var | “İncelendi, bayrak yok” → zararsız |
+| `kararsiz*` dolu | Kararsız: Serbest’te izin, Orta’da kullanıcı seçimine göre, Katı’da (kullanıcı engelliyorsa) engel. Ayrıntı: `docs/SISTEM_TASARIMI.md` |
+
+## Düzenleme sitesinin dışa aktarırken uyacağı oylama kuralı
+Ham oylar sitede kalır; **eklentiye yalnızca sonuç gelir.** Kurallar `docs/SISTEM_TASARIMI.md` bölüm 5 ve 6’dadır:
+- toplam = upvote − downvote (kararsız oylar hariç);
+- toplam > 0 → konu için ana/yan, etiket için `etiketler`;
+- toplam = 0 **ve** en az bir oy → `kararsizKonular` / `kararsizEtiketler`;
+- toplam < 0 → yazılmaz;
+- ana konu = en yüksek net puanlı pozitif konu; beraberlikte `taxonomy.KONULAR` sırasındaki ilk;
+- hiç pozitif konu yoksa `anaKonu` yazılmaz.
 
 ## Sürümleme
-
-- Alan eklemek geriye dönük uyumludur (eklenti bilmediği alanları yok sayar) ve `sema` aynı kalır.
-- Alan anlamı değişir ya da silinirse `sema` artar. Eklenti desteklemediği `sema`'yı yüklemez.
-
-## Boyut notu
-
-Dosya her YouTube sayfasında bir kez okunur ve bellekte indekslenir. Binlerce kayıtta sorun olmaz. Kayıt sayısı onbinleri geçerse (yaklaşık 5-10 MB üstü) arka planda önbelleğe alma gerekir.
+- Yeni **isteğe bağlı** alan eklemek şema numarasını değiştirmez. Eski eklenti sürümleri bilinmeyen alanı yok sayar; ancak **ana konusuz kaydı** eski doğrulama (“Ana konu zorunludur”) atlar.
+- Alanı kaldırmak/anlamını değiştirmek → `sema` artırılır; eklenti eski/yeni şemayı ayırt eder (`DB_SEMA`).

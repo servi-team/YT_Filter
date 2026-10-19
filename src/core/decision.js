@@ -1,13 +1,25 @@
 /**
  * YouTube Filtreleyici - Karar fonksiyonu.
  * Saf fonksiyon: DOM, chrome.* ya da başka bir modül kullanmaz. Hem tarayıcıda (global YTF) hem Node'da çalışır.
+ * Kuralların kaynağı: docs/SISTEM_TASARIMI.md (ekip lideri dökümanı) ve docs/DEVIR_NOTU.md bölüm 2.5.
  *
  * kararVer(ayar, video, kanal)
  *   ayar  : kullanıcı ayarları (taxonomy.varsayilanAyar() şekli)
- *   video : { id, kayit }          kayit = { anaKonu, yanKonular[], etiketler[] } | null (null = incelenmemiş)
+ *   video : { id, kayit }          kayit = { anaKonu?, yanKonular[], etiketler[], kararsizKonular[], kararsizEtiketler[] } | null
  *   kanal : { id, handle, kayit }  aynı şekilde
  *
  * Dönüş: { karar: 'ac' | 'engelle', sebepler: [ ... ] }   (sebepler, engel banner'ında gösterilir)
+ *   sebep türleri: liste | etiketlenmemis | konu | etiket | kararsiz-konu | kararsiz-etiket | izinli-konu-yok
+ *
+ * Akış:
+ *   1) Listeler (istisna): video > kanal; aynı düzeyde beyaz > kara > özel.
+ *   2) Kaynak seçimi: ÖNCE VİDEO. Videoda hiç bilgi yoksa (ve ayar.kanalKontrol açıksa) KANAL. İkisi birden asla karıştırılmaz.
+ *      Hiçbirinde bilgi yoksa "bilinmeyen" -> ayar.etiketlenmemis.
+ *   3) Seçilen kaynak üzerinde mod kuralları:
+ *      - Her modda: kullanıcının engellediği (kesinleşmiş) etiket varsa engelle.
+ *      - Serbest: herhangi bir konu izinliyse aç. Kararsızlara kullanıcı lehine izin verilir.
+ *      - Orta   : yalnızca ana konuya bakılır. Kararsızlar ayar.kararsiz'a göre (varsayılan izinver).
+ *      - Katı   : herhangi bir konu engelliyse engelle. Kararsızlar da (kullanıcı o konu/etiketi engelliyorsa) engeller.
  */
 (function (root, factory) {
     if (typeof module === 'object' && module.exports) module.exports = factory();
@@ -16,16 +28,19 @@
     'use strict';
 
     const norm = (x) => (typeof x === 'string' && x ? x.toLowerCase() : null);
+    const dizi = (x) => (Array.isArray(x) ? x : []);
 
-    // Konusu (ana konusu) olan kayıt "incelenmiş" sayılır. Yoksa null döner.
+    // Kayıtta herhangi bir bilgi varsa kayıt "incelenmiş" sayılır. Hiç bilgi yoksa null döner.
+    // Not: ana konu olmayabilir (oylamada hiçbir konu pozitif çıkmamış, yalnızca etiket/kararsız olabilir).
     function ozet(kayit) {
-        if (!kayit || !kayit.anaKonu) return null;
-        const yan = Array.isArray(kayit.yanKonular) ? kayit.yanKonular : [];
-        return {
-            ana: kayit.anaKonu,
-            konular: [kayit.anaKonu, ...yan.filter(k => k !== kayit.anaKonu)],
-            etiketler: Array.isArray(kayit.etiketler) ? kayit.etiketler : []
-        };
+        if (!kayit || typeof kayit !== 'object') return null;
+        const yan = dizi(kayit.yanKonular);
+        const etiketler = dizi(kayit.etiketler);
+        const kararsizKonular = dizi(kayit.kararsizKonular);
+        const kararsizEtiketler = dizi(kayit.kararsizEtiketler);
+        if (!kayit.anaKonu && !yan.length && !etiketler.length && !kararsizKonular.length && !kararsizEtiketler.length) return null;
+        const konular = kayit.anaKonu ? [kayit.anaKonu, ...yan.filter(k => k !== kayit.anaKonu)] : [...yan];
+        return { ana: kayit.anaKonu || null, konular, etiketler, kararsizKonular, kararsizEtiketler };
     }
 
     // Listede (anahtar -> true) verilen anahtarlardan biri var mı?
@@ -35,28 +50,21 @@
     }
 
     // Durumu belirtilmemiş konu izinli sayılır; durumu belirtilmemiş etiket engelli sayılır.
-    const konuIzinli = (ayar, id) => !(ayar.konular && ayar.konular[id] === 'engelli');
-    const konuEngelli = (ayar, id) => !!(ayar.konular && ayar.konular[id] === 'engelli');
+    // Engelli = 'izinli' dışındaki her değer ('engelli' eski değeri dahil; kaldir/uyari/bulaniklastir eylemleri).
+    const konuEngelli = (ayar, id) => !!(ayar.konular && ayar.konular[id] && ayar.konular[id] !== 'izinli');
+    const konuIzinli = (ayar, id) => !konuEngelli(ayar, id);
     const etiketEngelli = (ayar, id) => !(ayar.etiketler && ayar.etiketler[id] === 'izinli');
 
-    function etiketSebepleri(ayar, o, kaynak) {
-        if (!o) return [];
-        return o.etiketler.filter(e => etiketEngelli(ayar, e)).map(e => ({ tur: 'etiket', id: e, kaynak }));
-    }
-
-    function sonuc(karar, sebepler) { return { karar, sebepler }; }
+    const sonuc = (karar, sebepler) => ({ karar, sebepler });
 
     function kararVer(ayar, video, kanal) {
         ayar = ayar || {};
         video = video || {};
         kanal = kanal || {};
 
-        const L = ayar.listeler || {};
-        const videoAnahtar = [video.id];
-        const kanalAnahtar = [kanal.id, kanal.handle];
-
         // 1) Listeler. Video düzeyi kanal düzeyini yener; aynı düzeyde beyaz liste kara listeyi yener.
-        for (const [kaynak, anahtarlar] of [['video', videoAnahtar], ['kanal', kanalAnahtar]]) {
+        const L = ayar.listeler || {};
+        for (const [kaynak, anahtarlar] of [['video', [video.id]], ['kanal', [kanal.id, kanal.handle]]]) {
             if (listede(L.beyaz, anahtarlar)) return sonuc('ac', [{ tur: 'liste', liste: 'beyaz', kaynak }]);
             if (listede(L.kara, anahtarlar)) return sonuc('engelle', [{ tur: 'liste', liste: 'kara', kaynak }]);
             for (const o of (L.ozel || [])) {
@@ -66,33 +74,44 @@
             }
         }
 
-        // 2) Ne video ne kanal incelenmiş: kullanıcının ilk açılışta seçtiği ayar. Seçilmemişse (null) engelle.
+        // 2) Kaynak seçimi: önce video; videoda bilgi yoksa kanal (kanal kontrol açıksa). Asla ikisi birlikte değerlendirilmez.
         const v = ozet(video.kayit);
-        const k = ozet(kanal.kayit);
-        if (!v && !k) {
+        const kanalBakilsin = ayar.kanalKontrol !== false;
+        const k = (!v && kanalBakilsin) ? ozet(kanal.kayit) : null;
+        const o = v || k;
+        if (!o) {
+            // Bilinmeyen: kullanıcının ilk açılışta seçtiği ayar. Seçilmemişse (null) engelle.
             return sonuc(ayar.etiketlenmemis === 'ac' ? 'ac' : 'engelle', [{ tur: 'etiketlenmemis' }]);
         }
-
+        const kaynak = v ? 'video' : 'kanal';
         const mod = ['serbest', 'orta', 'kati'].includes(ayar.mod) ? ayar.mod : 'orta';
+        const sebepler = [];
 
-        // 3) Katı mod: herhangi bir engelli konu VEYA herhangi bir engelli etiket (video ve kanal) varsa engelle.
-        if (mod === 'kati') {
-            const sebepler = [];
-            [['video', v], ['kanal', k]].forEach(([kaynak, o]) => {
-                if (!o) return;
-                o.konular.filter(id => konuEngelli(ayar, id)).forEach(id => sebepler.push({ tur: 'konu', id, kaynak }));
-                sebepler.push(...etiketSebepleri(ayar, o, kaynak));
-            });
-            return sonuc(sebepler.length ? 'engelle' : 'ac', sebepler);
+        // 3a) Her modda: kullanıcının engellediği kesinleşmiş etiket.
+        o.etiketler.filter(e => etiketEngelli(ayar, e)).forEach(id => sebepler.push({ tur: 'etiket', id, kaynak }));
+
+        // 3b) Kararsız konu/etiketler: Serbest -> hep izin; Orta -> ayar.kararsiz; Katı -> hep engelle.
+        //     "Engelle" demek: kararsız bir konu/etiket, kullanıcı onu zaten engelliyorsa kesinleşmiş gibi sayılır.
+        if (mod === 'kati' || (mod === 'orta' && ayar.kararsiz === 'engelle')) {
+            o.kararsizEtiketler.filter(e => etiketEngelli(ayar, e)).forEach(id => sebepler.push({ tur: 'kararsiz-etiket', id, kaynak }));
+            o.kararsizKonular.filter(c => konuEngelli(ayar, c)).forEach(id => sebepler.push({ tur: 'kararsiz-konu', id, kaynak }));
         }
 
-        // 4) Serbest / orta: konu izinli olmalı VE engelli etiket olmamalı.
-        //    Serbest: video veya kanalın HERHANGİ bir konusu izinli yeter.  Orta: yalnızca ANA konulara bakılır.
-        //    Etiketler: video incelenmişse video etiketleri (kanal etiketleri yok sayılır), değilse kanal etiketleri.
-        const konular = (o) => (!o ? [] : (mod === 'serbest' ? o.konular : [o.ana]));
-        const konuTamam = konular(v).some(id => konuIzinli(ayar, id)) || konular(k).some(id => konuIzinli(ayar, id));
-        const sebepler = v ? etiketSebepleri(ayar, v, 'video') : etiketSebepleri(ayar, k, 'kanal');
-        if (!konuTamam) sebepler.push({ tur: 'izinli-konu-yok' });
+        // 3c) Konu kuralları
+        if (mod === 'kati') {
+            // Herhangi bir (ana veya yan) konu engelliyse engelle.
+            o.konular.filter(c => konuEngelli(ayar, c)).forEach(id => sebepler.push({ tur: 'konu', id, kaynak }));
+        } else {
+            // Serbest: tüm konulara bakılır, biri izinliyse yeter (kararsız konu da "lehine" sayılır).
+            // Orta   : yalnızca ana konuya bakılır.
+            // Hiç kesin konu yoksa (yalnızca etiket/kararsız bilgi) konu kuralı uygulanmaz.
+            const bakilacak = mod === 'serbest' ? o.konular : (o.ana ? [o.ana] : []);
+            if (bakilacak.length) {
+                const tamam = bakilacak.some(c => konuIzinli(ayar, c)) || (mod === 'serbest' && o.kararsizKonular.length > 0);
+                if (!tamam) sebepler.push({ tur: 'izinli-konu-yok', kaynak });
+            }
+        }
+
         return sonuc(sebepler.length ? 'engelle' : 'ac', sebepler);
     }
 

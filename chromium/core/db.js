@@ -14,10 +14,13 @@
     const VIDEO_ID = /^[A-Za-z0-9_-]{11}$/;
     const HANDLE = /^@[A-Za-z0-9._-]+$/;
 
+    const dz = (x) => (Array.isArray(x) ? x : []);
     const kayitAl = (o) => ({
-        anaKonu: o.anaKonu,
-        yanKonular: Array.isArray(o.yanKonular) ? o.yanKonular : [],
-        etiketler: Array.isArray(o.etiketler) ? o.etiketler : []
+        anaKonu: o.anaKonu || null,
+        yanKonular: dz(o.yanKonular),
+        etiketler: dz(o.etiketler),
+        kararsizKonular: dz(o.kararsizKonular),
+        kararsizEtiketler: dz(o.kararsizEtiketler)
     });
 
     /**

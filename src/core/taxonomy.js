@@ -40,10 +40,20 @@
 
     const MODLAR = ['serbest', 'orta', 'kati'];
 
+    // Engellenen içeriğin görünümü: kaldir = tamamen gizle, bulaniklastir = bulanık, uyari = üstü uyarı sayfasıyla kapalı.
+    // Sertlik sırası (birden çok sebepte en sert kazanır): kaldir > uyari > bulaniklastir.
+    const ENGEL_EYLEMLERI = ['kaldir', 'uyari', 'bulaniklastir'];
+    const KARARSIZ_SECENEKLERI = ['izinver', 'engelle'];
+
     /**
      * Kullanıcı ayarlarının varsayılanı.
      * etiketlenmemis: null = kullanıcı henüz seçmedi (ilk açılışta sorulacak). Karar sırasında 'engelle' sayılır.
-     * engelEylemi: engellenen kartın nasıl gösterileceği ('kaldir' | 'bulaniklastir').
+     * engelEylemi: liste / etiketlenmemiş / "izinli konu yok" gibi konu-etiket dışı engellerin görünümü ('kaldir' | 'uyari' | 'bulaniklastir').
+     * konular[id]  : 'izinli' | 'kaldir' | 'uyari' | 'bulaniklastir'   (izinli değilse engelli; değer = engellenince nasıl görüneceği)
+     * etiketler[id]: aynı değerler.
+     * kanalKontrol : true = videoda veri yoksa kanalın konu/etiketine bakılır; false = doğrudan "bilinmeyen" sayılır.
+     * kararsiz     : 'izinver' | 'engelle'. Topluluk oylamasında sonuç çıkmamış (toplam 0) konu/etiketlerin Orta moddaki davranışı.
+     *                Serbest modda kararsızlara hep izin verilir; Katı modda hep engellenir (kullanıcının engellediği konu/etiketse).
      * rozetGoster: kartların üzerinde rozet gösterilsin mi.
      */
     function varsayilanAyar() {
@@ -58,6 +68,8 @@
             etiketler,
             etiketlenmemis: null,
             engelEylemi: 'kaldir',
+            kanalKontrol: true,
+            kararsiz: 'izinver',
             rozetGoster: true,
             listeler: { beyaz: {}, kara: {}, ozel: [] }
         };
@@ -77,19 +89,23 @@
         const c = varsayilanAyar();
 
         if (MODLAR.includes(a.mod)) c.mod = a.mod;
-        KONULAR.forEach(k => {
-            if (duzNesne(a.konular) && sahipMi(a.konular, k.id) && (a.konular[k.id] === 'izinli' || a.konular[k.id] === 'engelli')) c.konular[k.id] = a.konular[k.id];
-        });
         c.etiketlenmemis = (a.etiketlenmemis === 'ac' || a.etiketlenmemis === 'engelle') ? a.etiketlenmemis : null;
-        if (a.engelEylemi === 'bulaniklastir') c.engelEylemi = 'bulaniklastir';
-        // Etiket eylem değerleri: 'izinli' | 'bulaniklastir' | 'kaldir'
-        // Geriye uyum: eski 'engelli' değeri, genel engelEylemi'ne çevrilir (c.engelEylemi zaten yukarıda belirlendi).
-        const ETIKET_EYLEMLERI = ['izinli', 'bulaniklastir', 'kaldir'];
+        if (ENGEL_EYLEMLERI.includes(a.engelEylemi)) c.engelEylemi = a.engelEylemi;
+        if (typeof a.kanalKontrol === 'boolean') c.kanalKontrol = a.kanalKontrol;
+        if (KARARSIZ_SECENEKLERI.includes(a.kararsiz)) c.kararsiz = a.kararsiz;
+
+        // Konu / etiket değerleri: 'izinli' | 'kaldir' | 'uyari' | 'bulaniklastir'.
+        // Geriye uyum: eski 'engelli' değeri genel engelEylemi'ne çevrilir.
+        const degerCoz = (deger, varsayilan) => {
+            if (deger === 'engelli') return c.engelEylemi;
+            if (deger === 'izinli' || ENGEL_EYLEMLERI.includes(deger)) return deger;
+            return varsayilan;
+        };
+        KONULAR.forEach(k => {
+            if (duzNesne(a.konular) && sahipMi(a.konular, k.id)) c.konular[k.id] = degerCoz(a.konular[k.id], c.konular[k.id]);
+        });
         ETIKETLER.forEach(e => {
-            if (!duzNesne(a.etiketler) || !sahipMi(a.etiketler, e.id)) return;
-            let deger = a.etiketler[e.id];
-            if (deger === 'engelli') deger = c.engelEylemi; // eski model → genel eylemine çevir
-            if (ETIKET_EYLEMLERI.includes(deger)) c.etiketler[e.id] = deger;
+            if (duzNesne(a.etiketler) && sahipMi(a.etiketler, e.id)) c.etiketler[e.id] = degerCoz(a.etiketler[e.id], c.etiketler[e.id]);
         });
         if (typeof a.rozetGoster === 'boolean') c.rozetGoster = a.rozetGoster;
 
@@ -119,7 +135,13 @@
 
     /**
      * Bir video/kanal kaydını doğrular. Hata mesajlarının listesini döndürür (boş = geçerli).
-     * kayit: { anaKonu, yanKonular[], etiketler[] }
+     * kayit: { anaKonu?, yanKonular[], etiketler[], kararsizKonular[], kararsizEtiketler[] }
+     *
+     * Kurallar:
+     *  - Düzenleme sitesi her zaman bir ana konu girer; ancak topluluk oylamasında hiçbir konu pozitif çıkmayabilir.
+     *    Bu yüzden anaKonu burada isteğe bağlıdır. Yan konu varsa ana konu zorunludur.
+     *  - Kayıtta en az bir bilgi olmalı (ana konu, etiket ya da kararsız); tamamen boş kayıt "bilinmeyen"dir, kayıt sayılmaz.
+     *  - Bir konu/etiket hem kesin hem kararsız olamaz.
      */
     function kayitDogrula(kayit) {
         const hatalar = [];
@@ -127,22 +149,29 @@
         const etiketIdleri = ETIKETLER.map(e => e.id);
 
         if (!kayit || typeof kayit !== 'object') return ['Kayıt yok.'];
-        if (!kayit.anaKonu) hatalar.push('Ana konu zorunludur.');
-        else if (!konuIdleri.includes(kayit.anaKonu)) hatalar.push(`Bilinmeyen ana konu: ${kayit.anaKonu}`);
 
-        const yan = kayit.yanKonular === undefined ? [] : kayit.yanKonular;
-        if (!Array.isArray(yan)) hatalar.push('yanKonular liste olmalı.');
-        else {
-            yan.forEach(k => { if (!konuIdleri.includes(k)) hatalar.push(`Bilinmeyen yan konu: ${k}`); });
-            if (kayit.anaKonu && yan.includes(kayit.anaKonu)) hatalar.push('Ana konu yan konularda tekrar edilemez.');
+        const liste = (alan, idler, ad) => {
+            const v = kayit[alan] === undefined ? [] : kayit[alan];
+            if (!Array.isArray(v)) { hatalar.push(`${alan} liste olmalı.`); return []; }
+            v.forEach(x => { if (!idler.includes(x)) hatalar.push(`Bilinmeyen ${ad}: ${x}`); });
+            return v;
+        };
+
+        if (kayit.anaKonu && !konuIdleri.includes(kayit.anaKonu)) hatalar.push(`Bilinmeyen ana konu: ${kayit.anaKonu}`);
+        const yan = liste('yanKonular', konuIdleri, 'yan konu');
+        const et = liste('etiketler', etiketIdleri, 'etiket');
+        const kk = liste('kararsizKonular', konuIdleri, 'kararsız konu');
+        const ke = liste('kararsizEtiketler', etiketIdleri, 'kararsız etiket');
+
+        if (yan.length && !kayit.anaKonu) hatalar.push('Yan konu için ana konu gerekli.');
+        if (kayit.anaKonu && yan.includes(kayit.anaKonu)) hatalar.push('Ana konu yan konularda tekrar edilemez.');
+        if (kk.some(k => k === kayit.anaKonu || yan.includes(k))) hatalar.push('Bir konu hem kesin hem kararsız olamaz.');
+        if (ke.some(e => et.includes(e))) hatalar.push('Bir etiket hem kesin hem kararsız olamaz.');
+        if (!kayit.anaKonu && !et.length && !kk.length && !ke.length && !hatalar.length) {
+            hatalar.push('Kayıt boş: ana konu, etiket ya da kararsız bilgi gerekli.');
         }
-
-        const et = kayit.etiketler === undefined ? [] : kayit.etiketler;
-        if (!Array.isArray(et)) hatalar.push('etiketler liste olmalı.');
-        else et.forEach(e => { if (!etiketIdleri.includes(e)) hatalar.push(`Bilinmeyen etiket: ${e}`); });
-
         return hatalar;
     }
 
-    return { KONULAR, ETIKETLER, MODLAR, REZERVE_LISTE_ADLARI, varsayilanAyar, ayarTemizle, kayitDogrula };
+    return { KONULAR, ETIKETLER, MODLAR, ENGEL_EYLEMLERI, KARARSIZ_SECENEKLERI, REZERVE_LISTE_ADLARI, varsayilanAyar, ayarTemizle, kayitDogrula };
 });

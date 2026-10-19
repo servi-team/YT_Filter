@@ -919,3 +919,11 @@ input:checked + .slider:before {
 .item-tag-badge.badge-beyaz { background: var(--success-bg); color: var(--success); }
 .item-tag-badge.badge-kara { background: var(--danger-bg); color: var(--danger); }
 .kural-count { font-size: 12.5px; font-weight: 600; color: var(--text-primary); padding: 6px 0; }
+
+/* Konu / etiket başına engelleme biçimi menüsü */
+.konu-item { flex-wrap: wrap; }
+.konu-item .eylem-sec, .eylem-sec { font-size: 11px; padding: 4px 6px; max-width: 150px; }
+.konu-item .eylem-sec { flex: 1 1 100%; max-width: none; }
+.switch-item .eylem-sec { flex: 0 0 auto; width: 140px; }
+.ilk-secim-kart { outline: 2px solid var(--warning); outline-offset: 4px; }
+#kararsizAlani.pasif .segment-group { opacity: .45; pointer-events: none; }

@@ -98,7 +98,7 @@ function yeni(ayarKismi) {
 test('yeni model: eksik alanlar varsayılanla dolar', () => {
     const a = yeni({ mod: 'kati', konular: { spor: 'engelli' } });
     assert.strictEqual(a.mod, 'kati');
-    assert.strictEqual(a.konular.spor, 'engelli');
+    assert.strictEqual(a.konular.spor, 'kaldir', 'eski "engelli" genel eyleme (kaldir) çevrilir');
     assert.strictEqual(a.konular.oyun, 'izinli');
     // PR 5: varsayılan etiket değeri artık 'kaldir' (eski: 'engelli')
     assert.strictEqual(a.etiketler.kufur, 'kaldir');
@@ -179,7 +179,7 @@ test('ayarTemizle: bilinmeyen konu/etiket ve geçersiz değerler atılır, anaht
         listeler: { beyaz: { '@IYI': true, '@kotu': 'evet' }, kara: { abc: true }, ozel: [] }
     });
     assert.strictEqual(a.mod, 'kati');
-    assert.strictEqual(a.konular.spor, 'engelli');
+    assert.strictEqual(a.konular.spor, 'bulaniklastir', 'eski "engelli" genel eyleme çevrilir');
     assert.strictEqual(a.konular.oyun, 'izinli', 'geçersiz değer varsayılana döner');
     assert.ok(!('yok' in a.konular));
     assert.strictEqual(a.etiketler.kufur, 'izinli');

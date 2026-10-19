@@ -107,3 +107,24 @@ ytd-thumbnail, ytd-rich-grid-media, ytd-rich-item-renderer, ytd-video-renderer {
     color: #fff !important;
 }
 
+/* Uyarı sayfası eylemi: kartın üstünü sebebi yazan bir kapakla kapatır */
+.ytf-uyari-kapak {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 300 !important;
+    background: rgba(15, 15, 15, 0.94) !important;
+    color: #fff !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 12px !important;
+    text-align: center !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    cursor: not-allowed !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+.ytf-uyari-baslik { font-size: 14px !important; font-weight: 700 !important; }
+.ytf-uyari-sebep { font-size: 12px !important; color: #bbb !important; line-height: 1.4 !important; }

@@ -80,6 +80,18 @@
 
     <!-- Ana Arayüz (Giriş Yapılınca Açılır) -->
     <div id="anaArayuz" style="display: none;">
+        <!-- İlk kurulum: PIN seçimi (yeni kurulumlarda PIN önceden belirlenmez) -->
+        <div id="pinKurulumKarti" class="card ilk-secim-kart" style="display: none;">
+            <div class="card-title">👋 Hoş geldiniz! Bir PIN seçin</div>
+            <div class="card-desc">Ayarlarınızı başkalarının değiştirmesini önlemek için 4 haneli bir PIN belirleyin. Dilerseniz sonra Güvenlik sekmesinden de belirleyebilirsiniz.</div>
+            <div class="input-row">
+                <input type="password" id="kurulumPin" inputmode="numeric" maxlength="4" placeholder="_ _ _ _" aria-label="Yeni 4 haneli PIN">
+                <button id="btnKurulumPinKaydet" class="btn btn-primary">Kaydet</button>
+                <button id="btnKurulumPinAtla" class="btn">Şimdilik atla</button>
+            </div>
+            <div id="kurulumPinHata" class="segment-hint" style="display: none; color: var(--danger);">PIN tam 4 rakam olmalıdır.</div>
+        </div>
+
         <!-- İlk Girişte PIN Değiştirme Uyarısı -->
         <div id="pinDegistirUyarisi" class="warning-banner" style="display: none;">
             <div class="warning-banner-icon">
@@ -136,6 +148,26 @@
                     <span data-mod="kati">Katı</span>
                 </div>
                 <div id="lblModAciklama" class="mod-desc"></div>
+
+                <div class="switch-item" style="margin-top: 10px;">
+                    <div class="switch-label-group">
+                        <span class="switch-title">Kanalın konu ve etiketlerine de bak</span>
+                        <span class="switch-subtext">Videonun kendi kaydı yoksa kanalın kaydı kullanılır. Kapatırsanız kaydı olmayan videolar doğrudan "bilinmeyen" sayılır.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkKanalKontrol">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+
+                <div id="kararsizAlani" style="margin-top: 10px;">
+                    <div class="switch-title" style="margin-bottom: 6px;">Kararsızlar</div>
+                    <div class="segment-group" role="radiogroup" aria-label="Kararsız konu ve etiketler">
+                        <label class="segment"><input type="radio" name="kararsiz" value="izinver"><span>İzin ver</span></label>
+                        <label class="segment"><input type="radio" name="kararsiz" value="engelle"><span>Engelle</span></label>
+                    </div>
+                    <div id="lblKararsizIpucu" class="segment-hint"></div>
+                </div>
             </div>
 
             <!-- Etiketlenmemiş içerik -->
@@ -159,7 +191,7 @@
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
                     Konular
                 </div>
-                <div class="card-desc">Açık olan konulara izin verilir, kapalı olanlar engellenir.</div>
+                <div class="card-desc">Açık olan konulara izin verilir. Kapattığınız konu engellenir; nasıl engelleneceğini yanındaki menüden seçin.</div>
                 <div class="mini-actions">
                     <button id="btnKonuHepsiIzin" class="btn-link">Tümüne izin ver</button>
                     <button id="btnKonuHepsiEngel" class="btn-link">Tümünü engelle</button>
@@ -173,7 +205,7 @@
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
                     Etiketler
                 </div>
-                <div class="card-desc">Her etiket için ayrı eylem seçin: İzin ver, Bulanıklaştır veya Kaldır.</div>
+                <div class="card-desc">Etiketler uyarı niteliğindedir; engellemek zorunda değilsiniz. Her biri için izin verin ya da nasıl engelleneceğini seçin.</div>
                 <div id="etiketListe"></div>
             </div>
         </div>
@@ -304,12 +336,13 @@
 
                 <div class="switch-item">
                     <div class="switch-label-group">
-                        <span class="switch-title">Engellenen Videolar</span>
-                        <span class="switch-subtext">Tamamen kaldırın ya da küçük resmini bulanıklaştırın.</span>
+                        <span class="switch-title">Diğer Engeller</span>
+                        <span class="switch-subtext">Listeler ve "bilinmeyen" içerik için engelleme biçimi. Konu ve etiketler kendi biçimini seçer.</span>
                     </div>
                     <select id="selEngelEylemi" style="width: 130px;" aria-label="Engellenen video eylemi">
-                        <option value="kaldir">Tamamen kaldır</option>
+                        <option value="kaldir">Gizle</option>
                         <option value="bulaniklastir">Bulanıklaştır</option>
+                        <option value="uyari">Uyarı sayfası</option>
                     </select>
                 </div>
 

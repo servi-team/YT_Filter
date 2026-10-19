@@ -44,10 +44,11 @@ test('KATI: yan konu engelliyse de engeller', () => {
     assert.strictEqual(sonuc(a, A, BOS_KANAL), 'engelle', 'A: yan konu oyun engelli');
 });
 
-test('KATI: kanalın etiketi videoyu engeller', () => {
+test('KATI: video verisi varsa kanalın etiketi videoyu engellemez', () => {
     const a = ayarOlustur('kati');
     const k = kanal('UC' + 'y'.repeat(22), '@bahis', kayit('spor', [], ['kumar']));
-    assert.strictEqual(sonuc(a, B, k), 'engelle');
+    assert.strictEqual(sonuc(a, B, k), 'ac', 'video incelenmişse yalnızca video bakılır');
+    assert.strictEqual(sonuc(a, video('eeeeeeeeeee', null), k), 'engelle', 'video yoksa kanal etiketi engeller');
 });
 
 test('SERBEST: herhangi bir konu izinliyse açar, engelli etiket varsa engeller', () => {
@@ -91,10 +92,10 @@ test('ORTA: yalnızca ana konuya bakar', () => {
     assert.strictEqual(sonuc({ ...a, mod: 'serbest' }, A, BOS_KANAL), 'ac');
 });
 
-test('ORTA: kanal ana konusu izinliyse ve video etiketi yoksa açar; kanal etiketleri yok sayılır', () => {
+test('ORTA: video verisi varsa kanal yok sayılır (ana konu engelliyse engellenir)', () => {
     const a = ayarOlustur('orta', { konular: { teknoloji: 'engelli' } });
-    const k = kanal('UC' + 'z'.repeat(22), '@iyi', kayit('bilim', [], ['kumar'])); // kanal etiketi engelli ama video incelenmiş
-    assert.strictEqual(sonuc(a, A, k), 'ac');
+    const k = kanal('UC' + 'z'.repeat(22), '@iyi', kayit('bilim', [], ['kumar']));
+    assert.strictEqual(sonuc(a, A, k), 'engelle', 'A\'nın ana konusu teknoloji engelli; izinli kanal açmaz');
 });
 
 test('ORTA: video incelenmemişse kanal etiketi engelliyse engeller', () => {
@@ -103,7 +104,7 @@ test('ORTA: video incelenmemişse kanal etiketi engelliyse engeller', () => {
     assert.strictEqual(sonuc(a, video('fffffffffff', null), k), 'engelle');
 });
 
-test('ORTA: video incelenmemişse kanalın ana konusu da izinli olmalı (varsayım)', () => {
+test('ORTA: video incelenmemişse kanalın ana konusu engelliyse engeller', () => {
     const a = ayarOlustur('orta', { konular: { oyun: 'engelli' } });
     const k = kanal('UC' + 'z'.repeat(22), '@oyun', kayit('oyun', [], []));
     assert.strictEqual(sonuc(a, video('fffffffffff', null), k), 'engelle');

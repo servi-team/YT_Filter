@@ -1,14 +1,15 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-17 (PR 6 kodlandı, elle testte engelleme/banner tetiklenme sorunu inceleniyor)
+> Son güncelleme: 2026-10-19 (ekip liderinin tasarım dökümanı geldi; PR 6B ile karar algoritması ona uyduruldu; hızlı ekleme bandı PR 6C'ye ayrıldı)
+> **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
 
 Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket tabanlı** bir YouTube filtresi:
 
 1. **Eklenti:** içeriği veritabanındaki konu/etiket kayıtlarına ve kullanıcının politikasına göre filtreler (tamamen yerelde).
-2. **Düzenleme sitesi:** editörler kanal/video başına konu ve etiket girer; ziyaretçi güncel JSON'u indirir ve rapor gönderir.
+2. **Düzenleme sitesi ("YouTube Filter Store"):** editörler ve topluluk kanal/video başına konu ve etiketi **oylar**; site sonucu hesaplar; ziyaretçi güncel JSON'u indirir ve rapor gönderir.
 3. **Dağıtım:** veritabanı aylık güncellemelerle eklenti paketiyle gelir (Chrome Web Mağazası); Firefox desteği korunur.
 
 ## 2. Durum
@@ -16,79 +17,95 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | PR | Konu | Durum |
 |---|---|---|
 | 1 | Zemin: tek karar noktası, helper'a kanal ID'si, tanılama | ✅ tamam, doğrulandı |
-| 2 | Çekirdek: taxonomy / decision / migrate + testler | ✅ tamam, testler geçti |
-| 3 | Motoru eklentiye bağlama, `db.json` sözleşmesi, manifest | ✅ teslim edildi; testler geçti; **tarayıcıda davranış kontrolü bekliyor** |
-| 4 | Arayüz: Filtre sekmesi, listeler, ilk açılış seçimi, kalıcı geçiş | ✅ tamam, doğrulandı (turuncu kart, sekme 1-2) |
-| 5 | Çerçeve düzetmesi + etiket başına eylem | ✅ tamam, doğrulandı |
-| 6 | Engel sayfası (tam sayfa banner) | ⚠️ kodlandı (commit 0b2272b); elle testte tetiklenmeme sorunu inceleniyor |
+| 2 | Çekirdek: taxonomy / decision / migrate + testler | ✅ tamam |
+| 3 | Motoru eklentiye bağlama, `db.json` sözleşmesi, manifest | ✅ teslim edildi; **tarayıcıda davranış kontrolü bekliyor** |
+| 4 | Arayüz: Filtre sekmesi, listeler, ilk açılış seçimi, kalıcı geçiş | ✅ tamam, doğrulandı |
+| 5 | Çerçeve düzeltmesi + etiket başına eylem | ⚠️ **kısmen.** Etiket başına eylem ✅. **Eksik:** hızlı ekleme bandında karar+sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı (dosyalarda yok) → **PR 6C** |
+| 6 | Engel sayfası (tam sayfa banner) | ⚠️ kodlandı (0b2272b). jsdom'da çalışıyor; **gerçek tarayıcıda doğrulanmadı** (aşağıdaki test listesi) |
+| **6B** | **Lider dökümanına uyum:** video-yoksa-kanal, kanal kontrol ayarı, kararsız, konu/etiket başına eylem + Uyarı sayfası, kanal sayfası banner'ı, PIN seçimi, banner düzeltmeleri | ✅ **Node birim testleri yeşil (eski testler güncellendi); tarayıcıda denenmedi** |
+| **6C** | **Hızlı ekleme bandı: karar + sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı** | ⏳ sırada |
 | 7 | İçe/dışa aktarma: çakışma diyaloğu, veritabanı JSON'u içe aktarma | ⏳ |
 | 8 | Sağlamlaştırma ve mağaza hazırlığı | ⏳ |
-| S | Düzenleme sitesi | ⏳ (şema donduğu için paralel başlayabilir) |
+| S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir) |
 
-### PR 6 elle test listesi ve mevcut durum
-> **Mevcut Durum / Blokaj:** Kodlama ve birim testler (51 test) tamamlanıp commit edildi (`0b2272b`). Ancak tarayıcı testinde sayfaların normal yüklendiği ve banner/engellemenin hiç devreye girmediği bildirildi. Teşhis aşamasında: `content.js` içindeki eski şema kalıntıları (`hafiza.ayarlar`), `loadData` zamanlaması ve YouTube sekmesinde betiklerin yüklenme durumu araştırılıyor.
+### Önce yapılacak: PR 6 / 6B gerçek tarayıcı doğrulaması
+**Hazırlık:** `node scripts/build.js`, `chrome://extensions` → eklentiyi yenile, YouTube'u F5 ile yenile, **eski `chromium/` klasörü yüklü kalmasın.** Konsolu açıp **"YT Filter"** ile filtreleyin. Beklenen: sayfa başına bir `YT Filter: hazır {…}` ve her sayfa için `YT Filter: sayfa kararı …` satırı. (`typeof YTF` konsolda anlamsız; içerik betiği izole dünyada.)
 
-1. Engelli bir kanal/video sayfasına git — tam sayfa banner görünüyor mu?
-2. Banner'da sebep doğru yazıyor mu? (liste adı, konu, etiket)
-3. **Geri dön** butonu tarayıcı geçmişine dönüyor mu?
-4. **İstisna olarak beyaz listeye ekle** butonu tıklanınca sayfa anında açılıyor mu?
-5. Video izleme sayfasında da aynı banner çalışıyor mu?
+1. Kara listedeki **video** sayfası → tam sayfa banner (titremiyor).
+2. Kara listedeki **kanal** sayfası (`/@kanal`) → tam sayfa banner; kanal vitrini videosu duruyor.
+3. Banner'da sebep okunur yazıyor mu? ("Kara listede (video)", "Etiket: … (kanal)" vb.)
+4. **Geri dön** tarayıcı geçmişine dönüyor mu?
+5. **İstisna: Beyaz listeye ekle** → sayfa anında açılıyor mu?
+6. Ana sayfada kara listedeki kanalın kartı: *Gizle / Bulanıklaştır / Uyarı sayfası* üç ayarda doğru görünüyor mu?
+7. `docs/db.test-ornek-kararsiz.json`'u `src/data/db.json`'a koyup (derleyin) mod/kararsız/kanal kontrol ayarlarını deneyin (`DEVIR_NOTU` bölüm 7).
+8. Pop-up 430 px'te taşmıyor mu? (konu menüleri, kanal kontrol anahtarı, kararsız seçimi)
 
 ## 3. Mantık çerçevesi: üç katman
 
-**Sorun:** Hızlı ekleme düğmesi ve "Kanal/Video Ekle" alanı yalnızca beyaz/kara/özel liste sunuyor. Kullanıcı hep listeye ekleyerek ilerlerse konular ve etiketler hiç devreye girmiyor; sistemin asıl değeri (veritabanı) atlanıyor.
+**Sorun:** Hızlı ekleme düğmesi ve "Kanal/Video Ekle" alanı yalnızca beyaz/kara/özel liste sunuyor. Kullanıcı hep listeye ekleyerek ilerlerse konular ve etiketler hiç devreye girmiyor; sistemin asıl değeri (veritabanı) atlanıyor. Üstelik veritabanı boş ve site yok; kullanıcının konu/etiket atamasının hiçbir yolu yok.
 
 **Çözüm:** Listeler *asıl mekanizma değil, istisnadır*. Üç katman:
 
 | Katman | Kim belirler | Ne için | Nerede |
 |---|---|---|---|
-| **1. Kural** | Kullanıcı | Genel politika: mod, hangi konulara izin, hangi etiket engellenecek (ve nasıl) | **Filtre** sekmesi |
-| **2. Veri** | Editörler + raporlar | Hangi içerik hangi konu/etiketle işaretli | `db.json` (kullanıcı değiştiremez) |
+| **1. Kural** | Kullanıcı | Genel politika: mod, hangi konulara izin, hangi etiket engellenecek **ve nasıl (Gizle/Bulanıklaştır/Uyarı sayfası)**, kanal kontrolü, kararsız/bilinmeyen seçimi | **Filtre** sekmesi |
+| **2. Veri** | Editörler + topluluk oyları | Hangi içerik hangi konu/etiketle işaretli (ve hangisi kararsız) | `db.json` (kullanıcı değiştiremez) |
 | **3. İstisna** | Kullanıcı | Tek tek kanal/video için "kuralı yok say" | **Listeler** sekmesi, hızlı ekleme |
 
 **İlke:** *Önce kural çalışır. Liste, kuralın yanlış kaldığı yerde istisnadır; istisna her zaman kuralı geçer.*
 
-### Arayüze etkisi (PR 5)
-1. **Hızlı ekleme bandı önce kararı ve sebebini gösterir:** "Şu an: ENGELLENİYOR — Konu: Oyun (engelli)" / "Etiketlenmemiş içerik". Sonra istisna seçenekleri: **Her zaman izin ver / Her zaman engelle**. Bu, konu ve etiketleri kullanıcının gözü önüne geri getirir. (Pop-up, sayfadaki kanal/video bilgisini içerik betiğinden mesajla ister.)
+### Arayüze etkisi (PR 6C'de yapılacak)
+1. **Hızlı ekleme bandı önce kararı ve sebebini gösterir:** "Şu an: ENGELLENİYOR — Konu: Oyun (engelli)" / "Bilinmeyen içerik". Sonra istisna seçenekleri: **Her zaman izin ver / Her zaman engelle.** (Pop-up, sayfadaki kanal/video bilgisini içerik betiğinden mesajla ister; `content.js`'te `onMessage` dinleyicisi eklenecek.)
 2. **Yanlış etiket olabilir mi?** → "Bildir" düğmesi (site hazır olana kadar pasif/gizli). Veritabanının düzelmesi istisnadan daha kalıcı bir çözümdür.
 3. **Listeler sekmesi "İstisnalar"** diye adlandırılır; açıklaması "kuralları geçersiz kılar" der. Beyaz liste = "Her zaman izin ver", Kara liste = "Her zaman engelle". (Spec'teki adlar parantezle korunur.)
 4. **Çok istisna uyarısı:** liste ~50 kaydı geçerse "Çok istisnanız var; kuralları gözden geçirin veya yanlış etiketleri bildirin."
-5. Etiketlenmemiş içerikte kullanıcının elinde yalnızca istisna olduğu için orada beyaz liste doğal yoldur; bilgi metni bunu söyler.
+5. Bilinmeyen içerikte kullanıcının elinde yalnızca istisna olduğu için orada beyaz liste doğal yoldur; bilgi metni bunu söyler.
 
 ### Açık nokta: özel listelerin anlamı
-Spec özel listeler olduğunu ve adlarının benzersiz olması gerektiğini söylüyor; ne yaptıklarını söylemiyor. Şu an: beyaz/kara liste gücünde "istisna grubu" (eylem: engelle / izin ver).
-Alternatif: özel liste = kullanıcının **kendi konusu** (ör. "Ders kanalları"); kanalları ona ekler ve mod kurallarına tabi izinli/engelli olur.
-**Öneri:** şimdilik istisna grubu olarak kalsın (basit, anlaşılır, kural-katmanıyla çakışmaz); gerçek kullanım görülünce yeniden bakılır.
+Lider dökümanı özel listeleri anmıyor. Şu an: beyaz/kara liste gücünde "istisna grubu" (eylem: engelle / izin ver).
+Alternatif: özel liste = kullanıcının **kendi konusu** (ör. "Ders kanalları").
+**Öneri:** şimdilik istisna grubu olarak kalsın; gerçek kullanım görülünce yeniden bakılır.
 
 ## 4. Karar bekleyen konular
 
-### 4.1 Etiket başına eylem — ✅ KARAR VERİLDİ (PR 5)
-`ayar.etiketler[id]` ∈ `izinli | bulaniklastir | kaldir`. Konular ikili kaldı. En sert sebep kazanır. Eski `engelli` → `engelEylemi`'ne çevrilir. Konulara eylem verilmedi (hayır kararı). Bkz. `DEVIR_NOTU.md` bölüm 5, madde 11.
+### 4.1 Çözüldü
+- **Etiket/konu başına eylem** — ✅ KARAR VERİLDİ (lider dökümanı 3/C, PR 6B): `konular[id]` ve `etiketler[id]` ∈ `izinli | kaldir | uyari | bulaniklastir`. En sert sebep kazanır: kaldir > uyari > bulaniklastir. Liste/bilinmeyen kaynaklı engeller genel `engelEylemi`'ni kullanır. (Eski "konulara eylem yok" kararı geçersiz.)
+- **Orta modda incelenmemiş video** — ✅ lider: "video verisi yoksa kanala bak"; kanal ana konusunun da izinli olması ek şartı kalktı.
+- **Video+kanal birlikte mi, video-yoksa-kanal mı** — ✅ video-yoksa-kanal.
 
-### 4.2 Diğer
-- Orta modda incelenmemiş video: kanalın ana konusunun da izinli olması şartı (bugünkü varsayım) kalsın mı, spec'i harfiyen mi izleyelim?
-- Beyaz liste, veritabanındaki "kumar" etiketli kanalı bile açar (tasarım gereği "asla engellenmez"). Kabul mü, yoksa etiket-bazlı koruma ("ebeveyn kilidi") ayrı bir ayar mı olsun?
+### 4.2 Liderden teyit bekleyenler (`docs/SISTEM_TASARIMI.md` bölüm 6'daki ❓ maddeleri)
+Mevcut yorumla kodlandı; liderin cevabına göre tek satır değişir. Her biri için test var.
+
+1. **Ana konu ölçütü:** "en çok upvote" mu, **net puan** mı? (Örnek net puana uyuyor: Oyun 30 upvote ama ana konu Teknoloji +23.) *Site tarafı.*
+2. **Beraberlik:** "listedeki ilki" = `KONULAR` sırası mı? (Alternatif: önce upvote.) *Site tarafı.*
+3. **Kararsız = toplam 0 ve en az bir oy** (hiç oy almamış 0/0/0 kararsız sayılmaz). *Site tarafı.*
+4. **Serbest + kararsız konu:** kararsız konu "izinli konu" mu sayılsın (ana konusu engelli bir video açılır), yoksa yalnızca engellemesin mi? *Şu an: izinli konu sayılır.*
+5. **Orta "Kararsızlar: Engelle" anlamı:** kullanıcının zaten engellediği kararsız konu/etiket kesinleşmiş gibi mi sayılsın? *Şu an evet.*
+6. **Katı'da kararsızlar:** dökümanda yok. *Şu an: kullanıcının engellediği kararsız konu/etiket engeller.*
+7. **Asgari oy eşiği:** Argo +1 ile aktif etiket olup "her zaman engelle" kuralıyla videoyu engelletebiliyor. Eşik (örn. ≥3 oy) isteniyor mu? *Site tarafı.*
+8. **Beyaz liste ve etiket koruması:** Beyaz liste, veritabanındaki "kumar" etiketli kanalı bile açar (tasarım gereği "asla engellenmez"). Kabul mü, yoksa etiket-bazlı koruma ("ebeveyn kilidi") ayrı bir ayar mı olsun?
+
+### 4.3 Veri köprüsü — Talha'nın kararı gerekiyor
+Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli filtre" ve konu/etiket kuralları denenemiyor. İki yol:
+- **A) Siteyi öne al (S).** İstek listesine en sadık yol; tek geliştiriciyle uzun sürer. O zamana kadar `docs/db.test-ornek*.json` ile elle test.
+- **B) Köprü: eklentide küçük yerel düzenleyici.** Kullanıcı hızlı ekleme alanından bir kanalı/videoyu konu ve etikete atar; kayıtlar `db.json` ile aynı şemada `storage.local`'de tutulur ve veritabanı kaydını geçer (şema artık aynı: ana konu, yan konular, etiketler, kararsızlar). Site hazır olunca aynı şema sayesinde atıl kalmaz. İstek listesine ekleme sayılır.
+- **Öneri:** PR 6C ile birlikte B'nin tasarımına geçmek (`engine.icerikKarari`'nın veritabanı arama adımına yerel kayıtlar eklenir; `decision.js`'e dokunulmaz).
 
 ## 5. Yol haritası
 
-### PR 5 — Çerçeve düzeltmesi + etiket başına eylem
-- Şema: `etiketler` üç durumlu; `ayarTemizle` eski `engelli`'yi çevirir; `migrate` etkilenmez.
-- `engine.icerikKarari`: nihai eylem = en sert sebep; `rozetBilgisi` buna uyar.
-- `content.js`: kart/oynatıcı bazında kaldır ya da bulanıklaştır (izleme sayfasında bulanıklaştırma zaten var).
-- Arayüz: etiket satırlarında 3'lü seçim; "İstisnalar" adlandırması; hızlı ekleme bandında karar+sebep; çok-istisna uyarısı.
-- Pop-up ↔ içerik betiği mesajlaşması (aktif sayfanın video/kanal ID'si).
-- Testler: en sert sebep kuralı, eski `engelli` uyumu, rozet metinleri, arayüz smoke.
-- **Kabul:** "Şiddet = bulanık, Kumar = kaldır" ayarında karışık sayfada her kart doğru görünüyor; eski kullanıcı verisi bozulmuyor.
+### PR 6B — ✅ tamam (2026-10-19)
+`decision.js` yeniden yazıldı (kaynak seçimi, `kanalKontrol`, kararsız); şema: `konular/etiketler` eylem değerleri, `kanalKontrol`, `kararsiz`, `engelEylemi` ∋ `uyari`; `db.js`/`kayitDogrula` kararsız + ana konusuz kayıt; `engine.js` eylem çözümleme; `content.js` (kanal sayfası banner'ı, uyarı kapağı, yeniden çizim/yükleme/Firefox düzeltmeleri, günlük); arayüz (kanal kontrol, kararsız, konu/etiket menüsü, PIN kartı); `tests/karar-v2.test.js` (28). **Kabul:** `SISTEM_TASARIMI.md` bölüm 4 örnekleri testte geçiyor; eski kullanıcı verisi bozulmuyor. **Kalan:** gerçek tarayıcı doğrulaması (`DEVIR_NOTU` 6/#14). Eski testler 6B kurallarına uyduruldu.
 
-### PR 6 — Engel sayfası
-- Engelli kanal/video açılınca tam sayfa banner: "Bu şu sebeplerle engellendi: …" (sebepler: liste adı, konu, etiket).
-- Butonlar: **Geri dön**, **İstisna olarak beyaz listeye ekle** (içerik betiği doğrudan `storage`'a yazar).
-- Videolar için aynısı (izleme sayfasında oynatıcı yerine).
-- **Kabul:** kullanıcı her engelin sebebini görebiliyor; beyaz listeye ekleyince sayfa anında açılıyor.
+### PR 6C — Hızlı ekleme bandı ve istisna çerçevesi (PR 5'te eksik kalanlar)
+- `content.js`: `runtime.onMessage` — pop-up'a aktif sayfanın video/kanal ID'sini ve **kararını + sebeplerini** döndürür (`icerikKarari` zaten sebep listesi üretir).
+- Pop-up: hızlı ekleme bandı "Şu an: ENGELLENİYOR/AÇIK — sebep…" gösterir, sonra "Her zaman izin ver / Her zaman engelle".
+- Listeler sekmesi → "İstisnalar"; çok-istisna uyarısı (~50 kayıt); "Bildir" düğmesi (pasif).
+- Testler: mesajlaşma (jsdom), sebep metinleri.
+- **Kabul:** kullanıcı bir sayfada kararın neden verildiğini pop-up'ta görüyor; liste, kural yerine geçmiyor.
 
 ### PR 7 — İçe/dışa aktarma
-- Liste içe aktarırken ad çakışması: **üzerine yaz / yeniden adlandır / birleştir**.
-- Siteden indirilen `db.json`'u içe aktarma (`dbOverride`, `veriSurumu` kontrolü, hatalı kayıt sayısı gösterimi).
+- Liste içe aktarırken ad çakışması: **üzerine yaz / yeniden adlandır / birleştir.**
+- Siteden indirilen `db.json`'u içe aktarma (`dbOverride`, `veriSurumu` kontrolü, hatalı kayıt sayısı gösterimi; yeni `kararsiz*` alanları dahil).
 - Liste dışa aktarma (tek liste / hepsi).
 - **Kabul:** aynı adlı liste hiçbir yolla ikiye çıkmıyor; bozuk dosya veriyi bozmuyor.
 
@@ -96,16 +113,17 @@ Alternatif: özel liste = kullanıcının **kendi konusu** (ör. "Ders kanallar�
 - Manifest açıklaması düzelt ("otomatik senkronizasyon" yok), izinleri daralt (`google.com` ihtiyacı gözden geçir), Firefox `strict_min_version`/MAIN world testi.
 - Performans: `yt-navigate-finish` ile yoklamanın azaltılması; veritabanı önbelleği (büyürse); helper özniteliklerinin izlenmesi.
 - Kanal adı/avatarını kullanıcı listelerinde göstermek (kullanıcı eklerken sayfadan toplama).
-- Arayüz smoke testlerinin repoya alınması (`tests/smoke/`, jsdom devDependency).
+- **Arayüz ve içerik betiği smoke testlerinin repoya alınması** (`tests/smoke/`, jsdom devDependency) — PR 6B'de kullanılan harness'ler (`options.html`: 26 kontrol; `content.js`: banner/kart) temel alınır.
 - PIN: düz metin yerine karma saklama (hâlâ yalnızca arayüz kilidi olduğu belgelenir).
 - Mağaza: gizlilik metni, ekran görüntüleri, sürüm akışı.
 
-### Düzenleme sitesi (S) — `db.json` şeması dondu, paralel başlayabilir
+### Düzenleme sitesi ("YouTube Filter Store", S) — `db.json` şeması dondu, paralel başlayabilir
 - **S0 — Prototip (önce):** link yapıştırınca kanal adı/avatar/ID'nin API'siz alınması (video: `oembed`; kanal sayfası: HTML meta). Kırılganlık ölçülür.
 - **S1 — Teknoloji ve barındırma kararı** (C#/ASP.NET Core MVC aday; SQLite; Docker). Karar: Talha.
-- **S2 — İskelet:** admin/editör hesapları (admin elle ekler), giriş.
-- **S3 — Editör ekranı:** adres çubuğuna link → varsa mevcut konu/etiketler seçili gelir → 1 ana konu (zorunlu), yan konular, etiketler; mevcut kaydı tekrar eklemez.
-- **S4 — Dışa aktarma:** `docs/db-sema.md` sema 1 çıktısı; `veriSurumu` otomatik artar; eklentiye `db.json` olarak girer.
+- **S2 — İskelet:** admin/editör/ziyaretçi rolleri, giriş.
+- **S3 — Oylama ekranı:** adres çubuğuna link → ID/başlık otomatik → her konu ve etiket için **Upvote / Kararsız / Downvote** (lider dökümanı bölüm 5); mevcut oylar gösterilir.
+- **S3b — Sonuç hesabı (saf fonksiyon + test):** toplam = up − down (kararsız oylar hariç); >0 → ana/yan konu ya da etiket; =0 ve oy var → kararsız; <0 → yazılmaz; ana konu = en yüksek net puan, beraberlikte `KONULAR` sırası; hiç pozitif konu yoksa `anaKonu` yok. Kurallar ve ❓ maddeler `SISTEM_TASARIMI.md`'de; eşik kararı 4.2/#7.
+- **S4 — Dışa aktarma:** `docs/db-sema.md` sema 1 çıktısı (**`kararsizKonular`/`kararsizEtiketler` dahil**); `veriSurumu` otomatik artar; eklentiye `db.json` olarak girer.
 - **S5 — Ziyaretçi:** girişsiz JSON indirme; konu/etiket öneri-rapor formu.
 - **S6 — Yayın:** Docker, yedekleme, rapor kuyruğu.
 
@@ -114,12 +132,17 @@ Alternatif: özel liste = kullanıcının **kendi konusu** (ör. "Ders kanallar�
 | Risk | Etki | Önlem |
 |---|---|---|
 | YouTube kart yapısı değişir | Helper kanal/video ID'sini bulamaz | DOM link yedeği var; `__ytFilterDiag()`; derin arama |
-| Veritabanı boş/küçük başlar | Çoğu içerik "etiketlenmemiş" | İlk açılışta seçim + bilgilendirme; hızlı istisna; rapor akışı |
-| Çok istisna eklenir | Konu/etiket sistemi atlanır | Çerçeve (üç katman), uyarı, bildirim düğmesi |
-| Şema değişikliği geç gelir | Kullanıcı verisi geçişi pahalı | Şema kararlarını (4.1) PR 5'in başında kapat |
-| Tek geliştirici | Süreklilik | Bu belge, `DEVIR_NOTU.md`, testler |
+| Veritabanı boş/küçük başlar | Çoğu içerik "bilinmeyen" | İlk açılışta seçim + bilgilendirme; hızlı istisna; rapor akışı; **veri köprüsü kararı (4.3)** |
+| Çok istisna eklenir | Konu/etiket sistemi atlanır | Çerçeve (üç katman), uyarı (PR 6C), bildirim düğmesi |
+| Şema değişikliği geç gelir | Kullanıcı verisi geçişi pahalı | Şema kararları erken kapatıldı; yeni alanlar isteğe bağlı eklendi (sema 1 korunur) |
+| **Belge–kod uyuşmazlığı** | "Tamam" denen iş dosyada yok (PR 5 örneği) | Yüklenen dosyalar esastır; her PR sonunda ilgili davranışı jsdom/Node ile gösteren test; DEVIR_NOTU'nda "doğrulandı / doğrulanmadı" ayrımı |
+| **Liderin belirsiz bıraktığı kurallar** | Yanlış yorumla kodlanan davranış | `SISTEM_TASARIMI.md` bölüm 6 (❓ maddeler) + her yorum için test; teyit gelince tek satır değişir |
+| **Tek oyla etiket oluşması** | Yanlış/kötü niyetli oyla video engellenir | Asgari oy eşiği (4.2/#7); site tarafında yönetim |
+| **Gerçek tarayıcı doğrulaması eksik** | jsdom'da geçen kod YouTube'da çalışmayabilir | Yukarıdaki test listesi; `YT Filter:` günlükleri |
+| Tek geliştirici | Süreklilik | Bu belge, `DEVIR_NOTU.md`, `SISTEM_TASARIMI.md`, testler |
 
-## 7. Plan.md güncelleme düzeni
-- Her PR teslim edilince 2. bölüm (Durum) güncellenir.
+## 7. PLAN.md güncelleme düzeni
+- Her PR teslim edilince 2. bölüm (Durum) güncellenir; **doğrulanan ile doğrulanmayan ayrı yazılır.**
 - Bir karar verilince 4. bölümden çıkar, `DEVIR_NOTU.md` bölüm 5'e gerekçesiyle eklenir.
+- Lider dökümanı değişirse önce `docs/SISTEM_TASARIMI.md`, sonra kod ve testler güncellenir.
 - Yeni risk/iş çıkarsa 5. ve 6. bölüme eklenir.

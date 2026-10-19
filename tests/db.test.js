@@ -17,7 +17,7 @@ test('geçerli veritabanı indekslenir; kanal id ve handle (büyük/küçük har
     assert.strictEqual(db.kanalBul(null, '@trtspor').id, KID);
     assert.strictEqual(db.kanalBul(null, '@TRTSPOR').ad, 'TRT Spor');
     assert.strictEqual(db.kanalBul('UC' + 'z'.repeat(22), '@yok'), null);
-    assert.deepStrictEqual(db.videoBul('abcdefghijk'), { anaKonu: 'oyun', yanKonular: ['eglence'], etiketler: ['kufur'] });
+    assert.deepStrictEqual(db.videoBul('abcdefghijk'), { anaKonu: 'oyun', yanKonular: ['eglence'], etiketler: ['kufur'], kararsizKonular: [], kararsizEtiketler: [] });
     assert.strictEqual(db.videoBul('yokyokyokyo'), null);
 });
 

@@ -18,10 +18,23 @@ let aktifYouTubeIcerigi = null;
 
 const MODLAR = YTF.MODLAR;    // ['serbest', 'orta', 'kati']
 const MOD_BILGI = {
-    serbest: 'Videonun veya kanalın herhangi bir konusu izinliyse video açılır. Yalnızca engellediğiniz bir etiket (küfür, şiddet vb.) varsa engellenir.',
-    orta: 'Yalnızca ana konuya bakılır. Ana konu izinliyse ve video engellediğiniz bir etiketi taşımıyorsa video açılır.',
-    kati: 'Video veya kanalda engellediğiniz bir konu (yan konular dahil) ya da etiket varsa video engellenir.'
+    serbest: 'Videonun herhangi bir konusu izinliyse video açılır. Engellediğiniz bir etiket (küfür, şiddet vb.) varsa yine de engellenir. Kararsız kalan konu ve etiketlere izin verilir.',
+    orta: 'Yalnızca ana konuya bakılır. Ana konu izinliyse ve video engellediğiniz bir etiketi taşımıyorsa video açılır. Kararsızları aşağıdan siz seçersiniz.',
+    kati: 'Videonun ana veya yan konularından biri engelliyse ya da engellediğiniz bir etiketi varsa video engellenir. Kararsız konu ve etiketler de (engellediklerinizse) engellenir.'
 };
+const KARARSIZ_IPUCU = {
+    serbest: 'Serbest modda kararsız konu ve etiketlere her zaman izin verilir.',
+    orta: {
+        izinver: 'Topluluk oylamasında sonuç çıkmamış konu ve etiketler engellemez.',
+        engelle: 'Kararsız kalan bir konu ya da etiketi siz engelliyorsanız, o video da engellenir.'
+    },
+    kati: 'Katı modda kararsız konu ve etiketler (engellediklerinizse) her zaman engellenir.'
+};
+const EYLEM_SECENEKLERI = [
+    ['kaldir', 'Gizle'],
+    ['bulaniklastir', 'Bulanıklaştır'],
+    ['uyari', 'Uyarı sayfası']
+];
 const ETIKETLENMEMIS_IPUCU = {
     null: 'Henüz seçmediniz. Siz seçene kadar etiketlenmemiş içerikler engellenir.',
     ac: 'Veritabanında olmayan kanal ve videolar normal şekilde açılır.',
@@ -156,6 +169,12 @@ function kilidiAc() {
     }
     const pinIpucu = document.getElementById('pinVarsayilanIpucu');
     if (pinIpucu) pinIpucu.style.display = 'none';
+
+    // Yeni kurulumda PIN henüz seçilmediyse seçim kartını göster
+    const kurulumKarti = document.getElementById('pinKurulumKarti');
+    if (kurulumKarti) {
+        kurulumKarti.style.display = (!mevcutVeri.pinKodu && !mevcutVeri.pinKurulumAtlandi) ? 'block' : 'none';
+    }
 
     // PIN hala 1234 ise uyarı banner'ını göster
     const uyariBanner = document.getElementById('pinDegistirUyarisi');
@@ -466,12 +485,25 @@ function renderMod() {
     const indeks = Math.max(0, MODLAR.indexOf(ayar.mod));
     document.getElementById('sliderMod').value = String(indeks);
     modAciklamasiniGuncelle(indeks);
+    document.getElementById('chkKanalKontrol').checked = ayar.kanalKontrol !== false;
+    document.querySelectorAll('input[name="kararsiz"]').forEach(r => { r.checked = (r.value === ayar.kararsiz); });
+    kararsizAlaniniGuncelle(indeks);
+}
+
+// Kararsız seçeneği yalnızca Orta modda değiştirilebilir; diğer modlarda sabit davranış açıklanır.
+function kararsizAlaniniGuncelle(indeks) {
+    const mod = MODLAR[indeks] || 'orta';
+    const alan = document.getElementById('kararsizAlani');
+    alan.classList.toggle('pasif', mod !== 'orta');
+    const ipucu = mod === 'orta' ? KARARSIZ_IPUCU.orta[ayar.kararsiz === 'engelle' ? 'engelle' : 'izinver'] : KARARSIZ_IPUCU[mod];
+    document.getElementById('lblKararsizIpucu').textContent = ipucu;
 }
 
 function modAciklamasiniGuncelle(indeks) {
     const mod = MODLAR[indeks] || 'orta';
     document.getElementById('lblModAciklama').textContent = MOD_BILGI[mod];
     document.querySelectorAll('#modEtiketleri span').forEach(s => s.classList.toggle('active', s.getAttribute('data-mod') === mod));
+    kararsizAlaniniGuncelle(indeks);
 }
 
 function renderEtiketlenmemis() {
@@ -479,6 +511,20 @@ function renderEtiketlenmemis() {
     document.getElementById('lblEtiketlenmemisIpucu').textContent = ETIKETLENMEMIS_IPUCU[ayar.etiketlenmemis];
     document.getElementById('kartEtiketlenmemis').classList.toggle('ilk-secim', ayar.etiketlenmemis === null);
 }
+
+// Engelleme biçimi menüsü (Gizle / Bulanıklaştır / Uyarı sayfası). Değer: 'kaldir' | 'bulaniklastir' | 'uyari'.
+function eylemMenusu(etiketAdi, deger, degisince, izinSecenegiVar) {
+    const sec = el('select', 'eylem-sec');
+    sec.setAttribute('aria-label', etiketAdi + ' engelleme biçimi');
+    if (izinSecenegiVar) sec.appendChild(new Option('İzin ver', 'izinli'));
+    EYLEM_SECENEKLERI.forEach(([v, ad]) => sec.appendChild(new Option(ad, v)));
+    sec.value = deger;
+    sec.addEventListener('change', () => degisince(sec.value));
+    return sec;
+}
+
+const eylemAdi = (v) => (EYLEM_SECENEKLERI.find(x => x[0] === v) || [v, v])[1].toLowerCase();
+const konuEngelliMi = (id) => !!ayar.konular[id] && ayar.konular[id] !== 'izinli';
 
 function renderKonular() {
     const izgara = document.getElementById('konuGrid');
@@ -490,15 +536,23 @@ function renderKonular() {
         const anahtar = el('label', 'switch');
         const kutu = el('input');
         kutu.type = 'checkbox';
-        kutu.checked = ayar.konular[konu.id] !== 'engelli';
+        kutu.checked = !konuEngelliMi(konu.id);
         kutu.setAttribute('aria-label', konu.ad);
         kutu.addEventListener('change', async () => {
-            ayar.konular[konu.id] = kutu.checked ? 'izinli' : 'engelli';
+            ayar.konular[konu.id] = kutu.checked ? 'izinli' : ayar.engelEylemi;
             await ayarKaydet();
-            showToast(`${konu.ad}: ${kutu.checked ? 'izinli' : 'engelli'}`);
+            renderKonular();
+            showToast(`${konu.ad}: ${kutu.checked ? 'izinli' : 'engelli (' + eylemAdi(ayar.konular[konu.id]) + ')'}`);
         });
         anahtar.append(kutu, el('span', 'slider'));
         oge.appendChild(anahtar);
+        if (konuEngelliMi(konu.id)) {
+            oge.appendChild(eylemMenusu(konu.ad, ayar.konular[konu.id], async (v) => {
+                ayar.konular[konu.id] = v;
+                await ayarKaydet();
+                showToast(`${konu.ad}: ${eylemAdi(v)}`);
+            }, false));
+        }
         izgara.appendChild(oge);
     });
 }
@@ -510,46 +564,20 @@ function renderEtiketler() {
         const oge = el('div', 'switch-item');
         const grup = el('div', 'switch-label-group');
         grup.append(el('span', 'switch-title', etiket.ad), el('span', 'switch-subtext', etiket.aciklama));
-
-        // 3'lü segment kontrolü: İzin ver / Bulanıklaştır / Kaldır
-        const segGrup = el('div', 'segment-group etiket-segment-group');
-        segGrup.setAttribute('role', 'radiogroup');
-        segGrup.setAttribute('aria-label', etiket.ad + ' eylemi');
-
-        const secenekler = [
-            ['izinli',       'İzin ver'],
-            ['bulaniklastir','Bulanıklaştır'],
-            ['kaldir',       'Kaldır']
-        ];
-        const guncelDeger = () => ayar.etiketler[etiket.id] || 'kaldir';
-
-        secenekler.forEach(([deger, etiketMetni]) => {
-            const lbl = el('label', 'segment');
-            const radio = el('input');
-            radio.type = 'radio';
-            radio.name = 'etiket-' + etiket.id;
-            radio.value = deger;
-            radio.checked = (guncelDeger() === deger);
-            radio.setAttribute('aria-label', etiket.ad + ': ' + etiketMetni);
-            radio.addEventListener('change', async () => {
-                if (!radio.checked) return;
-                ayar.etiketler[etiket.id] = deger;
-                await ayarKaydet();
-                const toastMesaj = deger === 'izinli' ? 'izin veriliyor' : deger === 'bulaniklastir' ? 'bulanıklaştırılıyor' : 'kaldırılıyor';
-                showToast(`${etiket.ad}: ${toastMesaj}`);
-            });
-            const span = el('span', '', etiketMetni);
-            lbl.append(radio, span);
-            segGrup.appendChild(lbl);
-        });
-
-        oge.append(grup, segGrup);
+        const deger = ayar.etiketler[etiket.id] || 'kaldir';
+        const menu = eylemMenusu(etiket.ad, deger, async (v) => {
+            ayar.etiketler[etiket.id] = v;
+            await ayarKaydet();
+            showToast(`${etiket.ad}: ${v === 'izinli' ? 'izin veriliyor' : eylemAdi(v)}`);
+        }, true);
+        oge.append(grup, menu);
         liste.appendChild(oge);
     });
 }
 
 function tumKonulariAyarla(deger) {
-    YTF.KONULAR.forEach(k => { ayar.konular[k.id] = deger; });
+    // 'engelli' -> genel engelleme biçimi (Görünüm sekmesi); her konu sonradan kendi biçimini seçebilir
+    YTF.KONULAR.forEach(k => { ayar.konular[k.id] = deger === 'izinli' ? 'izinli' : ayar.engelEylemi; });
     renderKonular();
     return ayarKaydet().then(() => showToast(deger === 'izinli' ? 'Tüm konulara izin verildi' : 'Tüm konular engellendi'));
 }
@@ -562,7 +590,7 @@ function arayuzuDoldur() {
     document.getElementById('chkOtomatikOynatma').checked = mevcutVeri.ayarlar.otomatikOynatmaKapat || false;
     document.getElementById('chkPinIptal').checked = mevcutVeri.ayarlar.pinIptal || false;
     document.getElementById('chkRozetGoster').checked = ayar.rozetGoster !== false;
-    document.getElementById('selEngelEylemi').value = ayar.engelEylemi === 'bulaniklastir' ? 'bulaniklastir' : 'kaldir';
+    document.getElementById('selEngelEylemi').value = YTF.ENGEL_EYLEMLERI.includes(ayar.engelEylemi) ? ayar.engelEylemi : 'kaldir';
 
     renderFiltreSekmesi();
     renderListeler();
@@ -627,6 +655,45 @@ function initEvents() {
             renderEtiketlenmemis();
             showToast('Seçiminiz kaydedildi');
         });
+    });
+
+    // Kanal kontrol ayarı
+    document.getElementById('chkKanalKontrol').addEventListener('change', async (e) => {
+        ayar.kanalKontrol = e.target.checked;
+        await ayarKaydet();
+        showToast(ayar.kanalKontrol ? 'Kanalın konu ve etiketlerine de bakılacak' : 'Yalnızca videonun kendi kaydına bakılacak');
+    });
+
+    // Kararsızlar (Orta mod)
+    document.querySelectorAll('input[name="kararsiz"]').forEach(r => {
+        r.addEventListener('change', async () => {
+            if (!r.checked) return;
+            ayar.kararsiz = r.value === 'engelle' ? 'engelle' : 'izinver';
+            await ayarKaydet();
+            kararsizAlaniniGuncelle(Math.max(0, MODLAR.indexOf(ayar.mod)));
+            showToast('Seçiminiz kaydedildi');
+        });
+    });
+
+    // İlk kurulum PIN kartı
+    document.getElementById('btnKurulumPinKaydet').addEventListener('click', async () => {
+        const pin = document.getElementById('kurulumPin').value.trim();
+        if (!/^\d{4}$/.test(pin)) {
+            document.getElementById('kurulumPinHata').style.display = 'block';
+            return;
+        }
+        mevcutVeri.pinKodu = pin;
+        mevcutVeri.pinDegistirildi = true;
+        mevcutVeri.ilkGirisYapildi = true;
+        await setStorageData({ pinKodu: pin, pinDegistirildi: true, ilkGirisYapildi: true });
+        document.getElementById('pinKurulumKarti').style.display = 'none';
+        document.getElementById('btnPinKilitle').style.display = 'flex';
+        showToast('PIN kaydedildi');
+    });
+    document.getElementById('btnKurulumPinAtla').addEventListener('click', async () => {
+        mevcutVeri.pinKurulumAtlandi = true;
+        await setStorageData({ pinKurulumAtlandi: true });
+        document.getElementById('pinKurulumKarti').style.display = 'none';
     });
 
     document.getElementById('btnKonuHepsiIzin').addEventListener('click', () => tumKonulariAyarla('izinli'));
@@ -826,7 +893,8 @@ async function kaydetTumAyarlar(bildirimVer = true) {
         koyuTema: document.body.classList.contains('dark-theme')
     };
     ayar.rozetGoster = document.getElementById('chkRozetGoster').checked;
-    ayar.engelEylemi = document.getElementById('selEngelEylemi').value === 'bulaniklastir' ? 'bulaniklastir' : 'kaldir';
+    const secilenEylem = document.getElementById('selEngelEylemi').value;
+    ayar.engelEylemi = YTF.ENGEL_EYLEMLERI.includes(secilenEylem) ? secilenEylem : 'kaldir';
     mevcutVeri.ayar = ayar;
 
     await setStorageData({

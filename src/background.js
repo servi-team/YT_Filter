@@ -29,7 +29,7 @@ browserAPI.runtime.onInstalled.addListener((details) => {
 
         const varsayilanVeriler = {
             kurulumTarihi: tarihSaat,
-            pinKodu: "1234",
+            pinKodu: "", // Yeni kurulumda PIN seçimini kullanıcı ilk açılışta yapar (options.js, "Hoş geldiniz" kartı)
             ...modelVerisi,
             ayarlar: {
                 shortsGizle: true,

@@ -37,23 +37,21 @@
             { id: girdi.channelId || (k && k.id) || null, handle: girdi.handle || (k && k.handle) || null, kayit: k ? k.kayit : null }
         );
 
-        // Nihai eylem: en sert sebep kazanır (kaldir > bulaniklastir).
-        // Etiket kaynaklı sebep → etiket-özgü eylem (ayar.etiketler[id]).
-        // Konu / liste / etiketlenmemiş kaynaklı sebep → genel engelEylemi.
-        let engelEylemi = 'kaldir';
+        // Nihai eylem: en sert sebep kazanır (kaldir > uyari > bulaniklastir).
+        // Konu / etiket (ve kararsız konu/etiket) kaynaklı sebep -> o konu/etiketin kendi eylemi.
+        // Liste / etiketlenmemiş / izinli-konu-yok kaynaklı sebep -> genel engelEylemi.
+        const genel = T.ENGEL_EYLEMLERI.includes(ayar.engelEylemi) ? ayar.engelEylemi : 'kaldir';
+        const SERT = { kaldir: 3, uyari: 2, bulaniklastir: 1 };
+        const eylemOku = (deger) => (T.ENGEL_EYLEMLERI.includes(deger) ? deger : genel); // 'engelli'/eksik -> genel
+        let engelEylemi = genel;
         if (sonuc.karar === 'engelle') {
-            const genel = ayar.engelEylemi === 'bulaniklastir' ? 'bulaniklastir' : 'kaldir';
             let enSert = null;
             for (const sebep of (sonuc.sebepler || [])) {
-                let eylem;
-                if (sebep.tur === 'etiket') {
-                    const ed = ayar.etiketler && ayar.etiketler[sebep.id];
-                    eylem = (ed === 'bulaniklastir') ? 'bulaniklastir' : 'kaldir';
-                } else {
-                    eylem = genel;
-                }
-                if (eylem === 'kaldir') { enSert = 'kaldir'; break; } // en sert, dur
-                if (eylem === 'bulaniklastir') enSert = 'bulaniklastir';
+                let eylem = genel;
+                if (sebep.tur === 'etiket' || sebep.tur === 'kararsiz-etiket') eylem = eylemOku(ayar.etiketler && ayar.etiketler[sebep.id]);
+                else if (sebep.tur === 'konu' || sebep.tur === 'kararsiz-konu') eylem = eylemOku(ayar.konular && ayar.konular[sebep.id]);
+                if (!enSert || SERT[eylem] > SERT[enSert]) enSert = eylem;
+                if (enSert === 'kaldir') break;
             }
             engelEylemi = enSert || genel;
         }
@@ -86,6 +84,8 @@
             case 'etiketlenmemis': return { metin: 'Etiketlenmemiş', sinif: 'untagged' };
             case 'etiket': return { metin: etiketAdi(s.id), sinif: 'profanity' };
             case 'konu': return { metin: konuAdi(s.id), sinif: 'warning' };
+            case 'kararsiz-etiket': return { metin: etiketAdi(s.id) + ' (kararsız)', sinif: 'profanity' };
+            case 'kararsiz-konu': return { metin: konuAdi(s.id) + ' (kararsız)', sinif: 'warning' };
             case 'izinli-konu-yok': return { metin: 'Konu izinli değil', sinif: 'warning' };
             default: return null;
         }
