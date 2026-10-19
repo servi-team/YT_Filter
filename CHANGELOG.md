@@ -5,8 +5,18 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 ## [Yayınlanmamış] — 2.0 geliştirme dalı
 
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
-PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)** ve **PR 7 (içe/dışa aktarma, 2026-10-19)** kodlandı.
-PR 6, 6B, 6C ve 7 **Node birim testleriyle doğrulandı** (6B/6C arayüzü ayrıca jsdom ile denendi); **gerçek tarayıcıda henüz denenmedi.**
+PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)** ve **PR 8A (manifest sertleştirmesi, 2026-10-19)** kodlandı.
+PR 6, 6B, 6C, 7 ve 8A **Node birim testleriyle doğrulandı** (6B/6C arayüzü ayrıca jsdom ile denendi); **gerçek tarayıcıda henüz denenmedi.**
+
+### PR 8A — Manifest sertleştirmesi (2026-10-19)
+
+#### Kullanıcıya görünen değişiklikler
+- **Mağaza açıklaması** gerçek özellikleri anlatıyor; "video etiketleme" ve olmayan "otomatik senkronizasyon" ifadeleri kaldırıldı.
+- **Gereksiz izinler kaldırıldı:** `google.com` / `google.com.tr` host izni ve içerik betiği eşleşmeleri silindi (kod hiç kullanmıyordu). Eklenti artık yalnızca YouTube'da çalışır.
+- **Sürüm uyumu:** Firefox en düşük sürüm **128** (MAIN world desteği), Chromium en düşük sürüm **111**.
+
+#### Eklendi (geliştiriciler için)
+- **`tests/manifest.test.js`:** 2 test — açıklama/izin kontrolü ve sürüm/içerik betiği sırası kontrolü. Toplam **96 test** yeşil.
 
 ### PR 7 — İçe/dışa aktarma (2026-10-19)
 
@@ -19,7 +29,7 @@ PR 6, 6B, 6C ve 7 **Node birim testleriyle doğrulandı** (6B/6C arayüzü ayrı
 #### Eklendi (geliştiriciler için)
 - **`src/core/listeler.js` (yeni, saf):** `listePaketiOlustur(ayar, secim)`, `listePaketiCoz(json)` (liste paketi + tam yedek biçimi; üye/liste adı doğrulaması, TR-duyarsız yinelenen ad birleştirme), `listeleriBirlestir(mevcut, gelen, strateji)` (`birlestir | uzerine | yeniden`; mevcut nesneyi değiştirmez, anahtarın tek listede kalmasını sağlar).
 - **`options.js`:** dosya indirme yardımcısı `jsonIndir`, `removeStorageData`; liste paketi dışa/içe aktarma, çakışma modalı; `dbOverride` içe aktarma/sıfırlama ve `renderDbDurumu`; `veriTabaniniYukle` artık paketli + override seçimini raporluyor.
-- **`tests/pr7.test.js`:** 12 test (paket oluşturma, temizleme, bozuk girdi, tam yedek, üç birleştirme stratejisi, liste taşıma, TR-duyarsız benzersiz ad). Toplam **94 test** yeşil.
+- **`tests/pr7.test.js`:** 12 test (paket oluşturma, temizleme, bozuk girdi, tam yedek, üç birleştirme stratejisi, liste taşıma, TR-duyarsız benzersiz ad). PR 7 sonunda toplam 94 test yeşildi (PR 8A ile 96).
 
 ### PR 6C — Hızlı ekleme bandı ve istisna çerçevesi (2026-10-19)
 PR 5'te planlanıp dosyalarda bulunmayan dört parça tamamlandı.
@@ -131,19 +141,18 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Bilinen sınırlar (henüz yapılmadı / çözülüyor)
 - **Veritabanı neredeyse boş ve düzenleme sitesi yok:** çoğu içerik "bilinmeyen" kalıyor; konu/etiket kuralları test verisi veya PR 7'deki `db.json` içe aktarma ile görülebilir.
-- **PR 6, 6B, 6C ve 7 gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü.
-- **Birim testleri** `node --test` ile yeşil (**94 test**).
+- **PR 6, 6B, 6C, 7 ve 8A gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi.
+- **Birim testleri** `node --test` ile yeşil (**96 test**).
 - **Hızlı ekleme bandının mesajlaşması** gerçek pop-up'ta denenmedi; içerik betiği yoksa URL yedeği kullanılır.
 - **Lider onayı bekleyen yorumlar:** ana konu ölçütü (net puan mı upvote mu), beraberlikte sıra, Serbest'te kararsız konu, Orta/Katı'da kararsız "engelle" anlamı, asgari oy eşiği — `docs/SISTEM_TASARIMI.md` bölüm 6.
 - **Tam yedek içe aktarma** hâlâ mevcut ayarların üzerine yazar (onay sorar); liste içe aktarma ise birleştirir/çakışma sorar.
 - Düzenleme sitesi ve oylama sistemi.
 - İzleme sayfasında kanal ID'si yok (yalnızca handle ile eşleşir).
 - Listelerde yalnızca veritabanında kayıtlı kanalların adı görünür; avatar yok.
-- Manifest açıklaması hâlâ "otomatik senkronizasyon" diyor (böyle bir özellik yok); `google.com` host izni geniş.
 - 5 sekmenin 430 px içinde sığması (yeni kontroller sonrası dahil) gerçek tarayıcıda doğrulanmadı.
 
 ### Geliştirici notları
 - **Derleme:** `node scripts/build.js` → `chromium/` ve `firefox/`. Tarayıcıya bu klasörler yüklenir; kaynak `src/`'dir. **Her değişiklikten sonra yeniden derleyin.**
-- **Test:** `node --test` (Node 18+; klasör yolu vermeyin) — 94 test. Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`. Arayüz ve içerik betiği jsdom + sahte `chrome.*` ile denendi; bu harness henüz repoda değil.
+- **Test:** `node --test` (Node 18+; klasör yolu vermeyin) — 96 test. Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`. Arayüz ve içerik betiği jsdom + sahte `chrome.*` ile denendi; bu harness henüz repoda değil.
 - **Uyumluluk:** eski yedek dosyaları yeni sürümde içe aktarılabilir; yeni yedekler eski sürümde **çalışmaz.** Yeni `db.json` alanları isteğe bağlıdır; ancak ana konusuz kayıtları eski eklenti sürümleri atlar.
 - **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `docs/DEVIR_NOTU.md`, plan: `PLAN.md`.

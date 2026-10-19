@@ -1,9 +1,11 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-19 (PR 7) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-19 (PR 8A) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
 
+> **PR 8A özeti (2026-10-19):** Manifest sertleştirildi. Mağaza açıklaması gerçek özellikleri anlatıyor ("video etiketleme"/"otomatik senkronizasyon" kaldırıldı); kullanılmayan `google.com`/`google.com.tr` host izni ve içerik betiği eşleşmeleri silindi; Firefox `strict_min_version` **128** (MAIN world desteği), Chromium `minimum_chrome_version` **111**. `tests/manifest.test.js` (2 test) bu kararları koruyor; toplam **96 test** yeşil. **Tarayıcıda yalnızca yeniden yükleme denemesi kaldı.**
+>
 > **PR 7 özeti (2026-10-19):** İçe/dışa aktarma tamamlandı. İstisnalar sekmesinde **tek liste veya tüm listeler** JSON olarak indirilebilir; içe aktarmada özel liste adı çakışırsa **Birleştir / Üzerine yaz / Yeniden adlandır** seçilir (varsayılan birleştir; yeniden adlandır `Ad (2)` üretir). Yedek sekmesinde **`db.json` içe aktarma** var: `sema` ve `veriSurumu` doğrulanır, geçersiz kayıt sayısı gösterilir, daha eski/eşit sürüm uyarısı verilir, `storage.local.dbOverride` olarak saklanır ve "Paketli veritabanına dön" ile kaldırılır. `core/listeler.js` saf modül + `tests/pr7.test.js` (12 test); toplam **94 test** yeşil. **Tarayıcıda denenmedi.**
 >
 > **PR 6C özeti (2026-10-19):** PR 5'te eksik kalan parçalar tamamlandı: hızlı ekleme bandı artık **"Şu an: ENGELLENİYOR/AÇIK" + sebep** gösteriyor (karar pop-up'ta içerik betiğine sorulur, olmazsa URL'den hesaplanır); düğmeler **"Her zaman izin ver / Her zaman engelle"**; Listeler sekmesi **İstisnalar** oldu; ~50 kayıtta çok-istisna uyarısı çıkıyor; "Bildir" düğmesi site hazır olana kadar gizli/pasif. `node --test` yeşil (82 test). **Tarayıcıda denenmedi.**
@@ -106,9 +108,9 @@ src/
     engine.js          ayarCoz, icerikKarari (db araması+karar+eylem çözümleme), rozetBilgisi,
                        sebepMetni / kararOzeti (hızlı bant), istisnaSayisi + ISTISNA_UYARI_ESIGI
   data/db.json         paketle gelen veritabanı (şimdilik yalnızca bir örnek kanal)
-manifests/             manifest.chromium.json, manifest.firefox.json
+manifests/             manifest.chromium.json, manifest.firefox.json (yalnızca youtube.com; Chrome >= 111, Firefox >= 128)
 scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır)
-tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 (Node'un yerleşik test koşucusu)
+tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 + manifest (Node'un yerleşik test koşucusu)
 docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözleşme), db.test-ornek.json,
                        db.test-ornek-kararsiz.json, DEVIR_NOTU.md
 ```
@@ -190,6 +192,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 6B | **Lider dökümanına uyum** (2026-10-19): video-yoksa-kanal kaynak seçimi, `kanalKontrol`, kararsız (şema+karar+arayüz), konu/etiket başına eylem + "Uyarı sayfası", kanal sayfası banner'ı, ilk açılışta PIN seçimi, banner/`content.js` düzeltmeleri; `tests/karar-v2.test.js` (28 test) + jsdom arayüz (26 kontrol) ve içerik betiği denemeleri | ✅ **Node/jsdom'da doğrulandı; tarayıcıda denenmedi.** Eski birim testleri yeni kurala uyduruldu (6/#15) |
 | 6C | **Hızlı ekleme bandı + istisna çerçevesi** (2026-10-19): `content.js`'te `sayfaDurumu` mesajı; pop-up önce içerik betiğine sorar, olmazsa URL'den hesaplar; bantta karar+sebep; "Her zaman izin ver / Her zaman engelle"; Listeler → **İstisnalar**; ~50 kayıtta uyarı; "Bildir" gizli/pasif; `tests/pr6c.test.js` (3 test) | ✅ `node --test` yeşil (82 test); **gerçek pop-up'ta denenmedi** |
 | 7 | **İçe/dışa aktarma** (2026-10-19): `core/listeler.js` (paket oluştur/çöz/birleştir); İstisnalar sekmesinde liste dışa/içe aktarma + TR-duyarsız çakışma modalı; Yedek sekmesinde `db.json` içe aktarma/sıfırlama (`dbOverride`, `veriSurumu` kontrolü); `tests/pr7.test.js` (12 test) | ✅ `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
+| 8A | **Manifest sertleştirmesi** (2026-10-19): mağaza açıklaması düzeltildi; `google.com`/`google.com.tr` host izni ve eşleşmeleri kaldırıldı; Firefox `strict_min_version` 128 (MAIN world), Chromium `minimum_chrome_version` 111; `tests/manifest.test.js` (2 test) | ✅ `node --test` yeşil (96 test); **tarayıcıda yalnızca yeniden yükleme denemesi kaldı** |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -239,8 +242,8 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 6. **PIN düz metin** saklanıyor ve yalnızca arayüz kilididir.
 7. **Liste içe aktarma (PR 7)** çakışma diyaloğu sunar ve birleştirir. Tam yedek (`btnIceAktar`) ise hâlâ **üzerine yazar** (onay sorar); bu ayrım kasıtlıdır. `dbOverride` içe aktarma arayüzü vardır; tarayıcıda denenmedi. İçe aktarılan dosya `storage.local` kotasına tabidir (ek izin yok); ~10 MB üstü dosyalar kaydedilemeyebilir.
 8. Yalnızca veritabanında kaydı olan kanalların adı listede görünür; avatar yok.
-9. Manifest `description` hâlâ "otomatik senkronizasyon" diyor (yok). `google.com` host izni geniş.
-10. Firefox `strict_min_version: 109` ile `world: "MAIN"` çakışıyor (~128'de geldi); yedek enjeksiyon test edilmedi.
+9. ~~Manifest `description` "otomatik senkronizasyon" diyor; `google.com` host izni geniş.~~ **Çözüldü (PR 8A):** açıklama gerçek özelliklere göre yazıldı, yalnızca `youtube.com` izni kaldı. Tarayıcıda yükleme doğrulaması bekliyor.
+10. ~~Firefox `strict_min_version: 109` ile `world: "MAIN"` çakışıyor.~~ **Çözüldü (PR 8A):** asgari sürüm 128'e çekildi. Yedek enjeksiyon yolu (MAIN world desteklemeyen tarayıcı) hâlâ test edilmedi.
 11. `setInterval` ile yoklama (izleme sayfası 1 sn, helper 2 sn); `yt-navigate-finish` ile değiştirilebilir.
 12. Arayüz (jsdom) smoke testleri repoda değil. PR 6B'de yazılan harness'ler (içerik betiği ve `options.html`) bu sohbette kullanıldı; `tests/smoke/` altına alınmalı (`PLAN.md` PR 8).
 13. Rozet metinleri değişti ("GÜVENLİ/EĞİTİCİ" → "BEYAZ LİSTE" vb.).
@@ -259,7 +262,8 @@ node scripts/build.js                       # chromium/ ve firefox/ üretir  (--
 node --test tests/karar-v2.test.js          # yeni kurallar (28 test)
 node --test tests/pr6c.test.js              # hızlı bant sebep/özet/istisna sayısı (3 test)
 node --test tests/pr7.test.js               # liste paketi/çakışma birleştirme (12 test)
-node --test                                  # tüm birim testleri (Node 18+; klasör yolu vermeyin, Node 22'de hata verir) — 94 test
+node --test tests/manifest.test.js          # açıklama/izin ve sürüm/script sırası (2 test)
+node --test                                  # tüm birim testleri (Node 18+; klasör yolu vermeyin, Node 22'de hata verir) — 96 test
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.
 

@@ -2,20 +2,18 @@
   "manifest_version": 3,
   "name": "YouTube Filtreleyici",
   "version": "1.0",
-  "description": "Özel kanal istisnaları, video etiketleme, PIN koruması ve otomatik senkronizasyon içeren gelişmiş filtreleyici.",
+  "description": "YouTube'u konu ve etiketlere göre filtreler; kanal/video istisnaları, kararsız içerik seçimi ve PIN kilidi.",
   "browser_specific_settings": {
     "gecko": {
       "id": "yt-filter@servifiltre",
-      "strict_min_version": "109.0"
+      "strict_min_version": "128.0"
     }
   },
   "permissions": [
     "storage"
   ],
   "host_permissions": [
-    "*://*.youtube.com/*",
-    "*://*.google.com/*",
-    "*://*.google.com.tr/*"
+    "*://*.youtube.com/*"
   ],
   "background": {
     "scripts": ["core/taxonomy.js", "background.js"]
@@ -23,9 +21,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.youtube.com/*", 
-        "*://*.google.com/*", 
-        "*://*.google.com.tr/*"
+        "*://*.youtube.com/*"
       ],
       "js": ["core/taxonomy.js", "core/decision.js", "core/migrate.js", "core/db.js", "core/engine.js", "content.js"],
       "css": ["inject.css"],

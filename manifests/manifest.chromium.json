@@ -2,14 +2,13 @@
   "manifest_version": 3,
   "name": "YouTube Filtreleyici",
   "version": "1.0",
-  "description": "Özel kanal istisnaları, video etiketleme, PIN koruması ve otomatik senkronizasyon içeren gelişmiş filtreleyici.",
+  "minimum_chrome_version": "111",
+  "description": "YouTube'u konu ve etiketlere göre filtreler; kanal/video istisnaları, kararsız içerik seçimi ve PIN kilidi.",
   "permissions": [
     "storage"
   ],
   "host_permissions": [
-    "*://*.youtube.com/*",
-    "*://*.google.com/*",
-    "*://*.google.com.tr/*"
+    "*://*.youtube.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -17,9 +16,7 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.youtube.com/*", 
-        "*://*.google.com/*", 
-        "*://*.google.com.tr/*"
+        "*://*.youtube.com/*"
       ],
       "js": ["core/taxonomy.js", "core/decision.js", "core/migrate.js", "core/db.js", "core/engine.js", "content.js"],
       "css": ["inject.css"],

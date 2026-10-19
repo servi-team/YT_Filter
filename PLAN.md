@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-19 (PR 7: liste + db.json içe/dışa aktarma, çakışma diyaloğu)
+> Son güncelleme: 2026-10-19 (PR 8A: manifest sertleştirmesi; öncesi PR 7 liste + db.json aktarma)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -25,11 +25,12 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **6B** | **Lider dökümanına uyum:** video-yoksa-kanal, kanal kontrol ayarı, kararsız, konu/etiket başına eylem + Uyarı sayfası, kanal sayfası banner'ı, PIN seçimi, banner düzeltmeleri | ✅ **Node birim testleri yeşil (eski testler güncellendi); tarayıcıda denenmedi** |
 | **6C** | **Hızlı ekleme bandı: karar + sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı** | ✅ kodlandı, `node --test` yeşil; **tarayıcıda denenmedi** |
 | **7** | **İçe/dışa aktarma:** liste paketi (tek/tümü), çakışma diyaloğu (birleştir/üzerine yaz/yeniden adlandır), `db.json` içe aktarma + `dbOverride` | ✅ kodlandı, `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
-| 8 | Sağlamlaştırma ve mağaza hazırlığı | ⏳ |
+| **8A** | **Manifest sertleştirmesi:** açıklama düzeltildi, `google.com` izni kaldırıldı, Firefox ≥128 / Chrome ≥111 | ✅ kodlandı, `node --test` yeşil (96 test); tarayıcıda yalnızca yükleme denemesi kaldı |
+| 8 | Sağlamlaştırma ve mağaza hazırlığı (manifest kısmı ✅ 8A) | ⏳ |
 | S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir) |
 
-### Önce yapılacak: PR 6 / 6B / 6C / 7 gerçek tarayıcı doğrulaması
-**Hazırlık:** `node scripts/build.js`, `chrome://extensions` → eklentiyi yenile, YouTube'u F5 ile yenile, **eski `chromium/` klasörü yüklü kalmasın.** Konsolu açıp **"YT Filter"** ile filtreleyin. Beklenen: sayfa başına bir `YT Filter: hazır {…}` ve her sayfa için `YT Filter: sayfa kararı …` satırı. (`typeof YTF` konsolda anlamsız; içerik betiği izole dünyada.)
+### Önce yapılacak: PR 6 / 6B / 6C / 7 / 8A gerçek tarayıcı doğrulaması
+**Hazırlık:** `node scripts/build.js`, `chrome://extensions` → eklentiyi yenile, YouTube'u F5 ile yenile, **eski `chromium/` klasörü yüklü kalmasın.** 8A sonrası manifest izinleri değişti; yükleme hatası olmadan açıldığını ve eklenti simgesinin çalıştığını doğrulayın. Konsolu açıp **"YT Filter"** ile filtreleyin. Beklenen: sayfa başına bir `YT Filter: hazır {…}` ve her sayfa için `YT Filter: sayfa kararı …` satırı. (`typeof YTF` konsolda anlamsız; içerik betiği izole dünyada.)
 
 1. Kara listedeki **video** sayfası → tam sayfa banner (titremiyor).
 2. Kara listedeki **kanal** sayfası (`/@kanal`) → tam sayfa banner; kanal vitrini videosu duruyor.
@@ -111,8 +112,13 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 - **Testler:** `tests/pr7.test.js` — 12 test (paket oluşturma/çözme, üç birleştirme stratejisi, liste taşıma, TR harf duyarlılığı, bozuk girdi). Toplam **94 test** yeşil.
 - **Kabul:** aynı adlı özel liste ikiye çıkmıyor (çözüm+birleştirme adı TR-duyarsız benzersizleştirir); bozuk JSON/dosya hiçbir listeyi değiştirmiyor (parse/merge mevcutu klonlar). **Kalan:** gerçek tarayıcıda dosya seçici + modal doğrulaması.
 
+### PR 8A — ✅ Manifest sertleştirmesi (2026-10-19)
+- Mağaza açıklaması gerçek özellikleri anlatıyor ("otomatik senkronizasyon"/"video etiketleme" kaldırıldı); kullanılmayan `google.com`/`google.com.tr` host izni ve içerik betiği eşleşmeleri silindi.
+- Firefox `strict_min_version` **128** (MAIN world), Chromium `minimum_chrome_version` **111**.
+- `tests/manifest.test.js` (2 test) kararları koruyor. **Kalan:** tarayıcıda yükleme denemesi.
+
 ### PR 8 — Sağlamlaştırma ve yayın hazırlığı
-- Manifest açıklaması düzelt ("otomatik senkronizasyon" yok), izinleri daralt (`google.com` ihtiyacı gözden geçir), Firefox `strict_min_version`/MAIN world testi.
+- ~~Manifest açıklaması düzelt, izinleri daralt, Firefox `strict_min_version`/MAIN world testi.~~ ✅ 8A'da yapıldı; tarayıcıda yükleme denemesi kaldı.
 - Performans: `yt-navigate-finish` ile yoklamanın azaltılması; veritabanı önbelleği (büyürse); helper özniteliklerinin izlenmesi.
 - Kanal adı/avatarını kullanıcı listelerinde göstermek (kullanıcı eklerken sayfadan toplama).
 - **Arayüz ve içerik betiği smoke testlerinin repoya alınması** (`tests/smoke/`, jsdom devDependency) — PR 6B'de kullanılan harness'ler (`options.html`: 26 kontrol; `content.js`: banner/kart) temel alınır.
