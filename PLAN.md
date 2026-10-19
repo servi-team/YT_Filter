@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-19 (PR 8B: jsdom smoke testleri repoda; öncesi 8A manifest sertleştirmesi)
+> Son güncelleme: 2026-10-19 (PR 8C: PIN karma saklama; öncesi 8B smoke testleri, 8A manifest)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -27,10 +27,11 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **7** | **İçe/dışa aktarma:** liste paketi (tek/tümü), çakışma diyaloğu (birleştir/üzerine yaz/yeniden adlandır), `db.json` içe aktarma + `dbOverride` | ✅ kodlandı, `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
 | **8A** | **Manifest sertleştirmesi:** açıklama düzeltildi, `google.com` izni kaldırıldı, Firefox ≥128 / Chrome ≥111 | ✅ kodlandı, `node --test` yeşil (96 test); tarayıcıda yalnızca yükleme denemesi kaldı |
 | **8B** | **jsdom smoke testleri repoda:** `tests/smoke/` (options 5 + content 4), `jsdom ^27` devDependency | ✅ kodlandı, `node --test` yeşil (105 test) |
-| 8 | Sağlamlaştırma ve mağaza hazırlığı (manifest ✅ 8A, smoke ✅ 8B) | ⏳ sürüyor: PIN karma, performans, kanal adı/avatar, mağaza |
+| **8C** | **PIN karma saklama:** `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon), arayüz akışları, eski düz metin yükseltme | ✅ kodlandı, `node --test` yeşil (109 test); tarayıcıda PIN akışı denenmeli |
+| 8 | Sağlamlaştırma ve mağaza hazırlığı (manifest ✅ 8A, smoke ✅ 8B, PIN ✅ 8C) | ⏳ sürüyor: performans, kanal adı/avatar, mağaza |
 | S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir) |
 
-### Önce yapılacak: PR 6 / 6B / 6C / 7 / 8A gerçek tarayıcı doğrulaması
+### Önce yapılacak: PR 6 / 6B / 6C / 7 / 8A / 8C gerçek tarayıcı doğrulaması
 **Hazırlık:** `node scripts/build.js`, `chrome://extensions` → eklentiyi yenile, YouTube'u F5 ile yenile, **eski `chromium/` klasörü yüklü kalmasın.** 8A sonrası manifest izinleri değişti; yükleme hatası olmadan açıldığını ve eklenti simgesinin çalıştığını doğrulayın. Konsolu açıp **"YT Filter"** ile filtreleyin. Beklenen: sayfa başına bir `YT Filter: hazır {…}` ve her sayfa için `YT Filter: sayfa kararı …` satırı. (`typeof YTF` konsolda anlamsız; içerik betiği izole dünyada.)
 
 1. Kara listedeki **video** sayfası → tam sayfa banner (titremiyor).
@@ -41,6 +42,7 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 6. Ana sayfada kara listedeki kanalın kartı: *Gizle / Bulanıklaştır / Uyarı sayfası* üç ayarda doğru görünüyor mu?
 7. `docs/db.test-ornek-kararsiz.json`'u `src/data/db.json`'a koyup (derleyin) mod/kararsız/kanal kontrol ayarlarını deneyin (`DEVIR_NOTU` bölüm 7).
 8. Pop-up 430 px'te taşmıyor mu? (konu menüleri, kanal kontrol anahtarı, kararsız seçimi)
+9. PIN (8C): PIN kaydet → uygulamayı kapat/aç → kilidi doğru PIN açar, yanlış PIN açmaz. Depoda `pinKodu` `pbkdf2-sha256$` ile başlamalı (DevTools → Application → Storage). Eski düz metin kayıtlı bir profilde ilk girişten sonra depo karma'ya dönmeli.
 
 ## 3. Mantık çerçevesi: üç katman
 
@@ -118,6 +120,12 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 - Firefox `strict_min_version` **128** (MAIN world), Chromium `minimum_chrome_version` **111**.
 - `tests/manifest.test.js` (2 test) kararları koruyor. **Kalan:** tarayıcıda yükleme denemesi.
 
+### PR 8C — ✅ PIN karma saklama (2026-10-19)
+- `src/core/pin.js` (saf): `pinKarmala` (PBKDF2-SHA256, 120.000 iterasyon, 16 bayt rastgele tuz, `pbkdf2-sha256$...` biçimi), `pinKarmaliMi`, `pinDogrulaGirdi` (eski düz metin uyumu), `pinDuzMetinMi`.
+- `options.js`: kurulum ve "PIN güncelle" karma üretir; giriş doğrulaması asenkron; başarılı girişte eski düz metin kayıt karma'ya yükseltilir. `options.html`'e `core/pin.js` eklendi (manifest'e girmez).
+- `tests/pin.test.js` (3) + smoke: depoda düz metin yok, kilit/giriş, eski kayıt yükseltme. Toplam **109 test** (99 saf + 10 smoke).
+- PIN hâlâ yalnızca arayüz kilididir. Yeni karma yedeği eski sürümde kilit açamaz (CHANGELOG uyumluluk notu).
+
 ### PR 8B — ✅ jsdom smoke testleri repoda (2026-10-19)
 - `tests/smoke/ortak.js`: sahte `chrome.*` (storage/onChanged/runtime/tabs) + `bekle()`; `options.html` gerçek betik sırasıyla jsdom'da çalışır, `content.js` verilen sayfa HTML'i üzerinde.
 - `tests/smoke/options.test.js` (5): ilk açılış + db durumu, PIN kurulum/kilit/giriş, liste ekle-sil, çakışma modalı (birleştir/yeniden/vazgeç), hızlı bant URL yedeği.
@@ -129,7 +137,7 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 - Performans: `yt-navigate-finish` ile yoklamanın azaltılması; veritabanı önbelleği (büyürse); helper özniteliklerinin izlenmesi.
 - Kanal adı/avatarını kullanıcı listelerinde göstermek (kullanıcı eklerken sayfadan toplama).
 - ~~Arayüz ve içerik betiği smoke testlerinin repoya alınması (`tests/smoke/`, jsdom devDependency).~~ ✅ 8B'de yapıldı.
-- PIN: düz metin yerine karma saklama (hâlâ yalnızca arayüz kilidi olduğu belgelenir).
+- ~~PIN: düz metin yerine karma saklama (hâlâ yalnızca arayüz kilidi olduğu belgelenir).~~ ✅ 8C'de yapıldı (PBKDF2-SHA256, eski kayıt yükseltme).
 - Mağaza: gizlilik metni, ekran görüntüleri, sürüm akışı.
 
 ### Düzenleme sitesi ("YouTube Filter Store", S) — `db.json` şeması dondu, paralel başlayabilir

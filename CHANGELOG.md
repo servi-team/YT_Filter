@@ -5,17 +5,31 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 ## [Yayınlanmamış] — 2.0 geliştirme dalı
 
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
-PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)** ve **PR 8B (jsdom smoke testleri repoda, 2026-10-19)** kodlandı.
-PR 6, 6B, 6C, 7, 8A ve 8B **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**
+PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)**, **PR 8B (jsdom smoke testleri repoda)** ve **PR 8C (PIN karma saklama, 2026-10-19)** kodlandı.
+PR 6, 6B, 6C, 7, 8A, 8B ve 8C **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**
+
+### PR 8C — PIN karma saklama (2026-10-19)
+
+#### Kullanıcıya görünen değişiklikler
+- **PIN artık depoda düz metin tutulmuyor.** Kaydedilen PIN, rastgele tuzlu **PBKDF2-SHA256 (120.000 iterasyon)** karması olarak saklanır (`pinKodu` alanı `pbkdf2-sha256$...` biçiminde).
+- **Eski kayıtlar çalışmaya devam eder:** önceki sürümden kalan düz metin PIN ilk başarılı girişte otomatik olarak karma'ya yükseltilir. PIN yine yalnızca arayüz kilididir (şifreleme değildir); bu belgelenir.
+
+#### Eklendi (geliştiriciler için)
+- **`src/core/pin.js` (yeni, saf):** `pinKarmala(pin, {tuz, iterasyon})`, `pinKarmaliMi`, `pinDogrulaGirdi(girilen, kayitli)` (eski düz metni de doğrular), `pinDuzMetinMi`.
+- **`options.js`:** kurulum kartı ve "PIN güncelle" karma üretir; giriş doğrulaması asenkron (`pinDogrula`) ve eski kaydı yükseltir. `options.html`'e `core/pin.js` eklendi (manifest'e girmez; yalnızca arayüz).
+- **`tests/pin.test.js` (3 test)** + smoke: PIN kaydı/kilit/giriş ve eski düz metin yükseltme (toplam smoke 10). Toplam **109 test** yeşil (99 saf + 10 smoke).
+
+#### Uyumluluk notu
+- Yeni yedek dosyasındaki karma PIN, **eski eklenti sürümünde** kilit açamaz (eski sürüm birebir karşılaştırır). Böyle bir durumda PIN, depodan silinerek sıfırlanabilir.
 
 ### PR 8B — jsdom smoke testleri repoda (2026-10-19)
 
 #### Eklendi (geliştiriciler için)
 - **`tests/smoke/ortak.js`:** jsdom + sahte `chrome.*` (`storage.local`/`onChanged`, `runtime`, `tabs`) ve `bekle()` yardımcıları; `options.html` gerçek betik sırasıyla, `content.js` verilen sayfa HTML'i üzerinde çalıştırılır.
-- **`tests/smoke/options.test.js` (5 test):** ilk açılış + veritabanı durumu, PIN kurulumu/kilitleme/yanlış-doğru giriş, içerik ekle/listele/sil, çakışma modalının üç stratejisi, hızlı bandın URL yedeğiyle dolması.
+- **`tests/smoke/options.test.js` (6 test):** ilk açılış + veritabanı durumu, PIN kurulumu/kilitleme/yanlış-doğru giriş (PR 8C), eski düz metin PIN'in karma'ya yükseltilmesi (PR 8C), içerik ekle/listele/sil, çakışma modalının üç stratejisi, hızlı bandın URL yedeğiyle dolması.
 - **`tests/smoke/content.test.js` (4 test):** kara listedeki video banner'ı + oynatıcı gizleme, "Beyaz listeye ekle" ile depo güncelleme, kara listedeki kanalın kartını gizleme, "Bulanıklaştır" eylemi.
 - **`package.json`:** `jsdom ^27` devDependency + `npm test` betiği; `.gitignore` (node_modules). Smoke testleri için `npm install` gerekir (Node >= 20; saf testler Node 18+ ile çalışır).
-- Toplam **105 test** yeşil (96 saf + 9 smoke).
+- Toplam 105 test yeşildi (96 saf + 9 smoke); PR 8C ile **109**.
 
 ### PR 8A — Manifest sertleştirmesi (2026-10-19)
 
@@ -146,12 +160,12 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 - **XSS:** arayüz kanal/kategori adlarını `innerHTML` ile basıyordu; tüm kullanıcı metinleri artık düz metin (testle doğrulandı).
 - **İçe aktarılan ayar doğrulaması:** `ayarTemizle` bilinmeyen alanları atar, geçersiz değerleri varsayılana çevirir, liste adlarını kırpar, yinelenen/ayrılmış adları eler, anahtar uzunluğunu sınırlar. *(PR 6B: yeni alanlar da doğrulanır.)*
 - **Nesne özellikleri:** liste araması `Object.prototype` özelliklerine takılmıyor (`hasOwnProperty`).
-- **PIN:** yeni kurulumda herkesçe bilinen varsayılan PIN (`1234`) artık atanmıyor. PIN hâlâ düz metin saklanır ve yalnızca arayüz kilididir. *(PR 8C'de karma saklamaya geçilecek.)*
+- **PIN:** yeni kurulumda herkesçe bilinen varsayılan PIN (`1234`) artık atanmıyor. PIN **PBKDF2-SHA256 (120.000 iterasyon, rastgele tuz)** karması olarak saklanır (PR 8C); yalnızca arayüz kilididir, şifreleme değildir. Eski düz metin kayıtlar ilk girişte karma'ya yükseltilir.
 
 ### Bilinen sınırlar (henüz yapılmadı / çözülüyor)
 - **Veritabanı neredeyse boş ve düzenleme sitesi yok:** çoğu içerik "bilinmeyen" kalıyor; konu/etiket kuralları test verisi veya PR 7'deki `db.json` içe aktarma ile görülebilir.
-- **PR 6, 6B, 6C, 7, 8A ve 8B gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır (davranış değişikliği yok).
-- **Testler** `node --test` ile yeşil (**105 test**: 96 saf + 9 jsdom smoke).
+- **PR 6, 6B, 6C, 7, 8A, 8B ve 8C gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır; 8C'de PIN akışı tarayıcıda denenmeli (kaydet → kilitle → eski düz metin yükseltme).
+- **Testler** `node --test` ile yeşil (**109 test**: 99 saf + 10 jsdom smoke).
 - **Hızlı ekleme bandının mesajlaşması** gerçek pop-up'ta denenmedi; içerik betiği yoksa URL yedeği kullanılır.
 - **Lider onayı bekleyen yorumlar:** ana konu ölçütü (net puan mı upvote mu), beraberlikte sıra, Serbest'te kararsız konu, Orta/Katı'da kararsız "engelle" anlamı, asgari oy eşiği — `docs/SISTEM_TASARIMI.md` bölüm 6.
 - **Tam yedek içe aktarma** hâlâ mevcut ayarların üzerine yazar (onay sorar); liste içe aktarma ise birleştirir/çakışma sorar.
@@ -162,6 +176,6 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Geliştirici notları
 - **Derleme:** `node scripts/build.js` → `chromium/` ve `firefox/`. Tarayıcıya bu klasörler yüklenir; kaynak `src/`'dir. **Her değişiklikten sonra yeniden derleyin.**
-- **Test:** `node --test` — 105 test (96 saf + 9 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
+- **Test:** `node --test` — 109 test (99 saf + 10 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
 - **Uyumluluk:** eski yedek dosyaları yeni sürümde içe aktarılabilir; yeni yedekler eski sürümde **çalışmaz.** Yeni `db.json` alanları isteğe bağlıdır; ancak ana konusuz kayıtları eski eklenti sürümleri atlar.
 - **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `docs/DEVIR_NOTU.md`, plan: `PLAN.md`.

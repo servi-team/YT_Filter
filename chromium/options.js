@@ -277,10 +277,17 @@ function kilitle() {
     setTimeout(() => document.getElementById('pinGiris').focus(), 50);
 }
 
-function pinDogrula() {
+async function pinDogrula() {
     const girilen = document.getElementById('pinGiris').value;
     const pinKutu = document.getElementById('pinEkrani');
-    if (girilen === mevcutVeri.pinKodu || !mevcutVeri.pinKodu) {
+    const dogru = await YTF.pinDogrulaGirdi(girilen, mevcutVeri.pinKodu);
+    if (dogru) {
+        // Eski sürümden kalan düz metin kayıt ilk başarılı girişte karma'ya yükseltilir.
+        if (YTF.pinDuzMetinMi(mevcutVeri.pinKodu)) {
+            const karma = await YTF.pinKarmala(girilen);
+            mevcutVeri.pinKodu = karma;
+            await setStorageData({ pinKodu: karma });
+        }
         document.getElementById('pinHata').style.display = 'none';
         kilidiAc();
     } else {
@@ -831,10 +838,11 @@ function initEvents() {
             document.getElementById('kurulumPinHata').style.display = 'block';
             return;
         }
-        mevcutVeri.pinKodu = pin;
+        const karma = await YTF.pinKarmala(pin); // PIN depoda düz metin tutulmaz
+        mevcutVeri.pinKodu = karma;
         mevcutVeri.pinDegistirildi = true;
         mevcutVeri.ilkGirisYapildi = true;
-        await setStorageData({ pinKodu: pin, pinDegistirildi: true, ilkGirisYapildi: true });
+        await setStorageData({ pinKodu: karma, pinDegistirildi: true, ilkGirisYapildi: true });
         document.getElementById('pinKurulumKarti').style.display = 'none';
         document.getElementById('btnPinKilitle').style.display = 'flex';
         showToast('PIN kaydedildi');
@@ -892,11 +900,12 @@ function initEvents() {
             alert("PIN kodu en az 4 haneli olmalıdır.");
             return;
         }
-        mevcutVeri.pinKodu = yeni;
+        const karma = await YTF.pinKarmala(yeni); // PIN depoda düz metin tutulmaz
+        mevcutVeri.pinKodu = karma;
         mevcutVeri.pinDegistirildi = true;
         mevcutVeri.ilkGirisYapildi = true;
         await setStorageData({
-            pinKodu: yeni,
+            pinKodu: karma,
             pinDegistirildi: true,
             ilkGirisYapildi: true
         });

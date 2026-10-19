@@ -34,7 +34,7 @@ test('options: PIN kurulumu, kilitleme, yanlış ve doğru giriş', async () => 
         belge.getElementById('kurulumPin').value = '2468';
         belge.getElementById('btnKurulumPinKaydet').click();
         await bekle(() => belge.getElementById('pinKurulumKarti').style.display === 'none');
-        assert.ok(chrome.__depo.pinKodu);
+        assert.match(String(chrome.__depo.pinKodu), /^pbkdf2-sha256\$/); // depoda düz metin yok
 
         belge.getElementById('btnPinKilitle').click();
         assert.strictEqual(belge.getElementById('pinEkrani').style.display, 'flex');
@@ -42,13 +42,36 @@ test('options: PIN kurulumu, kilitleme, yanlış ve doğru giriş', async () => 
 
         belge.getElementById('pinGiris').value = '0000';
         belge.getElementById('btnPinOnayla').click();
-        assert.strictEqual(belge.getElementById('pinHata').style.display, 'block');
+        await bekle(() => belge.getElementById('pinHata').style.display === 'block');
         assert.strictEqual(belge.getElementById('anaArayuz').style.display, 'none');
 
         belge.getElementById('pinGiris').value = '2468';
         belge.getElementById('btnPinOnayla').click();
+        await bekle(() => belge.getElementById('anaArayuz').style.display === 'block');
         assert.strictEqual(belge.getElementById('pinHata').style.display, 'none');
-        assert.strictEqual(belge.getElementById('anaArayuz').style.display, 'block');
+    } finally {
+        dom.window.close();
+    }
+});
+
+test('options: eski düz metin PIN ilk başarılı girişte karma\'ya yükseltilir', async () => {
+    const baslangic = temelBaslangic();
+    baslangic.pinKodu = '2468';
+    baslangic.ilkGirisYapildi = true;
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+
+        belge.getElementById('pinGiris').value = '2468';
+        belge.getElementById('btnPinOnayla').click();
+        await bekle(() => belge.getElementById('anaArayuz').style.display === 'block');
+        assert.match(String(chrome.__depo.pinKodu), /^pbkdf2-sha256\$/);
+
+        // Yükseltilen karma ile yeniden kilit açılabiliyor
+        belge.getElementById('btnPinKilitle').click();
+        belge.getElementById('pinGiris').value = '2468';
+        belge.getElementById('btnPinOnayla').click();
+        await bekle(() => belge.getElementById('anaArayuz').style.display === 'block');
     } finally {
         dom.window.close();
     }

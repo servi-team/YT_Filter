@@ -6,6 +6,7 @@
 const fs = require('node:fs');
 const path = require('node:path');
 const { pathToFileURL } = require('node:url');
+const { webcrypto } = require('node:crypto');
 const { JSDOM, VirtualConsole } = require('jsdom');
 
 const KOK = path.join(__dirname, '..', '..');
@@ -117,6 +118,8 @@ async function arayuzuAc({ baslangic = {}, sekmeler = [], mesajYaniti = null, on
         virtualConsole: sanalKonsol(jsdomHatalari),
         beforeParse(window) {
             window.chrome = chrome;
+            Object.defineProperty(window, 'crypto', { value: webcrypto, configurable: true }); // jsdom'da subtle yok
+            Object.defineProperty(window, 'TextEncoder', { value: TextEncoder, configurable: true }); // jsdom'da yok
             window.fetch = async () => ({ json: async () => kopyala(DB_JSON) });
             window.__hatalar = [];
             window.__uyarilar = [];
