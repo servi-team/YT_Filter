@@ -219,11 +219,43 @@ body {
   letter-spacing: 0.5px;
 }
 
+.quick-banner-karar {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text-primary);
+}
+.quick-banner-karar.engelleniyor { color: var(--danger); }
+.quick-banner-karar.acik { color: var(--success); }
+
+.quick-banner-sebep {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.quick-banner-not {
+  font-size: 11px;
+  color: var(--text-muted);
+  line-height: 1.35;
+}
+
+.btn-quick-bildir {
+  align-self: flex-start;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm);
+  border: 1px dashed var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  cursor: not-allowed;
+}
+
 .quick-banner-content {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
+  flex-wrap: wrap;
 }
 
 .quick-banner-title {

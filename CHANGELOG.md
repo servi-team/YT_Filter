@@ -5,8 +5,25 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 ## [Yayınlanmamış] — 2.0 geliştirme dalı
 
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
-PR 1–5 tamamlandı (PR 5'in bir kısmı eksik, bkz. aşağıda), **PR 6 (engel banner) kodlandı**, **PR 6B (ekip liderinin tasarım dökümanına uyum, 2026-10-19) kodlandı.**
-PR 6 ve 6B **Node birim testleri ve jsdom ile doğrulandı; gerçek tarayıcıda henüz denenmedi.**
+PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)** ve **PR 6C (hızlı ekleme bandı + istisna çerçevesi, 2026-10-19)** kodlandı.
+PR 6, 6B ve 6C **Node birim testleri ve jsdom ile doğrulandı; gerçek tarayıcıda henüz denenmedi.**
+
+### PR 6C — Hızlı ekleme bandı ve istisna çerçevesi (2026-10-19)
+PR 5'te planlanıp dosyalarda bulunmayan dört parça tamamlandı.
+
+#### Kullanıcıya görünen değişiklikler
+- **Hızlı ekleme bandı artık kararı ve sebebini gösteriyor:** "Şu an: ENGELLENİYOR" / "Şu an: AÇIK" ve altında okunur sebep ("Kara listede (video)", "Etiket: Küfürlü içerik (kanal)" vb.). Karar, açık YouTube sekmesindeki içerik betiğine sorulur; betik yoksa URL'den hesaplanır.
+- **Hızlı ekleme düğmeleri anlam kazandı:** "Beyaz liste / Kara liste" → **"Her zaman izin ver / Her zaman engelle"** (istisna olduğu vurgulanır).
+- **Listeler sekmesi → "İstisnalar".** Kart başlıkları ve açıklamaları "kuralı geçersiz kılar" çerçevesine göre yenilendi. Spec adları parantezde korunur ("Her zaman izin ver (Beyaz liste)").
+- **Çok-istisna uyarısı:** beyaz + kara + özel listelerdeki toplam kayıt ~50'yi geçince "Çok istisnanız var; kuralları gözden geçirin veya yanlış etiketleri bildirin" uyarısı görünür.
+- **"Bildir" düğmesi** eklendi; site hazır olana kadar gizli ve pasif.
+- **Bilinmeyen içerikte bilgi notu:** "Elinizde yalnızca istisna vardır; 'Her zaman izin ver' doğru yoldur."
+
+#### Eklendi (geliştiriciler için)
+- `core/engine.js`: `sebepMetni(sebep)` (banner ve pop-up ortak metin), `kararOzeti(sonuc)` (`{etiket, sebep, engelleniyor}`), `istisnaSayisi(ayar)`, `ISTISNA_UYARI_ESIGI = 50`.
+- `content.js`: üst çerçevede `runtime.onMessage` dinleyicisi; `tur: 'sayfaDurumu'` isteğine sayfa kimliği + karar + sebepler + özet döner. Banner sebep metni artık `YTF.sebepMetni` kullanır.
+- `options.js`: `sekmeyeSor` (Firefox promise / Chrome callback), `urlKimligi` yedeği, `hizliBandiDoldur`; istisna eklendikten sonra bant anında yeniden hesaplanır.
+- `tests/pr6c.test.js`: 3 test (sebep metinleri, karar özeti, istisna sayısı/eşiği). Toplam **82 test** yeşil.
 
 ### PR 6B — Ekip liderinin tasarım dökümanına uyum (2026-10-19)
 Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun dökümandan saptığı beş yer bulundu ve giderildi.
@@ -51,7 +68,7 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 - **Tanılama günlüğü:** `YT Filter: hazır {...}` ve `YT Filter: sayfa kararı …`.
 
 ### PR 5 notu — dosyalarla belge uyuşmazlığı
-`PLAN.md` PR 5'i tamam gösteriyordu; yüklenen güncel dosyalarda şu parçalar **yoktu** ve **hâlâ yok**: hızlı ekleme bandında karar+sebep gösterimi, pop-up ↔ içerik betiği mesajlaşması (`onMessage`), Listeler sekmesinin "İstisnalar" adlandırması, çok-istisna uyarısı. Bu iş PR 6C'ye taşındı (bkz. `PLAN.md`).
+`PLAN.md` PR 5'i tamam gösteriyordu; yüklenen güncel dosyalarda şu parçalar **yoktu**: hızlı ekleme bandında karar+sebep gösterimi, pop-up ↔ içerik betiği mesajlaşması (`onMessage`), Listeler sekmesinin "İstisnalar" adlandırması, çok-istisna uyarısı. Bu iş PR 6C'de tamamlandı (bkz. yukarı).
 
 ### Kullanıcıya görünen değişiklikler (önceki PR'lardan, hâlâ geçerli)
 - **Yeni "Filtre" sekmesi (ilk sekme).**
@@ -101,9 +118,9 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Bilinen sınırlar (henüz yapılmadı / çözülüyor)
 - **Veritabanı boş ve düzenleme sitesi yok:** her içerik "bilinmeyen" kalıyor; konu/etiket kuralları yalnızca test verisiyle görülebilir.
-- **PR 6 ve 6B gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14.
-- **Eski birim testleri 6B kurallarına uyduruldu** (`node --test` yeşil).
-- Hızlı ekleme bandı karar ve sebebi göstermiyor (PR 6C).
+- **PR 6, 6B ve 6C gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16.
+- **Eski birim testleri 6B kurallarına uyduruldu** (`node --test` yeşil, 82 test).
+- **Hızlı ekleme bandının mesajlaşması** gerçek pop-up'ta denenmedi; içerik betiği yoksa URL yedeği kullanılır.
 - **Lider onayı bekleyen yorumlar:** ana konu ölçütü (net puan mı upvote mu), beraberlikte sıra, Serbest'te kararsız konu, Orta/Katı'da kararsız "engelle" anlamı, asgari oy eşiği — `docs/SISTEM_TASARIMI.md` bölüm 6.
 - İçe aktarmada ad çakışması diyaloğu (üzerine yaz / yeniden adlandır / birleştir) ve siteden indirilen `db.json`'u içe aktarma.
 - Düzenleme sitesi ve oylama sistemi.
@@ -114,6 +131,6 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Geliştirici notları
 - **Derleme:** `node scripts/build.js` → `chromium/` ve `firefox/`. Tarayıcıya bu klasörler yüklenir; kaynak `src/`'dir. **Her değişiklikten sonra yeniden derleyin.**
-- **Test:** `node --test` (Node 18+; klasör yolu vermeyin). Yeni: `tests/karar-v2.test.js`. Arayüz ve içerik betiği jsdom + sahte `chrome.*` ile denendi; bu harness henüz repoda değil.
+- **Test:** `node --test` (Node 18+; klasör yolu vermeyin) — 82 test. Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`. Arayüz ve içerik betiği jsdom + sahte `chrome.*` ile denendi; bu harness henüz repoda değil.
 - **Uyumluluk:** eski yedek dosyaları yeni sürümde içe aktarılabilir; yeni yedekler eski sürümde **çalışmaz.** Yeni `db.json` alanları isteğe bağlıdır; ancak ana konusuz kayıtları eski eklenti sürümleri atlar.
 - **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `docs/DEVIR_NOTU.md`, plan: `PLAN.md`.

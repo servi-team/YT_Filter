@@ -38,7 +38,7 @@ const EYLEM_SECENEKLERI = [
 const ETIKETLENMEMIS_IPUCU = {
     null: 'Henüz seçmediniz. Siz seçene kadar etiketlenmemiş içerikler engellenir.',
     ac: 'Veritabanında olmayan kanal ve videolar normal şekilde açılır.',
-    engelle: 'Veritabanında olmayan kanal ve videolar engellenir. Listelere ekleyerek tek tek açabilirsiniz.'
+    engelle: 'Veritabanında olmayan kanal ve videolar engellenir. Bilinmeyen içerikte elinizde yalnızca istisna vardır; “Her zaman izin ver” ile tek tek açabilirsiniz.'
 };
 
 const SVG_COP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
@@ -277,8 +277,8 @@ function listeyeEkle(anahtar, hedef) {
 }
 
 function hedefAdi(hedef) {
-    if (hedef === 'beyaz') return 'Beyaz liste';
-    if (hedef === 'kara') return 'Kara liste';
+    if (hedef === 'beyaz') return 'Her zaman izin ver';
+    if (hedef === 'kara') return 'Her zaman engelle';
     return hedef.startsWith('ozel:') ? hedef.slice(5) : hedef;
 }
 
@@ -340,13 +340,15 @@ function renderListeler() {
     renderFilterChips();
     renderItemList();
     renderOzelListeler();
+    const uyari = document.getElementById('istisnaUyarisi');
+    if (uyari) uyari.style.display = YTF.istisnaSayisi(ayar) >= YTF.ISTISNA_UYARI_ESIGI ? 'flex' : 'none';
 }
 
 function renderHedefSecimi() {
     const secim = document.getElementById('yeniEtiketTuru');
     const onceki = secim.value;
     secim.textContent = '';
-    const secenekler = [['beyaz', 'Beyaz liste'], ['kara', 'Kara liste'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
+    const secenekler = [['beyaz', 'Her zaman izin ver (Beyaz liste)'], ['kara', 'Her zaman engelle (Kara liste)'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
     secenekler.forEach(([deger, ad]) => {
         const o = el('option', '', ad);
         o.value = deger;
@@ -359,7 +361,7 @@ function renderFilterChips() {
     const konteyner = document.getElementById('filterChipsContainer');
     if (!konteyner) return;
     konteyner.textContent = '';
-    const cipler = [['all', 'Tümü'], ['beyaz', 'Beyaz liste'], ['kara', 'Kara liste'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
+    const cipler = [['all', 'Tümü'], ['beyaz', 'İzin ver'], ['kara', 'Engelle'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
     cipler.forEach(([deger, ad]) => {
         const b = el('button', 'chip' + (aktifFiltre === deger ? ' active' : ''), ad);
         b.setAttribute('data-filter', deger);
@@ -826,7 +828,81 @@ function initEvents() {
     });
 }
 
-// Aktif YouTube Sekmesini Algılama (Quick Action)
+async function sekmeyeSor(tabId) {
+    try {
+        if (typeof browser !== 'undefined' && browser.tabs && browser.tabs.sendMessage) {
+            return await browser.tabs.sendMessage(tabId, { tur: 'sayfaDurumu' });
+        }
+        return await new Promise(resolve => {
+            chrome.tabs.sendMessage(tabId, { tur: 'sayfaDurumu' }, yanit => {
+                if (chrome.runtime.lastError) resolve(null);
+                else resolve(yanit || null);
+            });
+        });
+    } catch (e) {
+        return null;
+    }
+}
+
+function urlKimligi(url) {
+    if (!url || !url.includes('youtube.com')) return null;
+    const videoMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || url.match(/\/(?:shorts|embed)\/([a-zA-Z0-9_-]{11})/);
+    const channelMatch = url.match(/youtube\.com\/(@[a-zA-Z0-9._-]+)/);
+    const kanalIdMatch = url.match(/\/channel\/(UC[A-Za-z0-9_-]{22})/);
+    if (videoMatch && videoMatch[1]) return { tespit: videoMatch[1], tur: 'Video', videoId: videoMatch[1], handle: null, kanalId: null };
+    if (channelMatch && channelMatch[1]) return { tespit: channelMatch[1], tur: 'Kanal', videoId: null, handle: channelMatch[1], kanalId: null };
+    if (kanalIdMatch && kanalIdMatch[1]) return { tespit: kanalIdMatch[1], tur: 'Kanal', videoId: null, handle: null, kanalId: kanalIdMatch[1] };
+    return null;
+}
+
+function hizliBandiDoldur(durum) {
+    if (!durum || !durum.tespit) {
+        aktifYouTubeIcerigi = null;
+        return;
+    }
+    aktifYouTubeIcerigi = durum;
+    const titleEl = document.getElementById('quickTitle');
+    const typeEl = document.getElementById('quickPageType');
+    const kararEl = document.getElementById('quickKarar');
+    const sebepEl = document.getElementById('quickSebep');
+    const notEl = document.getElementById('quickBilinmeyenNot');
+    if (titleEl) titleEl.textContent = durum.tespit;
+    if (typeEl) typeEl.textContent = durum.tur || '';
+
+    let ozet = durum.ozet;
+    if (!ozet && ayar && durum.hazir !== false) {
+        const sonuc = YTF.icerikKarari(ayar, veriTabani, {
+            videoId: durum.videoId, handle: durum.handle, channelId: durum.kanalId
+        });
+        ozet = YTF.kararOzeti(sonuc);
+        durum.sebepler = sonuc.sebepler;
+    }
+    if (kararEl && ozet) {
+        kararEl.textContent = `Şu an: ${ozet.etiket}`;
+        kararEl.classList.toggle('engelleniyor', ozet.engelleniyor);
+        kararEl.classList.toggle('acik', !ozet.engelleniyor);
+    } else if (kararEl) {
+        kararEl.textContent = 'Şu an: karar bekleniyor';
+        kararEl.classList.remove('engelleniyor', 'acik');
+    }
+    if (sebepEl) sebepEl.textContent = ozet ? ozet.sebep : '';
+    const bilinmeyen = (durum.sebepler || []).some(s => s.tur === 'etiketlenmemis');
+    if (notEl) notEl.style.display = bilinmeyen ? 'block' : 'none';
+
+    const hizliEkle = async (hedef) => {
+        listeyeEkle(durum.tespit.toLowerCase(), hedef);
+        await ayarKaydet();
+        renderListeler();
+        showToast(`${durum.tespit} → ${hedefAdi(hedef)}`);
+        const yenilenen = YTF.icerikKarari(ayar, veriTabani, {
+            videoId: durum.videoId, handle: durum.handle, channelId: durum.kanalId
+        });
+        hizliBandiDoldur({ ...durum, hazir: true, sebepler: yenilenen.sebepler, ozet: YTF.kararOzeti(yenilenen) });
+    };
+    document.getElementById('btnQuickBlock').onclick = () => hizliEkle('kara');
+    document.getElementById('btnQuickAllow').onclick = () => hizliEkle('beyaz');
+}
+
 async function algilaAktifYouTubeSekmesi() {
     try {
         const tabs = await new Promise(resolve => {
@@ -836,47 +912,12 @@ async function algilaAktifYouTubeSekmesi() {
                 resolve([]);
             }
         });
-
-        if (!tabs || !tabs[0] || !tabs[0].url) return;
-        const url = tabs[0].url;
-
-        if (!url.includes("youtube.com")) return;
-
-        let tespit = null;
-        let tur = "Kanal";
-
-        const channelMatch = url.match(/youtube\.com\/(@[a-zA-Z0-9._-]+)/);
-        const videoMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-
-        if (videoMatch && videoMatch[1]) {
-            tespit = videoMatch[1];
-            tur = "Video ID";
-        } else if (channelMatch && channelMatch[1]) {
-            tespit = channelMatch[1];
-            tur = "Kanal";
-        }
-
-        if (tespit) {
-            aktifYouTubeIcerigi = { tespit, tur };
-
-            const titleEl = document.getElementById('quickTitle');
-            const typeEl = document.getElementById('quickPageType');
-
-            if (titleEl) titleEl.textContent = tespit;
-            if (typeEl) typeEl.textContent = tur;
-
-            // DİKKAT: Burada banner display yapılmaz!
-            // Sadece PIN açıldıktan sonra kilidiAc() fonksiyonunda görünür olur.
-
-            const hizliEkle = async (hedef) => {
-                listeyeEkle(tespit.toLowerCase(), hedef);
-                await ayarKaydet();
-                renderListeler();
-                showToast(`${tespit} → ${hedefAdi(hedef)}`);
-            };
-            document.getElementById('btnQuickBlock').onclick = () => hizliEkle('kara');
-            document.getElementById('btnQuickAllow').onclick = () => hizliEkle('beyaz');
-        }
+        if (!tabs || !tabs[0]) return;
+        const tab = tabs[0];
+        const yedek = urlKimligi(tab.url || '');
+        const yanit = tab.id != null ? await sekmeyeSor(tab.id) : null;
+        const durum = (yanit && yanit.tespit) ? yanit : yedek;
+        hizliBandiDoldur(durum);
     } catch (e) {
         // Tab sorgulama hatası durumunda sessizce geç
     }

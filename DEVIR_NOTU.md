@@ -1,10 +1,12 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-19 · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-19 (PR 6C) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
 
-> **2026-10-19 özeti:** Ekip lideri tasarım dökümanını gönderdi. Karar algoritması ona göre yeniden yazıldı (PR 6B): *önce video, video verisi yoksa kanal*; **kanal kontrol ayarı**; **kararsız** kavramı; konu ve etiket başına **Gizle / Bulanıklaştır / Uyarı sayfası**; ilk açılışta **PIN seçimi**. Bu değişiklikler Node birim testleriyle (28 yeni test) ve jsdom ile doğrulandı; **gerçek tarayıcıda henüz denenmedi.** Aşağıdaki 2.5, 3.3, 3.4, 5. ve 6. bölümler buna göre güncellendi; eski kararlardan geçersiz kalanlar işaretlendi.
+> **PR 6C özeti (2026-10-19):** PR 5'te eksik kalan parçalar tamamlandı: hızlı ekleme bandı artık **"Şu an: ENGELLENİYOR/AÇIK" + sebep** gösteriyor (karar pop-up'ta içerik betiğine sorulur, olmazsa URL'den hesaplanır); düğmeler **"Her zaman izin ver / Her zaman engelle"**; Listeler sekmesi **İstisnalar** oldu; ~50 kayıtta çok-istisna uyarısı çıkıyor; "Bildir" düğmesi site hazır olana kadar gizli/pasif. `node --test` yeşil (82 test). **Tarayıcıda denenmedi.**
+>
+> **2026-10-19 özeti (PR 6B):** Ekip lideri tasarım dökümanını gönderdi. Karar algoritması ona göre yeniden yazıldı (PR 6B): *önce video, video verisi yoksa kanal*; **kanal kontrol ayarı**; **kararsız** kavramı; konu ve etiket başına **Gizle / Bulanıklaştır / Uyarı sayfası**; ilk açılışta **PIN seçimi**. Bu değişiklikler Node birim testleriyle (28 yeni test) ve jsdom ile doğrulandı; **gerçek tarayıcıda henüz denenmedi.** Aşağıdaki 2.5, 3.3, 3.4, 5. ve 6. bölümler buna göre güncellendi; eski kararlardan geçersiz kalanlar işaretlendi.
 
 ---
 
@@ -53,6 +55,7 @@ Veritabanı aylık güncellemelerle eklenti paketiyle (Chrome Web Mağazası) ge
 - Varsayılan konu/etiket tanımlarını kullanıcı değiştiremez.
 - Dışarıdan içe aktarmada aynı liste adı çakışırsa "üzerine yaz / yeniden adlandır / birleştir" sorulmalı (**henüz yapılmadı**).
 - Kanallar **ID ile** tanınmalı (handle değişebilir); arayüzde kanal adı ve avatar gösterilmesi istendi (ad: yalnızca DB'dekiler, avatar: yok).
+- **Hızlı ekleme bandı (PR 6C):** aktif sayfanın kararını ve sebebini gösterir; istisna düğmeleri "Her zaman izin ver / Her zaman engelle". Listeler sekmesi bu çerçevede **İstisnalar** olarak adlandırıldı; kayıt sayısı ~50'yi geçince "çok istisna" uyarısı çıkar.
 
 ### 2.5 Engelleme algoritması (3 mod) — `core/decision.js`
 
@@ -87,7 +90,8 @@ Belirsiz kalan noktaların yorumları ve liderden teyit bekleyenler: `SISTEM_TAS
 ```
 src/
   background.js        kurulumda varsayılan veriyi yazar (PIN artık ATANMAZ; kullanıcı ilk açılışta seçer)
-  content.js           YouTube sayfasında kartları işler, izleme/kanal sayfasını kontrol eder, banner
+  content.js           YouTube sayfasında kartları işler, izleme/kanal sayfasını kontrol eder, banner,
+                       pop-up'a sayfa durumunu döndürür (runtime.onMessage: 'sayfaDurumu')
   inject_helper.js     MAIN world'de çalışır; kart verisinden videoId/handle/kanalId'yi DOM'a yazar
   inject.css           rozet / bulanıklaştırma / gizleme / uyarı kapağı / banner stilleri
   options.html|css|js  pop-up arayüzü (430px genişlik, 5 sekme)
@@ -96,7 +100,8 @@ src/
     decision.js        kararVer(ayar, video, kanal)  — SAF fonksiyon, asıl algoritma
     migrate.js         eski modelden (customMapping+preferences) yeni modele çeviri — saf
     db.js              db.json doğrulama/indeksleme (dbKur, dbSec)
-    engine.js          ayarCoz, icerikKarari (db araması+karar+eylem çözümleme), rozetBilgisi
+    engine.js          ayarCoz, icerikKarari (db araması+karar+eylem çözümleme), rozetBilgisi,
+                       sebepMetni / kararOzeti (hızlı bant), istisnaSayisi + ISTISNA_UYARI_ESIGI
   data/db.json         paketle gelen veritabanı (şimdilik boş)
 manifests/             manifest.chromium.json, manifest.firefox.json
 scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır)
@@ -180,6 +185,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 5 | Etiket 3 durumlu; en sert sebep kazanır; 51 test | ⚠️ **kısmen:** etiket eylemi tamam. **Planlanan ama dosyalarda bulunmayan parçalar:** hızlı ekleme bandında karar+sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı → `PLAN.md` PR 6C |
 | 6 | Tam sayfa engel banner'ı | ⚠️ kodlandı (commit 0b2272b). Gerçek tarayıcıda "tetiklenmiyor" bildirildi. Sonradan: jsdom'da çalıştığı doğrulandı; bulunan hatalar düzeltildi (aşağıda). **Gerçek YouTube'da hâlâ doğrulanmadı** |
 | 6B | **Lider dökümanına uyum** (2026-10-19): video-yoksa-kanal kaynak seçimi, `kanalKontrol`, kararsız (şema+karar+arayüz), konu/etiket başına eylem + "Uyarı sayfası", kanal sayfası banner'ı, ilk açılışta PIN seçimi, banner/`content.js` düzeltmeleri; `tests/karar-v2.test.js` (28 test) + jsdom arayüz (26 kontrol) ve içerik betiği denemeleri | ✅ **Node/jsdom'da doğrulandı; tarayıcıda denenmedi.** Eski birim testleri yeni kurala uyduruldu (6/#15) |
+| 6C | **Hızlı ekleme bandı + istisna çerçevesi** (2026-10-19): `content.js`'te `sayfaDurumu` mesajı; pop-up önce içerik betiğine sorar, olmazsa URL'den hesaplar; bantta karar+sebep; "Her zaman izin ver / Her zaman engelle"; Listeler → **İstisnalar**; ~50 kayıtta uyarı; "Bildir" gizli/pasif; `tests/pr6c.test.js` (3 test) | ✅ `node --test` yeşil (82 test); **gerçek pop-up'ta denenmedi** |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -235,7 +241,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 13. Rozet metinleri değişti ("GÜVENLİ/EĞİTİCİ" → "BEYAZ LİSTE" vb.).
 14. **Banner/filtre gerçek tarayıcıda doğrulanmadı.** jsdom'da engelli video ve kanal sayfasında banner çıkıyor, istisna butonu çalışıyor, yeniden çizim yok. Tarayıcıda test için: derleyin, uzantıyı yenileyin, YouTube'u F5 ile yenileyin, konsolu açıp **"YT Filter" ile filtreleyin**: `YT Filter: hazır {mod, etiketlenmemis, beyaz, kara, dbKanal, dbVideo, dbHatalar}` ve her sayfa için `YT Filter: sayfa kararı …` satırı görünmeli. Satır yoksa betik çalışmıyordur (yükleme/derleme); satır var ama banner yoksa karar/CSS sorunudur.
 15. **Eski testler:** PR 2–5 testleri 2026-10-19'da yeni kurala uyduruldu (video-yoksa-kanal, `kararsiz*` alanları, eski `"engelli"` → genel eylem). `node --test` bu düzeltmeyle birlikte yeşil.
-16. **Hızlı ekleme bandı** hâlâ yalnızca kimlik + Kara/Beyaz liste gösteriyor; karar ve sebebi göstermiyor, `content.js`'te `onMessage` yok (PR 6C).
+16. **Hızlı ekleme bandı (PR 6C) Node'da test edildi, gerçek pop-up'ta denenmedi.** Mesajlaşma (`chrome.tabs.sendMessage`) ve YouTube sekmesiyle karar+sebep gösterimi tarayıcıda doğrulanmalı. İçerik betiği yoksa URL yedeği devreye girer; bu yolda karar yerel `icerikKarari` ile hesaplanır.
 17. **Asgari oy eşiği** yok: tek upvote'lu etiket (Argo +1) "her zaman engelle" kuralıyla videoyu engelletebilir (site tarafı kararı).
 18. İlk açılış PIN kartı yalnızca **kilit açıkken** görünür; `pinIptal` işaretliyse ya da PIN yoksa zaten açıktır, sorun yok. PIN, yedek içe aktarmadan gelirse kart çıkmaz.
 
@@ -246,6 +252,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 ```
 node scripts/build.js                       # chromium/ ve firefox/ üretir  (--target chromium | --watch)
 node --test tests/karar-v2.test.js          # yeni kurallar (28 test)
+node --test tests/pr6c.test.js              # hızlı bant sebep/özet/istisna sayısı (3 test)
 node --test                                  # tüm birim testleri (Node 18+; klasör yolu vermeyin, Node 22'de hata verir)
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.

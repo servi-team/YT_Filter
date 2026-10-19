@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-19 (ekip liderinin tasarım dökümanı geldi; PR 6B ile karar algoritması ona uyduruldu; hızlı ekleme bandı PR 6C'ye ayrıldı)
+> Son güncelleme: 2026-10-19 (PR 6C: hızlı ekleme bandında karar+sebep, İstisnalar sekmesi, çok-istisna uyarısı)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -23,7 +23,7 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | 5 | Çerçeve düzeltmesi + etiket başına eylem | ⚠️ **kısmen.** Etiket başına eylem ✅. **Eksik:** hızlı ekleme bandında karar+sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı (dosyalarda yok) → **PR 6C** |
 | 6 | Engel sayfası (tam sayfa banner) | ⚠️ kodlandı (0b2272b). jsdom'da çalışıyor; **gerçek tarayıcıda doğrulanmadı** (aşağıdaki test listesi) |
 | **6B** | **Lider dökümanına uyum:** video-yoksa-kanal, kanal kontrol ayarı, kararsız, konu/etiket başına eylem + Uyarı sayfası, kanal sayfası banner'ı, PIN seçimi, banner düzeltmeleri | ✅ **Node birim testleri yeşil (eski testler güncellendi); tarayıcıda denenmedi** |
-| **6C** | **Hızlı ekleme bandı: karar + sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı** | ⏳ sırada |
+| **6C** | **Hızlı ekleme bandı: karar + sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı** | ✅ kodlandı, `node --test` yeşil; **tarayıcıda denenmedi** |
 | 7 | İçe/dışa aktarma: çakışma diyaloğu, veritabanı JSON'u içe aktarma | ⏳ |
 | 8 | Sağlamlaştırma ve mağaza hazırlığı | ⏳ |
 | S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir) |
@@ -96,12 +96,13 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 ### PR 6B — ✅ tamam (2026-10-19)
 `decision.js` yeniden yazıldı (kaynak seçimi, `kanalKontrol`, kararsız); şema: `konular/etiketler` eylem değerleri, `kanalKontrol`, `kararsiz`, `engelEylemi` ∋ `uyari`; `db.js`/`kayitDogrula` kararsız + ana konusuz kayıt; `engine.js` eylem çözümleme; `content.js` (kanal sayfası banner'ı, uyarı kapağı, yeniden çizim/yükleme/Firefox düzeltmeleri, günlük); arayüz (kanal kontrol, kararsız, konu/etiket menüsü, PIN kartı); `tests/karar-v2.test.js` (28). **Kabul:** `SISTEM_TASARIMI.md` bölüm 4 örnekleri testte geçiyor; eski kullanıcı verisi bozulmuyor. **Kalan:** gerçek tarayıcı doğrulaması (`DEVIR_NOTU` 6/#14). Eski testler 6B kurallarına uyduruldu.
 
-### PR 6C — Hızlı ekleme bandı ve istisna çerçevesi (PR 5'te eksik kalanlar)
-- `content.js`: `runtime.onMessage` — pop-up'a aktif sayfanın video/kanal ID'sini ve **kararını + sebeplerini** döndürür (`icerikKarari` zaten sebep listesi üretir).
-- Pop-up: hızlı ekleme bandı "Şu an: ENGELLENİYOR/AÇIK — sebep…" gösterir, sonra "Her zaman izin ver / Her zaman engelle".
-- Listeler sekmesi → "İstisnalar"; çok-istisna uyarısı (~50 kayıt); "Bildir" düğmesi (pasif).
-- Testler: mesajlaşma (jsdom), sebep metinleri.
-- **Kabul:** kullanıcı bir sayfada kararın neden verildiğini pop-up'ta görüyor; liste, kural yerine geçmiyor.
+### PR 6C — ✅ kodlandı (2026-10-19)
+- `content.js`: üst çerçevede `runtime.onMessage` (`tur: 'sayfaDurumu'`) — kimlik + `kararOzeti`.
+- Pop-up önce içerik betiğine sorar, olmazsa URL yedeği + yerel `icerikKarari`.
+- Hızlı bant: "Şu an: ENGELLENİYOR/AÇIK" + sebep; düğmeler "Her zaman izin ver / Her zaman engelle"; "Bildir" gizli/pasif.
+- Listeler sekmesi → **İstisnalar**; ~50 kayıtta uyarı; spec adları parantezde.
+- Testler: `tests/pr6c.test.js` (sebep metni, özet, istisna sayısı). Mesajlaşma Node'da yok; tarayıcıda denenmedi.
+- **Kalan:** gerçek pop-up'ta YouTube sekmesiyle doğrulama.
 
 ### PR 7 — İçe/dışa aktarma
 - Liste içe aktarırken ad çakışması: **üzerine yaz / yeniden adlandır / birleştir.**

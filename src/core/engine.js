@@ -67,6 +67,47 @@
     const konuAdi = (id) => { const k = T.KONULAR.find(x => x.id === id); return k ? k.ad : id; };
     const etiketAdi = (id) => { const e = T.ETIKETLER.find(x => x.id === id); return e ? e.ad : id; };
 
+    /** Banner ve pop-up için okunur sebep metni. */
+    function sebepMetni(sebep) {
+        if (!sebep) return '';
+        const nerede = sebep.kaynak === 'video' ? ' (video)' : sebep.kaynak === 'kanal' ? ' (kanal)' : '';
+        switch (sebep.tur) {
+            case 'liste':
+                if (sebep.liste === 'beyaz') return `Beyaz listede${nerede}`;
+                if (sebep.liste === 'kara') return `Kara listede${nerede}`;
+                return `"${sebep.liste}" listesinde${nerede}`;
+            case 'etiketlenmemis': return 'Bilinmeyen içerik (veritabanında kaydı yok)';
+            case 'etiket': return `Etiket: ${etiketAdi(sebep.id)}${nerede}`;
+            case 'konu': return `Engelli konu: ${konuAdi(sebep.id)}${nerede}`;
+            case 'kararsiz-etiket': return `Etiket (kararsız): ${etiketAdi(sebep.id)}${nerede}`;
+            case 'kararsiz-konu': return `Engelli konu (kararsız): ${konuAdi(sebep.id)}${nerede}`;
+            case 'izinli-konu-yok': return 'İzinli konu yok';
+            case 'shorts': return 'Shorts gizleme ayarı açık';
+            default: return sebep.tur || '';
+        }
+    }
+
+    /** Pop-up hızlı ekleme bandı: "Şu an: ENGELLENİYOR — sebep". */
+    function kararOzeti(sonuc) {
+        const sebepler = ((sonuc && sonuc.sebepler) || []).map(sebepMetni).filter(Boolean);
+        const engelleniyor = !!(sonuc && sonuc.karar === 'engelle');
+        return {
+            etiket: engelleniyor ? 'ENGELLENİYOR' : 'AÇIK',
+            sebep: sebepler.join(' · ') || (engelleniyor ? 'Filtre kuralı' : 'Kural izin veriyor'),
+            engelleniyor
+        };
+    }
+
+    const ISTISNA_UYARI_ESIGI = 50;
+
+    function istisnaSayisi(ayar) {
+        const L = ayar && ayar.listeler;
+        if (!L) return 0;
+        let n = Object.keys(L.beyaz || {}).length + Object.keys(L.kara || {}).length;
+        (L.ozel || []).forEach(l => { n += Object.keys((l && l.uyeler) || {}).length; });
+        return n;
+    }
+
     /**
      * Kartın üzerindeki rozet: { metin, sinif | renkAnahtari } ya da null (rozet kapalıysa).
      * sinif: inject.css'teki yt-filter-badge-<sinif> (safe, warning, untagged, educational, profanity).
@@ -91,5 +132,5 @@
         }
     }
 
-    return { ayarCoz, icerikKarari, rozetBilgisi };
+    return { ayarCoz, icerikKarari, rozetBilgisi, sebepMetni, kararOzeti, istisnaSayisi, ISTISNA_UYARI_ESIGI };
 });
