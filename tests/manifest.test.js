@@ -30,3 +30,9 @@ test('manifest: tarayıcı sürümleri MAIN world ile uyumlu, içerik betiği s�
         assert.deepStrictEqual(m.content_scripts[0].js, icerikBetigiSirasi);
     });
 });
+
+test('manifest: sürümler iki tarayıcıda eşit ve mağaza biçiminde (PR 8F)', () => {
+    assert.strictEqual(chromium.version, firefox.version);
+    assert.match(chromium.version, /^\d+(\.\d+){1,3}$/);
+    assert.strictEqual(chromium.name, firefox.name);
+});

@@ -5,8 +5,19 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 ## [Yayınlanmamış] — 2.0 geliştirme dalı
 
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
-PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)**, **PR 8B (jsdom smoke testleri repoda)**, **PR 8C (PIN karma saklama)**, **PR 8D (yoklama azaltma)** ve **PR 8E (listelerde kanal adı/avatarı, 2026-10-19)** kodlandı.
-PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D ve 8E **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**
+PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)**, **PR 8B (jsdom smoke testleri repoda)**, **PR 8C (PIN karma saklama)**, **PR 8D (yoklama azaltma)**, **PR 8E (listelerde kanal adı/avatarı)** ve **PR 8F (mağaza hazırlığı, 2026-10-19)** kodlandı.
+PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**
+
+### PR 8F — Mağaza hazırlığı (2026-10-19)
+
+#### Eklendi
+- **`docs/MAGAZA_HAZIRLIK.md`:** mağaza listeleme metinleri (kısa/uzun açıklama, kategori), izin gerekçeleri tablosu, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, adım adım **sürüm akışı** (test → version yükselt → build → zip → yükleme → etiket) ve yayın öncesi kontrol listesi.
+- **`docs/GIZLILIK.md`:** yayınlanabilir gizlilik politikası metni (veri toplanmaz; yerel depolama; izinler; TR + kısa EN özet).
+- **`tests/manifest.test.js` (+1 test):** iki manifestte sürüm ve ad eşitliği + sürüm biçimi (`\d+(\.\d+){1,3}`) denetimi. Toplam **113 test** yeşil (101 saf + 12 smoke).
+- `.gitignore`: `store/` (ekran görüntüleri repoya girmez).
+
+#### Kalan (elle)
+- Ekran görüntülerinin çekilmesi, gizlilik politikasının barındırılması (ör. GitHub Pages), mağaza hesaplarına yükleme. Yayın için `version` alanının `1.0` → `2.0` yükseltilmesi önerilir (adımlar belgede).
 
 ### PR 8E — Listelerde kanal adı/avatarı (2026-10-19)
 
@@ -184,8 +195,8 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Bilinen sınırlar (henüz yapılmadı / çözülüyor)
 - **Veritabanı neredeyse boş ve düzenleme sitesi yok:** çoğu içerik "bilinmeyen" kalıyor; konu/etiket kuralları test verisi veya PR 7'deki `db.json` içe aktarma ile görülebilir.
-- **PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D ve 8E gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır; 8C'de PIN akışı (kaydet → kilitle → eski düz metin yükseltme), 8D'de YouTube gezinmesi/geri tuşu, 8E'de kanal ekleme → avatar/ad görünümü tarayıcıda denenmeli.
-- **Testler** `node --test` ile yeşil (**112 test**: 100 saf + 12 jsdom smoke).
+- **PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır; 8C'de PIN akışı (kaydet → kilitle → eski düz metin yükseltme), 8D'de YouTube gezinmesi/geri tuşu, 8E'de kanal ekleme → avatar/ad görünümü tarayıcıda denenmeli. 8F yalnızca doküman ve sürüm kontrol testidir (davranış değişikliği yok).
+- **Testler** `node --test` ile yeşil (**113 test**: 101 saf + 12 jsdom smoke).
 - **Hızlı ekleme bandının mesajlaşması** gerçek pop-up'ta denenmedi; içerik betiği yoksa URL yedeği kullanılır.
 - **Lider onayı bekleyen yorumlar:** ana konu ölçütü (net puan mı upvote mu), beraberlikte sıra, Serbest'te kararsız konu, Orta/Katı'da kararsız "engelle" anlamı, asgari oy eşiği — `docs/SISTEM_TASARIMI.md` bölüm 6.
 - **Tam yedek içe aktarma** hâlâ mevcut ayarların üzerine yazar (onay sorar); liste içe aktarma ise birleştirir/çakışma sorar.
@@ -196,6 +207,7 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Geliştirici notları
 - **Derleme:** `node scripts/build.js` → `chromium/` ve `firefox/`. Tarayıcıya bu klasörler yüklenir; kaynak `src/`'dir. **Her değişiklikten sonra yeniden derleyin.**
-- **Test:** `node --test` — 112 test (100 saf + 12 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
+- **Test:** `node --test` — 113 test (101 saf + 12 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
+- **Yayın:** `docs/MAGAZA_HAZIRLIK.md` (listeleme metinleri, izin gerekçeleri, sürüm akışı, kontrol listesi) + `docs/GIZLILIK.md` (yayınlanabilir gizlilik metni).
 - **Uyumluluk:** eski yedek dosyaları yeni sürümde içe aktarılabilir; yeni yedekler eski sürümde **çalışmaz.** Yeni `db.json` alanları isteğe bağlıdır; ancak ana konusuz kayıtları eski eklenti sürümleri atlar.
 - **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `docs/DEVIR_NOTU.md`, plan: `PLAN.md`.

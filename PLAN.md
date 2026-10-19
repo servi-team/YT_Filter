@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-19 (PR 8E: listelerde kanal adı/avatarı; öncesi 8D yoklama azaltma, 8C PIN karma, 8B smoke, 8A manifest)
+> Son güncelleme: 2026-10-19 (PR 8F: mağaza hazırlığı; öncesi 8E avatar, 8D yoklama azaltma, 8C PIN karma, 8B smoke, 8A manifest)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -30,7 +30,8 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **8C** | **PIN karma saklama:** `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon), arayüz akışları, eski düz metin yükseltme | ✅ kodlandı, `node --test` yeşil (109 test); tarayıcıda PIN akışı denenmeli |
 | **8D** | **Yoklama azaltma:** `content.js` olay tabanlı sayfa kontrolü, `inject_helper.js` MutationObserver taraması | ✅ kodlandı, `node --test` yeşil (110 test); tarayıcıda gezinme/geri tuşu denenmeli |
 | **8E** | **Listelerde kanal adı/avatarı:** `kanalBilgileri` deposu, sayfadan toplama, listede avatar + ad | ✅ kodlandı, `node --test` yeşil (112 test); tarayıcıda kanal ekleme denenmeli |
-| 8 | Sağlamlaştırma ve mağaza hazırlığı (manifest ✅ 8A, smoke ✅ 8B, PIN ✅ 8C, performans ✅ 8D, avatar ✅ 8E) | ⏳ sürüyor: mağaza hazırlığı |
+| **8F** | **Mağaza hazırlığı:** listeleme metinleri, gizlilik politikası, sürüm akışı, kontrol listesi | ✅ kodlandı (`docs/MAGAZA_HAZIRLIK.md`, `docs/GIZLILIK.md`), 113 test; **elle:** ekran görüntüleri + mağaza yüklemesi |
+| 8 | Sağlamlaştırma ve mağaza hazırlığı (8A ✅, 8B ✅, 8C ✅, 8D ✅, 8E ✅, 8F ✅ kod tarafı) | ✅ tamam: kalan işler tarayıcı/mağaza hesabı gerektirir (aşağıdaki doğrulama listesi) |
 | S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir) |
 
 ### Önce yapılacak: PR 6 / 6B / 6C / 7 / 8A / 8C gerçek tarayıcı doğrulaması
@@ -124,6 +125,12 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 - Firefox `strict_min_version` **128** (MAIN world), Chromium `minimum_chrome_version` **111**.
 - `tests/manifest.test.js` (2 test) kararları koruyor. **Kalan:** tarayıcıda yükleme denemesi.
 
+### PR 8F — ✅ Mağaza hazırlığı (2026-10-19)
+- `docs/MAGAZA_HAZIRLIK.md`: listeleme metinleri (≤132 karakter kısa açıklama, uzun açıklama, kategori), izin gerekçeleri tablosu, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, sürüm akışı (test → version → build → zip → yükleme → etiket), yayın öncesi kontrol listesi.
+- `docs/GIZLILIK.md`: yayınlanabilir gizlilik politikası (TR + kısa EN özet); barındırma önerisi GitHub Pages.
+- `tests/manifest.test.js` +1: sürüm/ad iki manifestte eşit ve `\d+(\.\d+){1,3}` biçiminde. Toplam **113 test** (101 saf + 12 smoke).
+- `.gitignore`: `store/`. **Elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza hesaplarına yükleme, yayında `version` → `2.0`.
+
 ### PR 8E — ✅ Listelerde kanal adı/avatarı (2026-10-19)
 - Yeni depo anahtarı `kanalBilgileri` (`{ "@handle": { ad, avatar } }`, yalnızca görüntüleme; kuralları etkilemez). `background.js` kurulumda boş nesne yazar; tam yedek taşır, içe aktarmada `kanalBilgileriTemizle` ile doğrulanır.
 - `core/taxonomy.js`: `kanalBilgileriTemizle` (ad ≤ 120; avatar yalnızca YouTube görsel alan adları). `content.js`: `sayfaKimligi` artık `kanalAdi`/`avatar` döner.
@@ -153,7 +160,7 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 - ~~Kanal adı/avatarını kullanıcı listelerinde göstermek (kullanıcı eklerken sayfadan toplama).~~ ✅ 8E'de yapıldı (pop-up ekleme yolları; banner'daki "Beyaz listeye ekle" kapsam dışı).
 - ~~Arayüz ve içerik betiği smoke testlerinin repoya alınması (`tests/smoke/`, jsdom devDependency).~~ ✅ 8B'de yapıldı.
 - ~~PIN: düz metin yerine karma saklama (hâlâ yalnızca arayüz kilidi olduğu belgelenir).~~ ✅ 8C'de yapıldı (PBKDF2-SHA256, eski kayıt yükseltme).
-- Mağaza: gizlilik metni, ekran görüntüleri, sürüm akışı.
+- ~~Mağaza: gizlilik metni, ekran görüntüleri, sürüm akışı.~~ ✅ 8F'de doküman tarafı yapıldı (`docs/MAGAZA_HAZIRLIK.md`, `docs/GIZLILIK.md`); **elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza yüklemesi.
 
 ### Düzenleme sitesi ("YouTube Filter Store", S) — `db.json` şeması dondu, paralel başlayabilir
 - **S0 — Prototip (önce):** link yapıştırınca kanal adı/avatar/ID'nin API'siz alınması (video: `oembed`; kanal sayfası: HTML meta). Kırılganlık ölçülür.

@@ -1,9 +1,11 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-19 (PR 8A + 8B + 8C + 8D + 8E) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-19 (PR 8A–8F) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
 
+> **PR 8F özeti (2026-10-19):** Mağaza hazırlığı. `docs/MAGAZA_HAZIRLIK.md` (listeleme metinleri, izin gerekçeleri, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, adım adım sürüm akışı: test → version → build → zip → yükleme → etiket, yayın öncesi liste) ve `docs/GIZLILIK.md` (yayınlanabilir gizlilik politikası, TR + EN özet). `tests/manifest.test.js` +1: iki manifestte sürüm/ad eşitliği. Toplam **113 test** yeşil (101 saf + 12 smoke). **Kalan (elle):** ekran görüntüleri, gizlilik URL'i barındırma, mağaza hesaplarına yükleme, yayında `version` 2.0'a çıkarma.
+>
 > **PR 8E özeti (2026-10-19):** Kullanıcı pop-up'tan kanal eklerken sayfadaki kanal adı/avatarı toplanır ve İstisnalar listesinde gösterilir (avatar + `Ad (@handle)`). Yeni depo anahtarı `kanalBilgileri` (yalnızca görüntüleme; liste kurallarını etkilemez); `core/taxonomy.js`'te `kanalBilgileriTemizle` (avatar yalnızca YouTube görsel alan adları, ad ≤ 120); `content.js` `sayfaKimligi` artık `kanalAdi`/`avatar` döner; tam yedek bu anahtarı taşır. Toplam **112 test** yeşil (100 saf + 12 smoke). **Tarayıcıda kanal ekleme → avatar/ad görünümü denenmeli.**
 >
 > **PR 8D özeti (2026-10-19):** Yoklama azaltıldı. `content.js`'te 1 sn'lik `setInterval` yerine `yt-navigate-finish` / `yt-page-data-updated` / `popstate` olayları (200 ms birleştirme) + 5 sn yedek; `inject_helper.js`'te 2 sn'lik `setInterval(scan)` yerine `MutationObserver` (en fazla ~800 ms'de bir) + `yt-navigate-finish` + birleştirilmiş kaydırma + 5 sn yedek. Smoke'a SPA gezinme testi eklendi. Toplam **110 test** yeşil (99 saf + 11 smoke). Davranış aynı; boşta CPU uyanmaları azalır. **Tarayıcıda gezinme/geri tuşu denenmeli.**
@@ -122,7 +124,8 @@ scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yü
 tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 + manifest + pin (Node'un yerleşik test koşucusu)
 tests/smoke/           jsdom + sahte chrome.* ile options.html (7 test) ve content.js (5 test) smoke testleri
 docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözleşme), db.test-ornek.json,
-                       db.test-ornek-kararsiz.json, DEVIR_NOTU.md
+                       db.test-ornek-kararsiz.json, DEVIR_NOTU.md, MAGAZA_HAZIRLIK.md (listeleme/izin/sürüm akışı),
+                       GIZLILIK.md (yayınlanabilir gizlilik metni)
 ```
 **Önemli:** Tarayıcıya `chromium/` klasörü yüklenir; kaynak her zaman `src/`. `node scripts/build.js` ile derlenir, `--watch` ile izlenir. Doğrudan `chromium/` içini düzenlemeyin. **Eski bir `chromium/` klasörünün yüklü kalması, "değişiklik görünmüyor" şikâyetinin ilk sebebidir.**
 
@@ -208,6 +211,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 8C | **PIN karma saklama** (2026-10-19): `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon, rastgele tuz); `options.js` kurulum/güncelleme/giriş akışları karma üretir/doğrular; eski düz metin ilk girişte yükseltilir; `tests/pin.test.js` (3) + smoke yükseltme testi | ✅ `node --test` yeşil (**109 test**: 99 saf + 10 smoke); PIN akışı tarayıcıda denenmeli |
 | 8D | **Yoklama azaltma** (2026-10-19): `content.js` 1 sn yoklama → olay (`yt-navigate-finish`/`yt-page-data-updated`/`popstate`, 200 ms birleştirme) + 5 sn yedek; `inject_helper.js` 2 sn tarama → `MutationObserver` (~800 ms birleştirme) + gezinme/kaydırma + 5 sn yedek; smoke SPA gezinme testi | ✅ `node --test` yeşil (**110 test**: 99 saf + 11 smoke); tarayıcıda gezinme/geri tuşu denenmeli |
 | 8E | **Listelerde kanal adı/avatarı** (2026-10-19): yeni `kanalBilgileri` deposu; `kanalBilgileriTemizle` (taxonomy); `content.js` `kanalAdi`/`avatar` toplar; hızlı bant + manuel ekleme kaydeder; listede avatar + `Ad (@handle)`; tam yedek taşır | ✅ `node --test` yeşil (**112 test**: 100 saf + 12 smoke); tarayıcıda kanal ekleme denenmeli |
+| 8F | **Mağaza hazırlığı** (2026-10-19): `docs/MAGAZA_HAZIRLIK.md` + `docs/GIZLILIK.md`; manifest sürüm/ad eşitlik testi; `.gitignore`'a `store/` | ✅ `node --test` yeşil (**113 test**: 101 saf + 12 smoke); **elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza yüklemesi |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -281,7 +285,7 @@ node --test tests/pr7.test.js               # liste paketi/çakışma birleştir
 node --test tests/manifest.test.js          # açıklama/izin ve sürüm/script sırası (2 test)
 node --test tests/pin.test.js               # PIN karma biçimi/doğrulama, eski düz metin uyumu (3 test)
 node --test tests/smoke/options.test.js tests/smoke/content.test.js   # jsdom smoke (12 test)
-node --test                                  # tüm testler (Node 18+ saf testler; smoke için Node >= 20; klasör yolu vermeyin, Node 22'de hata verir) — 112 test
+node --test                                  # tüm testler (Node 18+ saf testler; smoke için Node >= 20; klasör yolu vermeyin, Node 22'de hata verir) — 113 test
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.
 
