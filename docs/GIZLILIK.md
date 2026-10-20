@@ -25,8 +25,9 @@ Eklenti yalnızca youtube.com sayfalarında çalışır. Çalışırken şu bilg
 ## 3. Verilerin silinmesi
 
 - Eklentiyi kaldırdığınızda tarayıcı, yerel deposunu da siler.
-- Pop-up → **Yedek** sekmesinden "Sıfırla / temizle" işlemleriyle verileri kendiniz de silebilirsiniz.
-- PIN kilitlidir yalnızca arayüz kilididir; kaldırmak için eklentiyi kaldırmanız veya tarayıcı depolamasını temizlemeniz yeterlidir.
+- Pop-up → **Sistem** sekmesinde yalnızca içe aktarılan `db.json` veritabanını "Paketli veritabanına dön" ile kaldırabilirsiniz; ayarları, listeleri ve PIN'i sıfırlayan bir düğme yoktur.
+- Ayarlar, listeler ve PIN dahil tüm yerel verileri silmek için eklentiyi kaldırın veya tarayıcı depolamasını temizleyin.
+- PIN yalnızca arayüz kilididir (verileri şifrelemez).
 
 ## 4. İzinler
 

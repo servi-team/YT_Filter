@@ -48,7 +48,7 @@
 |---|---|---|
 | `id` | ✅ | **Kanal:** `UC` + 22 karakter (`[A-Za-z0-9_-]`). **Video:** 11 karakter. Geçersizse kayıt atlanır. |
 | `handle` | – | Yalnızca kanal. `@` ile başlar, `[A-Za-z0-9._-]`. Yanlış biçimliyse kayıt atlanır. Eşleşmede küçük harfe çevrilir. |
-| `ad`, `avatar` | – | Yalnızca kanal; arayüzde gösterilir (avatar henüz kullanılmıyor). |
+| `ad`, `avatar` | – | Yalnızca kanal; arayüzde gösterilir. `avatar` varsa liste satırında kullanılır; yoksa veya yüklenemezse tür simgesi gösterilir. |
 | `anaKonu` | koşullu | Konu kimliği (`taxonomy.KONULAR`). **Düzenleme sitesi her zaman girer.** Oylamada hiçbir konu pozitif çıkmazsa boş olabilir. |
 | `yanKonular[]` | – | Konu kimlikleri. **Doluysa `anaKonu` zorunludur.** `anaKonu` burada tekrar edilemez. |
 | `etiketler[]` | – | Kesinleşmiş (aktif) etiket kimlikleri (`taxonomy.ETIKETLER`). |

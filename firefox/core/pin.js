@@ -33,7 +33,8 @@
      * Dönüş: "pbkdf2-sha256$120000$<tuz>$<ozet>" biçiminde tek satır.
      */
     async function pinKarmala(pin, { tuz, iterasyon = PIN_ITERASYON } = {}) {
-        const kripto = globalThis.crypto;
+        // Node 18'de WebCrypto global değildir; tarayıcıda globalThis.crypto kullanılır.
+        const kripto = globalThis.crypto || (typeof require === 'function' ? require('crypto').webcrypto : null);
         if (!kripto || !kripto.subtle) throw new Error('WebCrypto bu ortamda yok');
         const tuzUyg = tuz ? baz64Baytlara(tuz) : kripto.getRandomValues(new Uint8Array(PIN_TUZ_UZUNLUK));
         const anahtar = await kripto.subtle.importKey('raw', new TextEncoder().encode(String(pin)), 'PBKDF2', false, ['deriveBits']);

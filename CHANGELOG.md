@@ -57,10 +57,10 @@ PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F **Node testleriyle doğrulandı** (ara
 
 #### Eklendi (geliştiriciler için)
 - **`tests/smoke/ortak.js`:** jsdom + sahte `chrome.*` (`storage.local`/`onChanged`, `runtime`, `tabs`) ve `bekle()` yardımcıları; `options.html` gerçek betik sırasıyla, `content.js` verilen sayfa HTML'i üzerinde çalıştırılır.
-- **`tests/smoke/options.test.js` (6 test):** ilk açılış + veritabanı durumu, PIN kurulumu/kilitleme/yanlış-doğru giriş (PR 8C), eski düz metin PIN'in karma'ya yükseltilmesi (PR 8C), içerik ekle/listele/sil, çakışma modalının üç stratejisi, hızlı bandın URL yedeğiyle dolması.
-- **`tests/smoke/content.test.js` (4 test):** kara listedeki video banner'ı + oynatıcı gizleme, "Beyaz listeye ekle" ile depo güncelleme, kara listedeki kanalın kartını gizleme, "Bulanıklaştır" eylemi.
+- **`tests/smoke/options.test.js` (bugün 7 test):** ilk açılış + veritabanı durumu, PIN kurulumu/kilitleme/yanlış-doğru giriş (PR 8C), eski düz metin PIN'in karma'ya yükseltilmesi (PR 8C), içerik ekle/listele/sil, çakışma modalının üç stratejisi, hızlı bandın URL yedeğiyle dolması, kanal ekleme → avatarlı satır (PR 8E).
+- **`tests/smoke/content.test.js` (bugün 5 test):** kara listedeki video banner'ı + oynatıcı gizleme, "Beyaz listeye ekle" ile depo güncelleme, kara listedeki kanalın kartını gizleme, "Bulanıklaştır" eylemi, SPA gezinmesinde olayla yeniden karar (PR 8D).
 - **`package.json`:** `jsdom ^27` devDependency + `npm test` betiği; `.gitignore` (node_modules). Smoke testleri için `npm install` gerekir (Node >= 20; saf testler Node 18+ ile çalışır).
-- Toplam 105 test yeşildi (96 saf + 9 smoke); PR 8C ile **109**.
+- PR 8B'de toplam 105 test yeşildi (96 saf + 9 smoke); 8F itibarıyla **113** (101 saf + 12 smoke).
 
 ### PR 8A — Manifest sertleştirmesi (2026-10-19)
 
@@ -77,7 +77,7 @@ PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F **Node testleriyle doğrulandı** (ara
 #### Kullanıcıya görünen değişiklikler
 - **Liste dışa aktarma:** İstisnalar sekmesinde "Listeleri dışa / içe aktar" kartı. Açılır listeden **tüm listeler**, beyaz liste, kara liste veya tek bir özel liste seçilip JSON olarak indirilir (`yt_filter_listeler.json` / listeye özel dosya adı).
 - **Liste içe aktarma:** Paket mevcut listelerle birleştirilir. Aynı adlı özel liste varsa üç seçenekli modal çıkar: **Birleştir (varsayılan) / Üzerine yaz / Yeniden adlandır**. Yeniden adlandırma TR-duyarsız benzersiz ad üretir (`Okul (2)`). Beyaz/kara listelerde üyeler birleşir; bir anahtar her zaman tek listede kalır (sonraki liste taşır).
-- **`db.json` içe aktarma:** Yedek sekmesinde "Veritabanı (db.json)" kartı. `sema 1` ve `veriSurumu` doğrulanır; kaç kanal/video alınacağı ve kaç geçersiz kaydın atlanacağı onaydan önce gösterilir. Paketli veriden daha eski veya eşit sürüm için uyarı verilir (saklanır ama eşitlikte paketli veri kullanılır). "Paketli veritabanına dön" ile içe aktarılan veritabanı silinir.
+- **`db.json` içe aktarma:** Sistem sekmesinde "Veritabanı (db.json)" kartı. `sema 1` ve `veriSurumu` doğrulanır; kaç kanal/video alınacağı ve kaç geçersiz kaydın atlanacağı onaydan önce gösterilir. Paketli veriden daha eski veya eşit sürüm için uyarı verilir (saklanır ama eşitlikte paketli veri kullanılır). "Paketli veritabanına dön" ile içe aktarılan veritabanı silinir.
 - **Veritabanı durumu** kartta özetlenir: paketli sürüm, içe aktarılan sürüm (aktif/pasif), kanal/video sayısı, atlanan kayıt sayısı.
 
 #### Eklendi (geliştiriciler için)
@@ -195,14 +195,14 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Bilinen sınırlar (henüz yapılmadı / çözülüyor)
 - **Veritabanı neredeyse boş ve düzenleme sitesi yok:** çoğu içerik "bilinmeyen" kalıyor; konu/etiket kuralları test verisi veya PR 7'deki `db.json` içe aktarma ile görülebilir.
-- **PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `docs/DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır; 8C'de PIN akışı (kaydet → kilitle → eski düz metin yükseltme), 8D'de YouTube gezinmesi/geri tuşu, 8E'de kanal ekleme → avatar/ad görünümü tarayıcıda denenmeli. 8F yalnızca doküman ve sürüm kontrol testidir (davranış değişikliği yok).
+- **PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır; 8C'de PIN akışı (kaydet → kilitle → eski düz metin yükseltme), 8D'de YouTube gezinmesi/geri tuşu, 8E'de kanal ekleme → avatar/ad görünümü tarayıcıda denenmeli. 8F yalnızca doküman ve sürüm kontrol testidir (davranış değişikliği yok).
 - **Testler** `node --test` ile yeşil (**113 test**: 101 saf + 12 jsdom smoke).
 - **Hızlı ekleme bandının mesajlaşması** gerçek pop-up'ta denenmedi; içerik betiği yoksa URL yedeği kullanılır.
 - **Lider onayı bekleyen yorumlar:** ana konu ölçütü (net puan mı upvote mu), beraberlikte sıra, Serbest'te kararsız konu, Orta/Katı'da kararsız "engelle" anlamı, asgari oy eşiği — `docs/SISTEM_TASARIMI.md` bölüm 6.
-- **Tam yedek içe aktarma** hâlâ mevcut ayarların üzerine yazar (onay sorar); liste içe aktarma ise birleştirir/çakışma sorar.
+- **Tam yedek içe aktarma** hâlâ mevcut ayarların üzerine yazar (onay sorar); liste içe aktarma ise birleştirir/çakışma sorar. **Tam yedek dışa aktarma `dbOverride`'ı içermez** (dosya şişmesin diye); içe aktarma mevcut `dbOverride`'a dokunmaz.
 - Düzenleme sitesi ve oylama sistemi.
 - İzleme sayfasında kanal ID'si yok (yalnızca handle ile eşleşir).
-- Listelerde yalnızca veritabanında kayıtlı kanalların adı görünür; avatar yok.
+- Veritabanında kaydı olmayan ve YouTube sayfası dışından (manuel metinle) eklenen kanallarda avatar görünmez; sayfadan eklenen kanallarda ad/avatar `kanalBilgileri`'nden, veritabanı kayıtlarında `db.json`'dan gelir.
 - 5 sekmenin 430 px içinde sığması (yeni kontroller sonrası dahil) gerçek tarayıcıda doğrulanmadı.
 
 ### Geliştirici notları
@@ -210,4 +210,4 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 - **Test:** `node --test` — 113 test (101 saf + 12 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
 - **Yayın:** `docs/MAGAZA_HAZIRLIK.md` (listeleme metinleri, izin gerekçeleri, sürüm akışı, kontrol listesi) + `docs/GIZLILIK.md` (yayınlanabilir gizlilik metni).
 - **Uyumluluk:** eski yedek dosyaları yeni sürümde içe aktarılabilir; yeni yedekler eski sürümde **çalışmaz.** Yeni `db.json` alanları isteğe bağlıdır; ancak ana konusuz kayıtları eski eklenti sürümleri atlar.
-- **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `docs/DEVIR_NOTU.md`, plan: `PLAN.md`.
+- **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `DEVIR_NOTU.md`, plan: `PLAN.md`.

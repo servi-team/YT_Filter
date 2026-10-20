@@ -1,6 +1,6 @@
 # YouTube Filtreleyici — Plan
 
-> Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `docs/DEVIR_NOTU.md` bölüm 5'e taşınır.
+> Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `DEVIR_NOTU.md` bölüm 5'e taşınır.
 > Son güncelleme: 2026-10-19 (PR 8F: mağaza hazırlığı; öncesi 8E avatar, 8D yoklama azaltma, 8C PIN karma, 8B smoke, 8A manifest)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
@@ -26,7 +26,7 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **6C** | **Hızlı ekleme bandı: karar + sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı** | ✅ kodlandı, `node --test` yeşil; **tarayıcıda denenmedi** |
 | **7** | **İçe/dışa aktarma:** liste paketi (tek/tümü), çakışma diyaloğu (birleştir/üzerine yaz/yeniden adlandır), `db.json` içe aktarma + `dbOverride` | ✅ kodlandı, `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
 | **8A** | **Manifest sertleştirmesi:** açıklama düzeltildi, `google.com` izni kaldırıldı, Firefox ≥128 / Chrome ≥111 | ✅ kodlandı, `node --test` yeşil (96 test); tarayıcıda yalnızca yükleme denemesi kaldı |
-| **8B** | **jsdom smoke testleri repoda:** `tests/smoke/` (options 5 + content 4), `jsdom ^27` devDependency | ✅ kodlandı, `node --test` yeşil (105 test) |
+| **8B** | **jsdom smoke testleri repoda:** `tests/smoke/` (bugün options 7 + content 5), `jsdom ^27` devDependency | ✅ kodlandı, `node --test` yeşil (PR 8B'de 105 test; bugün 113) |
 | **8C** | **PIN karma saklama:** `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon), arayüz akışları, eski düz metin yükseltme | ✅ kodlandı, `node --test` yeşil (109 test); tarayıcıda PIN akışı denenmeli |
 | **8D** | **Yoklama azaltma:** `content.js` olay tabanlı sayfa kontrolü, `inject_helper.js` MutationObserver taraması | ✅ kodlandı, `node --test` yeşil (110 test); tarayıcıda gezinme/geri tuşu denenmeli |
 | **8E** | **Listelerde kanal adı/avatarı:** `kanalBilgileri` deposu, sayfadan toplama, listede avatar + ad | ✅ kodlandı, `node --test` yeşil (112 test); tarayıcıda kanal ekleme denenmeli |
@@ -116,7 +116,7 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 ### PR 7 — ✅ kodlandı (2026-10-19)
 - **`core/listeler.js` (yeni, saf):** `listePaketiOlustur(ayar, secim)` — `hepsi | beyaz | kara | ozel:<ad>`; `listePaketiCoz(json)` — paket + tam yedek biçimini kabul eder, üyeleri/liste adlarını doğrular, geçersizleri sayar; `listeleriBirlestir(mevcut, gelen, strateji)` — `birlestir | uzerine | yeniden`, mevcut nesneyi değiştirmez, bir anahtarın tek listede kalmasını sağlar.
 - **Arayüz (İstisnalar sekmesi):** "Listeleri dışa / içe aktar" kartı; tek liste veya tümü indirilebilir; içe aktarmada özel liste adı çakışırsa **Birleştir (varsayılan) / Üzerine yaz / Yeniden adlandır** modalı; "yeniden adlandır" `Ad (2)` üretir.
-- **Arayüz (Yedek sekmesi):** "Veritabanı (db.json)" kartı; `sema === 1` ve `veriSurumu` doğrulaması, `dbKur` ile geçerli/geçersiz kayıt sayısı, paketli veriden daha eski veya eşit sürüm uyarısı, `dbOverride` olarak saklama, "Paketli veritabanına dön".
+- **Arayüz (Sistem sekmesi):** "Veritabanı (db.json)" kartı; `sema === 1` ve `veriSurumu` doğrulaması, `dbKur` ile geçerli/geçersiz kayıt sayısı, paketli veriden daha eski veya eşit sürüm uyarısı, `dbOverride` olarak saklama, "Paketli veritabanına dön".
 - **Testler:** `tests/pr7.test.js` — 12 test (paket oluşturma/çözme, üç birleştirme stratejisi, liste taşıma, TR harf duyarlılığı, bozuk girdi). Toplam **94 test** yeşil.
 - **Kabul:** aynı adlı özel liste ikiye çıkmıyor (çözüm+birleştirme adı TR-duyarsız benzersizleştirir); bozuk JSON/dosya hiçbir listeyi değiştirmiyor (parse/merge mevcutu klonlar). **Kalan:** gerçek tarayıcıda dosya seçici + modal doğrulaması.
 
@@ -150,9 +150,9 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 
 ### PR 8B — ✅ jsdom smoke testleri repoda (2026-10-19)
 - `tests/smoke/ortak.js`: sahte `chrome.*` (storage/onChanged/runtime/tabs) + `bekle()`; `options.html` gerçek betik sırasıyla jsdom'da çalışır, `content.js` verilen sayfa HTML'i üzerinde.
-- `tests/smoke/options.test.js` (5): ilk açılış + db durumu, PIN kurulum/kilit/giriş, liste ekle-sil, çakışma modalı (birleştir/yeniden/vazgeç), hızlı bant URL yedeği.
-- `tests/smoke/content.test.js` (4): video banner + oynatıcı gizleme, beyaz listeye ekle, kart gizleme, bulanıklaştırma.
-- `jsdom ^27` devDependency + `npm test`; `.gitignore` eklendi. Smoke için `npm install` (Node >= 20). Toplam **105 test**.
+- `tests/smoke/options.test.js` (bugün 7 test; PR 8B'de 5 idi): ilk açılış + db durumu, PIN kurulum/kilit/giriş + eski düz metin yükseltme (8C), liste ekle-sil, çakışma modalı (birleştir/yeniden/vazgeç), hızlı bant URL yedeği, kanal ekleme → avatarlı satır (8E).
+- `tests/smoke/content.test.js` (bugün 5 test; PR 8B'de 4 idi): video banner + oynatıcı gizleme, beyaz listeye ekle, kart gizleme, bulanıklaştırma, SPA gezinme (8D).
+- `jsdom ^27` devDependency + `npm test`; `.gitignore` eklendi. Smoke için `npm install` (Node >= 20). PR 8B'de toplam **105 test**; sonraki PR'larla **113** (101 saf + 12 smoke).
 
 ### PR 8 — Sağlamlaştırma ve yayın hazırlığı
 - ~~Manifest açıklaması düzelt, izinleri daralt, Firefox `strict_min_version`/MAIN world testi.~~ ✅ 8A'da yapıldı; tarayıcıda yükleme denemesi kaldı.

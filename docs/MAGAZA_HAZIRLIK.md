@@ -16,7 +16,7 @@
 >
 > **Nasıl çalışır?**
 > - **Kural katmanı (Filtre sekmesi):** Modunuzu (Serbest / Orta / Katı), izin verdiğiniz konuları, engellediğiniz etiketleri ve her biri için eylemi (Gizle / Bulanıklaştır / Uyarı sayfası) seçersiniz.
-> - **Veri katmanı:** İçeriklerin konu ve etiketleri eklentiyle gelen gömülü veritabanından okunur; Yedek sekmesinden kendi `db.json` dosyanızı içe aktarabilirsiniz.
+> - **Veri katmanı:** İçeriklerin konu ve etiketleri eklentiyle gelen gömülü veritabanından okunur; Sistem sekmesinden kendi `db.json` dosyanızı içe aktarabilirsiniz.
 > - **İstisna katmanı:** Tek tek kanalları veya videoları "Her zaman izin ver / Her zaman engelle" listelerine ekleyerek kuralı geçersiz kılabilirsiniz. Kanal eklerken adı ve avatarı sayfadan otomatik toplanır.
 >
 > **Öne çıkanlar**

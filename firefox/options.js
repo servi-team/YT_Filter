@@ -561,7 +561,7 @@ function renderItemList() {
         const kanalMi = id.startsWith('@') || id.startsWith('uc');
         const satir = el('div', 'item-row');
         const bilgi = el('div', 'item-info');
-        const avatarUrl = kanalMi && sayfaBilgisi && sayfaBilgisi.avatar;
+        const avatarUrl = kanalMi && ((sayfaBilgisi && sayfaBilgisi.avatar) || (kanalKaydi && kanalKaydi.avatar));
         if (avatarUrl) {
             const avatar = el('img', 'item-avatar');
             avatar.src = avatarUrl;
@@ -921,8 +921,8 @@ function initEvents() {
     // PIN Güncelle
     document.getElementById('btnPinGuncelle').addEventListener('click', async () => {
         const yeni = document.getElementById('yeniPin').value.trim();
-        if (yeni.length < 4) {
-            alert("PIN kodu en az 4 haneli olmalıdır.");
+        if (!/^\d{4}$/.test(yeni)) {
+            alert("PIN tam 4 rakam olmalıdır.");
             return;
         }
         const karma = await YTF.pinKarmala(yeni); // PIN depoda düz metin tutulmaz
@@ -951,6 +951,8 @@ function initEvents() {
     // Dışa Aktarma
     document.getElementById('btnDisaAktar').addEventListener('click', async () => {
         const veri = await getStorageData(null);
+        // Kullanıcının içe aktardığı büyük db.json yedeğe girmesin; db ayrıca içe/dışa aktarılır.
+        delete veri.dbOverride;
         jsonIndir(veri, "yt_filter_yedek.json");
         showToast("Yedek dosyası indirildi");
     });
