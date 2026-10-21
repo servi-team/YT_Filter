@@ -25,14 +25,14 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **6B** | **Lider dökümanına uyum:** video-yoksa-kanal, kanal kontrol ayarı, kararsız, konu/etiket başına eylem + Uyarı sayfası, kanal sayfası banner'ı, PIN seçimi, banner düzeltmeleri | ✅ **Node birim testleri yeşil (eski testler güncellendi); tarayıcıda denenmedi** |
 | **6C** | **Hızlı ekleme bandı: karar + sebep, pop-up ↔ sayfa mesajlaşması, "İstisnalar" adlandırması, çok-istisna uyarısı** | ✅ kodlandı, `node --test` yeşil; **tarayıcıda denenmedi** |
 | **7** | **İçe/dışa aktarma:** liste paketi (tek/tümü), çakışma diyaloğu (birleştir/üzerine yaz/yeniden adlandır), `db.json` içe aktarma + `dbOverride` | ✅ kodlandı, `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
-| **8A** | **Manifest sertleştirmesi:** açıklama düzeltildi, `google.com` izni kaldırıldı, Firefox ≥128 / Chrome ≥111 | ✅ kodlandı, `node --test` yeşil (96 test); tarayıcıda yalnızca yükleme denemesi kaldı |
-| **8B** | **jsdom smoke testleri repoda:** `tests/smoke/` (bugün options 7 + content 5), `jsdom ^27` devDependency | ✅ kodlandı, `node --test` yeşil (PR 8B'de 105 test; bugün 113) |
+| **8A** | **Manifest sertleştirmesi:** açıklama düzeltildi, `google.com` izni kaldırıldı, Firefox ≥128 (D2: ≥140) / Chrome ≥111 | ✅ kodlandı, `node --test` yeşil (96 test); tarayıcıda yalnızca yükleme denemesi kaldı |
+| **8B** | **jsdom smoke testleri repoda:** `tests/smoke/` (bugün options 7 + content 5), `jsdom ^27` devDependency | ✅ kodlandı, `node --test` yeşil (PR 8B'de 105 test; bugün 116) |
 | **8C** | **PIN karma saklama:** `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon), arayüz akışları, eski düz metin yükseltme | ✅ kodlandı, `node --test` yeşil (109 test); tarayıcıda PIN akışı denenmeli |
 | **8D** | **Yoklama azaltma:** `content.js` olay tabanlı sayfa kontrolü, `inject_helper.js` MutationObserver taraması | ✅ kodlandı, `node --test` yeşil (110 test); tarayıcıda gezinme/geri tuşu denenmeli |
 | **8E** | **Listelerde kanal adı/avatarı:** `kanalBilgileri` deposu, sayfadan toplama, listede avatar + ad | ✅ kodlandı, `node --test` yeşil (112 test); tarayıcıda kanal ekleme denenmeli |
-| **8F** | **Mağaza hazırlığı:** listeleme metinleri, gizlilik politikası, sürüm akışı, kontrol listesi | ✅ kodlandı (`docs/MAGAZA_HAZIRLIK.md`, `docs/GIZLILIK.md`), 113 test; **elle:** ekran görüntüleri + mağaza yüklemesi |
+| **8F** | **Mağaza hazırlığı:** listeleme metinleri, gizlilik politikası, sürüm akışı, kontrol listesi, ikonlar/mağaza görselleri | ✅ kodlandı (`docs/MAGAZA_HAZIRLIK.md`, `docs/GIZLILIK.md`, `README.md`), 116 test; **elle:** ekran görüntüleri + mağaza yüklemesi |
 | 8 | Sağlamlaştırma ve mağaza hazırlığı (8A ✅, 8B ✅, 8C ✅, 8D ✅, 8E ✅, 8F ✅ kod tarafı) | ✅ tamam: kalan işler tarayıcı/mağaza hesabı gerektirir (aşağıdaki doğrulama listesi) |
-| S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir) |
+| S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir; roller/kararlar `docs/SITE_HAZIRLIK.md`) |
 
 ### Önce yapılacak: PR 6 / 6B / 6C / 7 / 8A / 8C gerçek tarayıcı doğrulaması
 **Hazırlık:** `node scripts/build.js`, `chrome://extensions` → eklentiyi yenile, YouTube'u F5 ile yenile, **eski `chromium/` klasörü yüklü kalmasın.** 8A sonrası manifest izinleri değişti; yükleme hatası olmadan açıldığını ve eklenti simgesinin çalıştığını doğrulayın. Konsolu açıp **"YT Filter"** ile filtreleyin. Beklenen: sayfa başına bir `YT Filter: hazır {…}` ve her sayfa için `YT Filter: sayfa kararı …` satırı. (`typeof YTF` konsolda anlamsız; içerik betiği izole dünyada.)
@@ -83,22 +83,22 @@ Alternatif: özel liste = kullanıcının **kendi konusu** (ör. "Ders kanallar�
 - **Video+kanal birlikte mi, video-yoksa-kanal mı** — ✅ video-yoksa-kanal.
 
 ### 4.2 Liderden teyit bekleyenler (`docs/SISTEM_TASARIMI.md` bölüm 6'daki ❓ maddeleri)
-Mevcut yorumla kodlandı; liderin cevabına göre tek satır değişir. Her biri için test var.
+Mevcut yorumla kodlandı; liderin cevabına göre tek satır değişir. Aşağıdaki **SISTEM #N** numaraları `docs/SISTEM_TASARIMI.md` bölüm 6'daki tabloya aittir (PLAN sıra numarası değildir). Kodlanan maddeler için test var; site tarafındakiler site yazılınca test edilecek.
 
-1. **Ana konu ölçütü:** "en çok upvote" mu, **net puan** mı? (Örnek net puana uyuyor: Oyun 30 upvote ama ana konu Teknoloji +23.) *Site tarafı.*
-2. **Beraberlik:** "listedeki ilki" = `KONULAR` sırası mı? (Alternatif: önce upvote.) *Site tarafı.*
-3. **Kararsız = toplam 0 ve en az bir oy** (hiç oy almamış 0/0/0 kararsız sayılmaz). *Site tarafı.*
-4. **Serbest + kararsız konu:** kararsız konu "izinli konu" mu sayılsın (ana konusu engelli bir video açılır), yoksa yalnızca engellemesin mi? *Şu an: izinli konu sayılır.*
-5. **Orta "Kararsızlar: Engelle" anlamı:** kullanıcının zaten engellediği kararsız konu/etiket kesinleşmiş gibi mi sayılsın? *Şu an evet.*
-6. **Katı'da kararsızlar:** dökümanda yok. *Şu an: kullanıcının engellediği kararsız konu/etiket engeller.*
-7. **Asgari oy eşiği:** Argo +1 ile aktif etiket olup "her zaman engelle" kuralıyla videoyu engelletebiliyor. Eşik (örn. ≥3 oy) isteniyor mu? *Site tarafı.*
-8. **Beyaz liste ve etiket koruması:** Beyaz liste, veritabanındaki "kumar" etiketli kanalı bile açar (tasarım gereği "asla engellenmez"). Kabul mü, yoksa etiket-bazlı koruma ("ebeveyn kilidi") ayrı bir ayar mı olsun?
+1. **SISTEM #1 — Ana konu ölçütü:** "en çok upvote" mu, **net puan** mı? (Örnek net puana uyuyor: Oyun 30 upvote ama ana konu Teknoloji +23.) *Site tarafı.*
+2. **SISTEM #2 — Beraberlik:** "listedeki ilki" = `KONULAR` sırası mı? (Alternatif: önce upvote.) *Site tarafı.*
+3. **SISTEM #3 — Kararsız = toplam 0 ve en az bir oy:** hiç oy almamış 0/0/0 kararsız sayılmaz. *Site tarafı.*
+4. **SISTEM #8 — Serbest + kararsız konu:** kararsız konu "izinli konu" mu sayılsın (ana konusu engelli bir video açılır), yoksa yalnızca engellemesin mi? *Şu an: izinli konu sayılır.*
+5. **SISTEM #10 — Orta "Kararsızlar: Engelle" anlamı:** kullanıcının zaten engellediği kararsız konu/etiket kesinleşmiş gibi mi sayılsın? *Şu an evet.*
+6. **SISTEM #11 — Katı'da kararsızlar:** dökümanda yok. *Şu an: kullanıcının engellediği kararsız konu/etiket engeller.*
+7. **SISTEM #18 — Asgari oy eşiği:** Argo +1 ile aktif etiket olup "her zaman engelle" kuralıyla videoyu engelletebiliyor. Eşik (örn. ≥3 oy) isteniyor mu? *Site tarafı.*
+8. **SISTEM #19 — Beyaz liste ve etiket koruması:** beyaz liste, veritabanındaki "kumar" etiketli kanalı bile açar. Kabul mü, yoksa etiket-bazlı koruma ("ebeveyn kilidi") ayrı bir ayar mı olsun? *(Bu madde SISTEM tablosuna 2026-10-21'de eklendi.)*
 
 ### 4.3 Veri köprüsü — Talha'nın kararı gerekiyor
 Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli filtre" ve konu/etiket kuralları denenemiyor. İki yol:
 - **A) Siteyi öne al (S).** İstek listesine en sadık yol; tek geliştiriciyle uzun sürer. O zamana kadar `docs/db.test-ornek*.json` ile elle test.
 - **B) Köprü: eklentide küçük yerel düzenleyici.** Kullanıcı hızlı ekleme alanından bir kanalı/videoyu konu ve etikete atar; kayıtlar `db.json` ile aynı şemada `storage.local`'de tutulur ve veritabanı kaydını geçer (şema artık aynı: ana konu, yan konular, etiketler, kararsızlar). Site hazır olunca aynı şema sayesinde atıl kalmaz. İstek listesine ekleme sayılır.
-- **Durum (2026-10-19):** PR 6C ve 7 tamamlandı; B'ye geçilmedi. A/B kararı hâlâ Talha'da. B seçilirse `engine.icerikKarari`'nın veritabanı arama adımına yerel kayıtlar eklenir; `decision.js`'e dokunulmaz.
+- **Durum (2026-10-19):** PR 6C ve 7 tamamlandı; B'ye geçilmedi. A/B kararı hâlâ Talha'da. B seçilirse `engine.icerikKarari`'nın veritabanı arama adımına yerel kayıtlar eklenir; `decision.js`'e dokunulmaz. Ayrıntılı seçenek/öneri: `docs/SITE_HAZIRLIK.md` bölüm 3.
 
 ## 5. Yol haritası
 
@@ -122,14 +122,14 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 
 ### PR 8A — ✅ Manifest sertleştirmesi (2026-10-19)
 - Mağaza açıklaması gerçek özellikleri anlatıyor ("otomatik senkronizasyon"/"video etiketleme" kaldırıldı); kullanılmayan `google.com`/`google.com.tr` host izni ve içerik betiği eşleşmeleri silindi.
-- Firefox `strict_min_version` **128** (MAIN world), Chromium `minimum_chrome_version` **111**.
-- `tests/manifest.test.js` (2 test) kararları koruyor. **Kalan:** tarayıcıda yükleme denemesi.
+- Firefox `strict_min_version` **128** (MAIN world; düzeltme turu 2'de veri beyanı için **140**), Chromium `minimum_chrome_version` **111**.
+- `tests/manifest.test.js` (PR 8A'da 2 test; D2 ile 4 test) kararları koruyor. **Kalan:** tarayıcıda yükleme denemesi.
 
 ### PR 8F — ✅ Mağaza hazırlığı (2026-10-19)
 - `docs/MAGAZA_HAZIRLIK.md`: listeleme metinleri (≤132 karakter kısa açıklama, uzun açıklama, kategori), izin gerekçeleri tablosu, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, sürüm akışı (test → version → build → zip → yükleme → etiket), yayın öncesi kontrol listesi.
 - `docs/GIZLILIK.md`: yayınlanabilir gizlilik politikası (TR + kısa EN özet); barındırma önerisi GitHub Pages.
-- `tests/manifest.test.js` +1: sürüm/ad iki manifestte eşit ve `\d+(\.\d+){1,3}` biçiminde. Toplam **113 test** (101 saf + 12 smoke).
-- `.gitignore`: `store/`. **Elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza hesaplarına yükleme, yayında `version` → `2.0`.
+- `tests/manifest.test.js` +1: sürüm/ad iki manifestte eşit ve `\d+(\.\d+){1,3}` biçiminde. PR 8F'de toplam **113 test** (101 saf + 12 smoke); düzeltme turuyla **116** (manifest testi 4).
+- `.gitignore`: `store/`. Sürüm üç yerde **2.0.0**; **elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza hesaplarına yükleme.
 
 ### PR 8E — ✅ Listelerde kanal adı/avatarı (2026-10-19)
 - Yeni depo anahtarı `kanalBilgileri` (`{ "@handle": { ad, avatar } }`, yalnızca görüntüleme; kuralları etkilemez). `background.js` kurulumda boş nesne yazar; tam yedek taşır, içe aktarmada `kanalBilgileriTemizle` ile doğrulanır.
@@ -152,7 +152,7 @@ Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli fil
 - `tests/smoke/ortak.js`: sahte `chrome.*` (storage/onChanged/runtime/tabs) + `bekle()`; `options.html` gerçek betik sırasıyla jsdom'da çalışır, `content.js` verilen sayfa HTML'i üzerinde.
 - `tests/smoke/options.test.js` (bugün 7 test; PR 8B'de 5 idi): ilk açılış + db durumu, PIN kurulum/kilit/giriş + eski düz metin yükseltme (8C), liste ekle-sil, çakışma modalı (birleştir/yeniden/vazgeç), hızlı bant URL yedeği, kanal ekleme → avatarlı satır (8E).
 - `tests/smoke/content.test.js` (bugün 5 test; PR 8B'de 4 idi): video banner + oynatıcı gizleme, beyaz listeye ekle, kart gizleme, bulanıklaştırma, SPA gezinme (8D).
-- `jsdom ^27` devDependency + `npm test`; `.gitignore` eklendi. Smoke için `npm install` (Node >= 20). PR 8B'de toplam **105 test**; sonraki PR'larla **113** (101 saf + 12 smoke).
+- `jsdom ^27` devDependency + `npm test`; `.gitignore` eklendi. Smoke için `npm install` (Node >= 20). PR 8B'de toplam **105 test**; düzeltme turuyla **116** (104 saf + 12 smoke).
 
 ### PR 8 — Sağlamlaştırma ve yayın hazırlığı
 - ~~Manifest açıklaması düzelt, izinleri daralt, Firefox `strict_min_version`/MAIN world testi.~~ ✅ 8A'da yapıldı; tarayıcıda yükleme denemesi kaldı.

@@ -127,6 +127,7 @@ Aşağıdakiler **bizim yorumumuzdur**. ✅ = kodlandı ve testlendi, ❓ = lide
 | 16 | **Konu/etiket dışı engellerin görünümü** | Liste, bilinmeyen ve "izinli konu yok" kaynaklı engeller tek bir **genel eylem** kullanır (Görünüm sekmesi → "Diğer Engeller"). | ✅ |
 | 17 | **PIN** | Yeni kurulumda PIN önceden **atanmaz**; ilk açılışta tam 4 rakamlı PIN seçtirilir ("Şimdilik atla" mümkün). Mevcut kullanıcıların `1234` PIN'i ve değiştirme uyarısı aynen kalır. PIN hâlâ yalnızca arayüz kilididir. | ✅ |
 | 18 | **Asgari oy eşiği** | Örnekte Argo yalnızca +1 ile aktif etiket oluyor. "Her zaman engelle" kuralıyla tek bir oy videoyu engelletebilir. Eşik (örn. en az 3 oy) düşünülmeli; **şu an uygulanmıyor.** | ❓ teyit |
+| 19 | **Beyaz liste ve etiket koruması** | Beyaz liste, veritabanındaki "kumar" etiketli kanalı bile açar (tasarım gereği "asla engellenmez"). Bu kabul mü, yoksa etiket-bazlı koruma ("ebeveyn kilidi") ayrı bir ayar mı olsun? | ❓ teyit |
 
 ### Ayar şemasındaki karşılıkları (`ayar`)
 | Döküman | Alan |

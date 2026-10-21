@@ -1,10 +1,12 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-19 (PR 8A–8F) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-21 (düzeltme turu) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
 
-> **PR 8F özeti (2026-10-19):** Mağaza hazırlığı. `docs/MAGAZA_HAZIRLIK.md` (listeleme metinleri, izin gerekçeleri, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, adım adım sürüm akışı: test → version → build → zip → yükleme → etiket, yayın öncesi liste) ve `docs/GIZLILIK.md` (yayınlanabilir gizlilik politikası, TR + EN özet). `tests/manifest.test.js` +1: iki manifestte sürüm/ad eşitliği. Toplam **113 test** yeşil (101 saf + 12 smoke). **Kalan (elle):** ekran görüntüleri, gizlilik URL'i barındırma, mağaza hesaplarına yükleme, yayında `version` 2.0'a çıkarma.
+> **2026-10-21 düzeltme turu:** Mağaza engelleri kapatıldı: Firefox `data_collection_permissions.required = ["none"]` (AMO, 3 Kasım 2025'ten beri zorunlu), `strict_min_version` 140; 16/32/48/128 ikonları (`src/icons/`, `npm run ikon`) + manifest `icons` / `action.default_icon`; sürüm üç yerde **2.0.0** (`package.json` + iki manifest); `README.md`; mağaza görselleri (128×128 ikon, 440×280 karo, 1280×800 ekran görüntüsü planı) ve gizlilik metni güncellendi. Önceki düzeltme turu (`46b5afd`) CHANGELOG'a işlendi. Taksonomi ileri uyumluluğu: bilinmeyen konu/etiket kimlikleri artık kaydı düşürmez, yok sayılır ve sayılır. Toplam **116 test**. Kalan (elle): gerçek ekran görüntüleri, mağaza hesapları, site kararları.
+>
+> **PR 8F özeti (2026-10-19):** Mağaza hazırlığı. `docs/MAGAZA_HAZIRLIK.md` (listeleme metinleri, izin gerekçeleri, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, adım adım sürüm akışı: test → version → build → zip → yükleme → etiket, yayın öncesi liste) ve `docs/GIZLILIK.md` (yayınlanabilir gizlilik politikası, TR + EN özet). `tests/manifest.test.js` +1: iki manifestte sürüm/ad eşitliği. PR 8F'de toplam **113 test** yeşil (101 saf + 12 smoke); düzeltme turuyla **116**. **Kalan (elle):** ekran görüntüleri, gizlilik URL'i barındırma, mağaza hesaplarına yükleme; sürüm artık **2.0.0**.
 >
 > **PR 8E özeti (2026-10-19):** Kullanıcı pop-up'tan kanal eklerken sayfadaki kanal adı/avatarı toplanır ve İstisnalar listesinde gösterilir (avatar + `Ad (@handle)`). Yeni depo anahtarı `kanalBilgileri` (yalnızca görüntüleme; liste kurallarını etkilemez); `core/taxonomy.js`'te `kanalBilgileriTemizle` (avatar yalnızca YouTube görsel alan adları, ad ≤ 120); `content.js` `sayfaKimligi` artık `kanalAdi`/`avatar` döner; tam yedek bu anahtarı taşır. Toplam **112 test** yeşil (100 saf + 12 smoke). **Tarayıcıda kanal ekleme → avatar/ad görünümü denenmeli.**
 >
@@ -12,9 +14,9 @@
 >
 > **PR 8C özeti (2026-10-19):** PIN artık depoda düz metin tutulmuyor; `pbkdf2-sha256$<iterasyon>$<tuz>$<ozet>` biçiminde **PBKDF2-SHA256 (120.000 iterasyon, 16 bayt rastgele tuz)** karması saklanıyor. Yeni `src/core/pin.js` (saf) + arayüz akışları (`options.js` kurulum/güncelleme/giriş) karma üretir/doğrular. **Eski düz metin PIN kaydı ilk başarılı girişte karma'ya yükseltilir.** PIN hâlâ yalnızca arayüz kilididir (şifreleme değil). `tests/pin.test.js` (3) + smoke'a yükseltme testi eklendi. Toplam **109 test** yeşil (99 saf + 10 smoke). Yeni karma yedeği eski sürümde PIN'i kilitleyebilir (uyumluluk notu CHANGELOG'da).
 >
-> **PR 8B özeti (2026-10-19):** PR 6B'de kullanılan jsdom harness'i repoya alındı. `tests/smoke/ortak.js` (sahte `chrome.*`, `bekle`) + `tests/smoke/options.test.js` (bugün 7 test; PR 8B'de 5: ilk açılış/db durumu, PIN kurulum-kilit-giriş, liste ekle/sil, çakışma modalı üç strateji, hızlı bant URL yedeği; 8C ile PIN yükseltme, 8E ile avatarlı satır eklendi) + `tests/smoke/content.test.js` (bugün 5 test; PR 8B'de 4: video banner, beyaz listeye ekle, kart gizleme, bulanıklaştırma; 8D ile SPA gezinme eklendi). `jsdom ^27` artık `devDependencies`'te (`npm install` gerekir; Node >= 20). PR 8B'de toplam **105 test** yeşildi (96 saf + 9 smoke); 8F itibarıyla **113** (101 saf + 12 smoke). **Tarayıcı doğrulamasını değiştirmez.**
+> **PR 8B özeti (2026-10-19):** PR 6B'de kullanılan jsdom harness'i repoya alındı. `tests/smoke/ortak.js` (sahte `chrome.*`, `bekle`) + `tests/smoke/options.test.js` (bugün 7 test; PR 8B'de 5: ilk açılış/db durumu, PIN kurulum-kilit-giriş, liste ekle/sil, çakışma modalı üç strateji, hızlı bant URL yedeği; 8C ile PIN yükseltme, 8E ile avatarlı satır eklendi) + `tests/smoke/content.test.js` (bugün 5 test; PR 8B'de 4: video banner, beyaz listeye ekle, kart gizleme, bulanıklaştırma; 8D ile SPA gezinme eklendi). `jsdom ^27` artık `devDependencies`'te (`npm install` gerekir; Node >= 20). PR 8B'de toplam **105 test** yeşildi (96 saf + 9 smoke); düzeltme turu sonrası **116** (104 saf + 12 smoke). **Tarayıcı doğrulamasını değiştirmez.**
 >
-> **PR 8A özeti (2026-10-19):** Manifest sertleştirildi. Mağaza açıklaması gerçek özellikleri anlatıyor ("video etiketleme"/"otomatik senkronizasyon" kaldırıldı); kullanılmayan `google.com`/`google.com.tr` host izni ve içerik betiği eşleşmeleri silindi; Firefox `strict_min_version` **128** (MAIN world desteği), Chromium `minimum_chrome_version` **111**. `tests/manifest.test.js` (2 test) bu kararları koruyor; toplam **96 test** yeşil. **Tarayıcıda yalnızca yeniden yükleme denemesi kaldı.**
+> **PR 8A özeti (2026-10-19):** Manifest sertleştirildi. Mağaza açıklaması gerçek özellikleri anlatıyor ("video etiketleme"/"otomatik senkronizasyon" kaldırıldı); kullanılmayan `google.com`/`google.com.tr` host izni ve içerik betiği eşleşmeleri silindi; Firefox `strict_min_version` **128** (MAIN world desteği; düzeltme turunda veri beyanı için **140**), Chromium `minimum_chrome_version` **111**. `tests/manifest.test.js` (PR 8A'da 2 test; 8F ile 3, D2 ile 4) bu kararları koruyor; toplam **96 test** yeşil. **Tarayıcıda yalnızca yeniden yükleme denemesi kaldı.**
 >
 > **PR 7 özeti (2026-10-19):** İçe/dışa aktarma tamamlandı. İstisnalar sekmesinde **tek liste veya tüm listeler** JSON olarak indirilebilir; içe aktarmada özel liste adı çakışırsa **Birleştir / Üzerine yaz / Yeniden adlandır** seçilir (varsayılan birleştir; yeniden adlandır `Ad (2)` üretir). Sistem sekmesinde **`db.json` içe aktarma** var: `sema` ve `veriSurumu` doğrulanır, geçersiz kayıt sayısı gösterilir, daha eski/eşit sürüm uyarısı verilir, `storage.local.dbOverride` olarak saklanır ve "Paketli veritabanına dön" ile kaldırılır. `core/listeler.js` saf modül + `tests/pr7.test.js` (12 test); toplam **94 test** yeşil. **Tarayıcıda denenmedi.**
 >
@@ -94,7 +96,7 @@ Belirsiz kalan noktaların yorumları ve liderden teyit bekleyenler: `SISTEM_TAS
 - Banner'daki **doğrulanmamış** nokta: gerçek YouTube'da tetiklenmesi (bkz. 6/#14).
 
 ### 2.7 Düzenleme sitesi (henüz yapılmadı)
-3 rol: **Admin**, **Editör** (link yapıştırır → ID/başlık otomatik gelir → konu/etiket **oyları** girer), **Ziyaretçi** (girişsiz: güncel `db.json`'u indirir, rapor gönderir). Oylama ve sonuç hesabı: `SISTEM_TASARIMI.md` bölüm 5. Site, `db.json`'a **yalnızca sonucu** yazar (ham oylar sitede kalır).
+**Rol önerisi (lider onayı bekliyor):** **Admin**, **Editör** (link yapıştırır → ID/başlık otomatik gelir → konu/etiket **oyları** girer), **Ziyaretçi** (girişsiz: güncel `db.json`'u indirir, rapor gönderir). Bu roller `SISTEM_TASARIMI.md`'de tanımlı değildir; yetki matrisi ve açık sorular `docs/SITE_HAZIRLIK.md` bölüm 1'dedir. Oylama ve sonuç hesabı: `SISTEM_TASARIMI.md` bölüm 5. Site, `db.json`'a **yalnızca sonucu** yazar (ham oylar sitede kalır).
 
 ---
 
@@ -110,24 +112,33 @@ src/
   inject.css           rozet / bulanıklaştırma / gizleme / uyarı kapağı / banner stilleri
   options.html|css|js  pop-up arayüzü (430px genişlik, 5 sekme)
   core/
-    taxonomy.js        konu/etiket tanımları, varsayilanAyar(), ayarTemizle(), kayitDogrula(), ENGEL_EYLEMLERI
+    taxonomy.js        konu/etiket tanımları, varsayilanAyar(), ayarTemizle(), kayitDogrula(),
+                       kayitBilinmeyenleriAyikla(), ENGEL_EYLEMLERI
     decision.js        kararVer(ayar, video, kanal)  — SAF fonksiyon, asıl algoritma
     migrate.js         eski modelden (customMapping+preferences) yeni modele çeviri — saf
-    db.js              db.json doğrulama/indeksleme (dbKur, dbSec)
+    db.js              db.json doğrulama/indeksleme (dbKur, dbSec); bilinmeyen taksonomi kimliklerini yok sayar
     listeler.js        liste paketi oluştur/çöz + çakışma stratejisiyle birleştir (saf)
     pin.js             PIN karma/doğrulama (PBKDF2-SHA256, eski düz metin uyumu) — saf (PR 8C)
     engine.js          ayarCoz, icerikKarari (db araması+karar+eylem çözümleme), rozetBilgisi,
                        sebepMetni / kararOzeti (hızlı bant), istisnaSayisi + ISTISNA_UYARI_ESIGI
   data/db.json         paketle gelen veritabanı (şimdilik yalnızca bir örnek kanal)
-manifests/             manifest.chromium.json, manifest.firefox.json (yalnızca youtube.com; Chrome >= 111, Firefox >= 128)
-scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır)
-tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 + manifest + pin (Node'un yerleşik test koşucusu)
+  icons/               16/32/48/128 px uzantı ikonları (npm run ikon ile üretilir)
+manifests/             manifest.chromium.json, manifest.firefox.json (yalnızca youtube.com; Chrome >= 111, Firefox >= 140)
+scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır; --check bayat çıktıyı yakalar)
+scripts/ikon-uret.js   uzantı ikonlarını üretir (bağımlılıksız PNG)
+scripts/store-gorsel.js 440x280 mağaza tanıtım karesini headless Chrome/Edge ile üretir
+tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 + manifest + build + pin
 tests/smoke/           jsdom + sahte chrome.* ile options.html (7 test) ve content.js (5 test) smoke testleri
 docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözleşme), db.test-ornek.json,
-                       db.test-ornek-kararsiz.json, DEVIR_NOTU.md, MAGAZA_HAZIRLIK.md (listeleme/izin/sürüm akışı),
-                       GIZLILIK.md (yayınlanabilir gizlilik metni)
+                       db.test-ornek-kararsiz.json, MAGAZA_HAZIRLIK.md (listeleme/izin/görsel/sürüm akışı),
+                       GIZLILIK.md (yayınlanabilir gizlilik metni), SITE_HAZIRLIK.md (site kararları/öneriler),
+                       puan-sistemi-onerisi.md (gayriresmî puan notu; bağlayıcı değil)
+README.md              proje girişi, kurulum, test ve belge bağlantıları
+DEVIR_NOTU.md          bu belge (kök dizin)
+PLAN.md                yol haritası ve karar bekleyen konular
+CHANGELOG.md           sürüm/değişiklik günlüğü
 ```
-**Önemli:** Tarayıcıya `chromium/` klasörü yüklenir; kaynak her zaman `src/`. `node scripts/build.js` ile derlenir, `--watch` ile izlenir. Doğrudan `chromium/` içini düzenlemeyin. **Eski bir `chromium/` klasörünün yüklü kalması, "değişiklik görünmüyor" şikâyetinin ilk sebebidir.**
+**Önemli:** Tarayıcıya `chromium/` klasörü yüklenir; kaynak her zaman `src/`. `node scripts/build.js` ile derlenir, `--watch` ile izlenir, `--check` ile çıktının bayat olup olmadığı denetlenir. Derleme çıktıları repoda izlenir; `npm test` içindeki `tests/build.test.js` kaynakla uyumu zorunlu kılar. Doğrudan `chromium/` içini düzenlemeyin. **Eski bir `chromium/` klasörünün yüklü kalması, "değişiklik görünmüyor" şikâyetinin ilk sebebidir.**
 
 ### 3.2 Modül kuralları
 - Bundler yok. `core/*.js` UMD biçimindedir: tarayıcıda `YTF` global nesnesine eklenir, Node'da `require` edilir. Yükleme sırası manifestlerde: `taxonomy → decision → migrate → db → engine → content`; `options.html` ayrıca `migrate` ile `db` arasında `listeler.js` yükler.
@@ -206,12 +217,14 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 6B | **Lider dökümanına uyum** (2026-10-19): video-yoksa-kanal kaynak seçimi, `kanalKontrol`, kararsız (şema+karar+arayüz), konu/etiket başına eylem + "Uyarı sayfası", kanal sayfası banner'ı, ilk açılışta PIN seçimi, banner/`content.js` düzeltmeleri; `tests/karar-v2.test.js` (28 test) + jsdom arayüz (26 kontrol) ve içerik betiği denemeleri | ✅ **Node/jsdom'da doğrulandı; tarayıcıda denenmedi.** Eski birim testleri yeni kurala uyduruldu (6/#15) |
 | 6C | **Hızlı ekleme bandı + istisna çerçevesi** (2026-10-19): `content.js`'te `sayfaDurumu` mesajı; pop-up önce içerik betiğine sorar, olmazsa URL'den hesaplar; bantta karar+sebep; "Her zaman izin ver / Her zaman engelle"; Listeler → **İstisnalar**; ~50 kayıtta uyarı; "Bildir" gizli/pasif; `tests/pr6c.test.js` (3 test) | ✅ `node --test` yeşil (82 test); **gerçek pop-up'ta denenmedi** |
 | 7 | **İçe/dışa aktarma** (2026-10-19): `core/listeler.js` (paket oluştur/çöz/birleştir); İstisnalar sekmesinde liste dışa/içe aktarma + TR-duyarsız çakışma modalı; Sistem sekmesinde `db.json` içe aktarma/sıfırlama (`dbOverride`, `veriSurumu` kontrolü); `tests/pr7.test.js` (12 test) | ✅ `node --test` yeşil (94 test); **tarayıcıda denenmedi** |
-| 8A | **Manifest sertleştirmesi** (2026-10-19): mağaza açıklaması düzeltildi; `google.com`/`google.com.tr` host izni ve eşleşmeleri kaldırıldı; Firefox `strict_min_version` 128 (MAIN world), Chromium `minimum_chrome_version` 111; `tests/manifest.test.js` (2 test) | ✅ `node --test` yeşil (96 test); **tarayıcıda yalnızca yeniden yükleme denemesi kaldı** |
-| 8B | **jsdom smoke testleri repoda** (2026-10-19): `tests/smoke/ortak.js` + `options.test.js` (bugün 7) + `content.test.js` (bugün 5); `jsdom ^27` devDependency, `npm install` gerekir (Node >= 20) | ✅ `node --test` yeşil (PR 8B'de **105 test**: 96 saf + 9 smoke; bugün 113); tarayıcı doğrulamasını değiştirmez |
+| 8A | **Manifest sertleştirmesi** (2026-10-19): mağaza açıklaması düzeltildi; `google.com`/`google.com.tr` host izni ve eşleşmeleri kaldırıldı; Firefox `strict_min_version` 128 (MAIN world; D2: 140), Chromium `minimum_chrome_version` 111; `tests/manifest.test.js` (2 test; bugün 4) | ✅ `node --test` yeşil (96 test); **tarayıcıda yalnızca yeniden yükleme denemesi kaldı** |
+| 8B | **jsdom smoke testleri repoda** (2026-10-19): `tests/smoke/ortak.js` + `options.test.js` (bugün 7) + `content.test.js` (bugün 5); `jsdom ^27` devDependency, `npm install` gerekir (Node >= 20) | ✅ `node --test` yeşil (PR 8B'de **105 test**: 96 saf + 9 smoke; bugün 116); tarayıcı doğrulamasını değiştirmez |
 | 8C | **PIN karma saklama** (2026-10-19): `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon, rastgele tuz); `options.js` kurulum/güncelleme/giriş akışları karma üretir/doğrular; eski düz metin ilk girişte yükseltilir; `tests/pin.test.js` (3) + smoke yükseltme testi | ✅ `node --test` yeşil (**109 test**: 99 saf + 10 smoke); PIN akışı tarayıcıda denenmeli |
 | 8D | **Yoklama azaltma** (2026-10-19): `content.js` 1 sn yoklama → olay (`yt-navigate-finish`/`yt-page-data-updated`/`popstate`, 200 ms birleştirme) + 5 sn yedek; `inject_helper.js` 2 sn tarama → `MutationObserver` (~800 ms birleştirme) + gezinme/kaydırma + 5 sn yedek; smoke SPA gezinme testi | ✅ `node --test` yeşil (**110 test**: 99 saf + 11 smoke); tarayıcıda gezinme/geri tuşu denenmeli |
 | 8E | **Listelerde kanal adı/avatarı** (2026-10-19): yeni `kanalBilgileri` deposu; `kanalBilgileriTemizle` (taxonomy); `content.js` `kanalAdi`/`avatar` toplar; hızlı bant + manuel ekleme kaydeder; listede avatar + `Ad (@handle)`; tam yedek taşır | ✅ `node --test` yeşil (**112 test**: 100 saf + 12 smoke); tarayıcıda kanal ekleme denenmeli |
-| 8F | **Mağaza hazırlığı** (2026-10-19): `docs/MAGAZA_HAZIRLIK.md` + `docs/GIZLILIK.md`; manifest sürüm/ad eşitlik testi; `.gitignore`'a `store/` | ✅ `node --test` yeşil (**113 test**: 101 saf + 12 smoke); **elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza yüklemesi |
+| 8F | **Mağaza hazırlığı** (2026-10-19): `docs/MAGAZA_HAZIRLIK.md` + `docs/GIZLILIK.md`; manifest sürüm/ad eşitlik testi; `.gitignore`'a `store/` | ✅ `node --test` yeşil (PR 8F'de **113 test**: 101 saf + 12 smoke; D2 ile 116); **elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza yüklemesi |
+| D1 | **Düzeltme turu 1** (`46b5afd`, 2026-10-20): belge tutarlılığı; `db.json` avatarı; PIN güncellemede `/^\d{4}$/`; Node 18 WebCrypto yedeği; tam yedekten `dbOverride` çıkarma | ✅ `node --test` yeşil (113 test); `checkpoint-duzeltme-1` |
+| D2 | **Düzeltme turu 2** (2026-10-21, `checkpoint-duzeltme-2`): mağaza engelleri (Firefox veri beyanı, ikonlar, sürüm 2.0.0, README, görseller); derleme güncellik kontrolü + `.gitattributes`; DEVIR/db-sema/PLAN tutarlılığı; taksonomi ileri uyumluluğu (bilinmeyen kimlikleri yok say); site kararları/puan notu | ✅ `node --test` yeşil (116 test); ayrıntı `CHANGELOG.md` |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -262,7 +275,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 7. **Liste içe aktarma (PR 7)** çakışma diyaloğu sunar ve birleştirir. Tam yedek (`btnIceAktar`) ise hâlâ **üzerine yazar** (onay sorar); bu ayrım kasıtlıdır. Tam yedek dışa aktarma `dbOverride`'ı içermez; içe aktarma mevcut `dbOverride`'a dokunmaz. `dbOverride` içe aktarma arayüzü vardır; tarayıcıda denenmedi. İçe aktarılan dosya `storage.local` kotasına tabidir (ek izin yok); ~10 MB üstü dosyalar kaydedilemeyebilir.
 8. ~~Yalnızca veritabanında kaydı olan kanalların adı listede görünür; avatar yok.~~ **Kısmen çözüldü (PR 8E):** kullanıcı eklerken sayfadan toplanan ad/avatar (`kanalBilgileri`) listede gösterilir; veritabanı kaydı olmayan ve sayfadan eklenmemiş kanallarda yalnızca anahtar görünür.
 9. ~~Manifest `description` "otomatik senkronizasyon" diyor; `google.com` host izni geniş.~~ **Çözüldü (PR 8A):** açıklama gerçek özelliklere göre yazıldı, yalnızca `youtube.com` izni kaldı. Tarayıcıda yükleme doğrulaması bekliyor.
-10. ~~Firefox `strict_min_version: 109` ile `world: "MAIN"` çakışıyor.~~ **Çözüldü (PR 8A):** asgari sürüm 128'e çekildi. Yedek enjeksiyon yolu (MAIN world desteklemeyen tarayıcı) hâlâ test edilmedi.
+10. ~~Firefox `strict_min_version: 109` ile `world: "MAIN"` çakışıyor.~~ **Çözüldü (PR 8A):** asgari sürüm 128'e çekildi; D2'de veri beyanı için 140 yapıldı. Yedek enjeksiyon yolu (MAIN world desteklemeyen tarayıcı) hâlâ test edilmedi.
 11. ~~`setInterval` ile yoklama (izleme sayfası 1 sn, helper 2 sn); `yt-navigate-finish` ile değiştirilebilir.~~ **Çözüldü (PR 8D):** sayfa kontrolü `yt-navigate-finish`/`yt-page-data-updated`/`popstate` olaylarıyla, kart taraması `MutationObserver` + gezinme + kaydırmayla; ikisinde de seyrek yedek zamanlayıcı (5 sn) var. Tarayıcı davranışı doğrulanmayı bekliyor. **Kalan:** veritabanı önbelleği (büyürse, #5) ve helper'ın sonradan yazdığı özniteliklerin izlenmesi (#4).
 12. ~~Arayüz (jsdom) smoke testleri repoda değil.~~ **Çözüldü (PR 8B):** harness `tests/smoke/` altında; `jsdom` devDependency (`npm install`, Node >= 20). Kapsam: ilk açılış, PIN akışı, liste ekle/sil, çakışma modalı, hızlı bant, banner/beyaz liste/kart gizleme/bulanıklaştırma. Gerçek tarayıcı doğrulamasının yerini tutmaz.
 13. Rozet metinleri değişti ("GÜVENLİ/EĞİTİCİ" → "BEYAZ LİSTE" vb.).
@@ -277,19 +290,22 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 ## 7. Çalıştırma ve test
 
 ```
-node scripts/build.js                       # chromium/ ve firefox/ üretir  (--target chromium | --watch)
-npm install                                  # yalnızca smoke testleri için (jsdom devDependency, Node >= 20)
+node scripts/build.js                       # chromium/ ve firefox/ üretir  (--target chromium | --watch | --check)
+npm run build:check                          # çıktılar src/ + manifestlerle güncel mi? (npm test içinde de çalışır)
+npm install                                  # smoke testleri için (jsdom devDependency; Node >= 20, package.json engines)
+npm run ikon                                 # uzantı ikonlarını yeniden üretir (src/icons/)
+npm run store:gorsel                         # 440x280 mağaza tanıtım karesi (store/)
 node --test tests/karar-v2.test.js          # yeni kurallar (28 test)
 node --test tests/pr6c.test.js              # hızlı bant sebep/özet/istisna sayısı (3 test)
 node --test tests/pr7.test.js               # liste paketi/çakışma birleştirme (12 test)
-node --test tests/manifest.test.js          # açıklama/izin ve sürüm/script sırası (2 test)
+node --test tests/manifest.test.js          # açıklama/izin, sürüm/script sırası, veri beyanı, ikonlar (4 test)
 node --test tests/pin.test.js               # PIN karma biçimi/doğrulama, eski düz metin uyumu (3 test)
 node --test tests/smoke/options.test.js tests/smoke/content.test.js   # jsdom smoke (12 test)
-node --test                                  # tüm testler (Node 18+ saf testler; smoke için Node >= 20; klasör yolu vermeyin, Node 22'de hata verir) — 113 test
+node --test                                  # tüm testler (saf testler Node 18+; smoke için Node >= 20; klasör yolu vermeyin) — 116 test
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.
 
-Geri alma: PR sonları annotated tag ile işaretlenir — PR 6C `checkpoint-pr6c` (`214944e`), PR 7 `checkpoint-pr7`, PR 8A `checkpoint-pr8a`. İncelemek için `git show checkpoint-pr7`; tek dosyayı eski hâline döndürmek için `git checkout checkpoint-pr6c -- <dosya>`. Tüm çalışmayı geri almak gerekirse önce yeni bir checkpoint tag atın, sonra `git revert` kullanın.
+Geri alma: PR/düzeltme sonları annotated tag ile işaretlenir — PR 6C `checkpoint-pr6c` (`214944e`), PR 7 `checkpoint-pr7` (`76ccd8e`), PR 8A `checkpoint-pr8a` (`472f08e`), PR 8B `checkpoint-pr8b` (`f508c39`), PR 8C `checkpoint-pr8c` (`82bdbb7`), PR 8D `checkpoint-pr8d` (`75dfadd`), PR 8E `checkpoint-pr8e` (`52bcb45`), PR 8F `checkpoint-pr8f` (`74226fd`), düzeltme turu 1 `checkpoint-duzeltme-1` (`46b5afd`). İncelemek için `git show checkpoint-pr7`; tag'in hedef commit'i için `git rev-parse "checkpoint-pr7^0"`; tek dosyayı eski hâline döndürmek için `git checkout checkpoint-pr6c -- <dosya>`. Tüm çalışmayı geri almak gerekirse önce yeni bir checkpoint tag atın, sonra `git revert` kullanın.
 
 Elle deneme ipuçları:
 - İlk açılış seçimini yeniden görmek: pop-up konsolunda `chrome.storage.local.get('ayar', r => { r.ayar.etiketlenmemis = null; chrome.storage.local.set({ayar: r.ayar}) })`

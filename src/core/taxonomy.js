@@ -163,6 +163,54 @@
     }
 
     /**
+     * İçe aktarılan bir kayıttaki, bu eklenti sürümünün tanımadığı konu/etiket
+     * kimliklerini yok sayar. Amaç: site yeni bir konu/etiket eklediğinde eski
+     * eklenti sürümü kaydın tamamını kaybetmesin.
+     *
+     * Dönüş: { kayit: temizlenmiş kopya, yokSayilan: ['etiket:yeni-etiket', ...] }
+     * - anaKonu bilinmiyorsa yanKonular da düşürülür (yan konu ana konu ister).
+     * - Kayıt boş kalırsa db.js bunu "atlanan" olarak sayar.
+     */
+    function kayitBilinmeyenleriAyikla(kayit) {
+        const yokSayilan = [];
+        if (!kayit || typeof kayit !== 'object') return { kayit, yokSayilan };
+
+        const konuIdleri = new Set(KONULAR.map(k => k.id));
+        const etiketIdleri = new Set(ETIKETLER.map(e => e.id));
+        const kopya = Object.assign({}, kayit);
+
+        const diziAyikla = (alan, idler, ad) => {
+            const v = kopya[alan];
+            if (!Array.isArray(v)) return;
+            const kalan = [];
+            v.forEach(x => {
+                if (idler.has(x)) kalan.push(x);
+                else yokSayilan.push(`${ad}:${x}`);
+            });
+            kopya[alan] = kalan;
+        };
+
+        if (kopya.anaKonu && !konuIdleri.has(kopya.anaKonu)) {
+            yokSayilan.push(`ana konu:${kopya.anaKonu}`);
+            kopya.anaKonu = null;
+            // Ana konu düşünce yan konular şemaya göre geçersizdir; bilinmeyenleri ayrıca raporla.
+            if (Array.isArray(kopya.yanKonular)) {
+                kopya.yanKonular.forEach(x => {
+                    if (!konuIdleri.has(x)) yokSayilan.push(`yan konu:${x}`);
+                });
+                kopya.yanKonular = [];
+            }
+        }
+
+        diziAyikla('yanKonular', konuIdleri, 'yan konu');
+        diziAyikla('etiketler', etiketIdleri, 'etiket');
+        diziAyikla('kararsizKonular', konuIdleri, 'kararsız konu');
+        diziAyikla('kararsizEtiketler', etiketIdleri, 'kararsız etiket');
+
+        return { kayit: kopya, yokSayilan };
+    }
+
+    /**
      * Bir video/kanal kaydını doğrular. Hata mesajlarının listesini döndürür (boş = geçerli).
      * kayit: { anaKonu?, yanKonular[], etiketler[], kararsizKonular[], kararsizEtiketler[] }
      *
@@ -202,5 +250,5 @@
         return hatalar;
     }
 
-    return { KONULAR, ETIKETLER, MODLAR, ENGEL_EYLEMLERI, KARARSIZ_SECENEKLERI, REZERVE_LISTE_ADLARI, varsayilanAyar, ayarTemizle, kayitDogrula, kanalBilgileriTemizle };
+    return { KONULAR, ETIKETLER, MODLAR, ENGEL_EYLEMLERI, KARARSIZ_SECENEKLERI, REZERVE_LISTE_ADLARI, varsayilanAyar, ayarTemizle, kayitDogrula, kayitBilinmeyenleriAyikla, kanalBilgileriTemizle };
 });

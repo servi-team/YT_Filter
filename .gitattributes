@@ -1,0 +1,14 @@
+# Satır sonu normalizasyonu: depoda LF, Windows'ta çalışma kopyası otomatik.
+* text=auto
+.gitattributes text eol=lf
+
+*.js   text eol=lf
+*.json text eol=lf
+*.md   text eol=lf
+*.css  text eol=lf
+*.html text eol=lf
+
+*.png  binary
+*.jpg  binary
+*.jpeg binary
+*.zip  binary

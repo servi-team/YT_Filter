@@ -2,22 +2,49 @@
 
 Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izler. Henüz sürüm numarası verilmemiş çalışmalar "Yayınlanmamış" altında toplanır.
 
-## [Yayınlanmamış] — 2.0 geliştirme dalı
+## [Yayınlanmamış] — 2.0.0 geliştirme dalı
 
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
 PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)**, **PR 8B (jsdom smoke testleri repoda)**, **PR 8C (PIN karma saklama)**, **PR 8D (yoklama azaltma)**, **PR 8E (listelerde kanal adı/avatarı)** ve **PR 8F (mağaza hazırlığı, 2026-10-19)** kodlandı.
 PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**
+
+### Düzeltme turu 2 — mağaza engelleri ve belge tutarlılığı (2026-10-21, `checkpoint-duzeltme-2`)
+
+#### Eklendi
+- **Firefox veri beyanı:** `browser_specific_settings.gecko.data_collection_permissions.required = ["none"]`. AMO, 3 Kasım 2025'ten beri yeni gönderilerde bu anahtarı zorunlu tutuyor. `strict_min_version` 140'a yükseltildi (veri toplama izin ekranı desteği).
+- **Uzantı ikonları:** `src/icons/icon{16,32,48,128}.png` + iki manifestte `icons` ve `action.default_icon`; bağımlılıksız üretici `scripts/ikon-uret.js` (`npm run ikon`).
+- **`README.md`:** kurulum, geliştirme, test, proje yapısı, gizlilik ve sürümleme.
+- **Mağaza görselleri:** `scripts/store-gorsel.js` (`npm run store:gorsel`) 440×280 küçük tanıtım karesini üretir; mağaza belgesine 128×128 ikon, en az bir 1280×800 ekran görüntüsü ve 440×280 karo gereksinimleri eklendi.
+- **`docs/SITE_HAZIRLIK.md`:** site rolleri (öneri), karar bekleyenler, veri köprüsü, "Bildir" sözleşmesi, taksonomi uyumluluğu ve S0/S1 durumu.
+- **Derleme güncellik kontrolü:** `node scripts/build.js --check` + `tests/build.test.js`; `chromium/` ve `firefox/` çıktıları repoda izlenir ama kaynakla uyumsuz kalamaz.
+- **Taksonomi ileri uyumluluğu:** `kayitBilinmeyenleriAyikla`; `dbKur` artık tanımadığı konu/etiket kimliklerini yok sayar, `sayac.yokSayilan` ve `uyarilar[]` ile raporlar (kaydı tamamen düşürmez). Test: `tests/db.test.js` +1.
+
+#### Değişti
+- **Sürüm birliği:** `package.json`, `manifest.chromium.json`, `manifest.firefox.json` → **2.0.0**; `tests/manifest.test.js` üçünü karşılaştırır. `package.json` içine `engines.node >= 20` eklendi.
+- **Mağaza metinleri:** "sayfa açılmadan önce" ve "sayfa sayfa" ifadeleri gerçek davranışa göre düzeltildi; gizlilik metnindeki iletişim yer tutucusu GitHub Issues adresine çevrildi; `dbOverride` işlenen veriler listesine eklendi.
+- **`docs/db-sema.md`:** `olusturma`, `avatar: null` ve bilinmeyen kimlik politikası belgelendi; kalıntı not kaldırıldı.
+- **`DEVIR_NOTU.md`:** dosya ağacında `DEVIR_NOTU` köke taşındı; manifest testi 2 → 4 (8F'de 3); tüm checkpoint etiketleri, D1 commiti ve D2 checkpoint'i belgelendi; 2.7 rolleri "öneri, onay bekliyor" olarak işaretlendi.
+- **`PLAN.md` + `SISTEM_TASARIMI.md`:** karar maddeleri SISTEM numaralarıyla eşlendi; beyaz liste maddesi SISTEM #19 olarak eklendi; CHANGELOG onay listesine #3 ve #8 dahil edildi. Site kararları `docs/SITE_HAZIRLIK.md`'de toplandı.
+- **Puan sistemi notu:** `docs/puan-sistemi-onerisi.md`'ye taşındı; bağlayıcı olmadığı işaretlendi, "Kararsız" sütunundaki negatif değerler ve beraberlik kuralı düzeltildi.
+- **`.gitattributes`:** satır sonları depoda LF, Windows'ta otomatik; CRLF kaynaklı hayalet diff'ler önlenir.
+- **Test sayısı:** **116** (104 saf + 12 smoke).
+
+### Düzeltme turu 1 — belge ve kod tutarlılığı (2026-10-20, `46b5afd`, `checkpoint-duzeltme-1`)
+
+- Belge tutarlılığı: `DEVIR_NOTU.md` 2.4 kanal adı/avatarı, `CHANGELOG` avatar sınırı, `db-sema` avatar notu, `docs/DEVIR_NOTU.md` → `DEVIR_NOTU.md`, "Yedek sekmesi" → "Sistem sekmesi", gizlilikte silme metni, smoke dağılımları (7 + 5).
+- `docs/decision.js` silindi; `db.json` avatarı listede; PIN güncelleme 4 rakam; Node 18 WebCrypto yedeği; tam yedekten `dbOverride` çıkarıldı.
+- **113 test** yeşil.
 
 ### PR 8F — Mağaza hazırlığı (2026-10-19)
 
 #### Eklendi
 - **`docs/MAGAZA_HAZIRLIK.md`:** mağaza listeleme metinleri (kısa/uzun açıklama, kategori), izin gerekçeleri tablosu, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, adım adım **sürüm akışı** (test → version yükselt → build → zip → yükleme → etiket) ve yayın öncesi kontrol listesi.
 - **`docs/GIZLILIK.md`:** yayınlanabilir gizlilik politikası metni (veri toplanmaz; yerel depolama; izinler; TR + kısa EN özet).
-- **`tests/manifest.test.js` (+1 test):** iki manifestte sürüm ve ad eşitliği + sürüm biçimi (`\d+(\.\d+){1,3}`) denetimi. Toplam **113 test** yeşil (101 saf + 12 smoke).
+- **`tests/manifest.test.js` (+1 test):** iki manifestte sürüm ve ad eşitliği + sürüm biçimi (`\d+(\.\d+){1,3}`) denetimi. PR 8F'de toplam **113 test** yeşil (101 saf + 12 smoke); düzeltme turuyla **116**.
 - `.gitignore`: `store/` (ekran görüntüleri repoya girmez).
 
 #### Kalan (elle)
-- Ekran görüntülerinin çekilmesi, gizlilik politikasının barındırılması (ör. GitHub Pages), mağaza hesaplarına yükleme. Yayın için `version` alanının `1.0` → `2.0` yükseltilmesi önerilir (adımlar belgede).
+- Ekran görüntülerinin çekilmesi, gizlilik politikasının barındırılması (ör. GitHub Pages), mağaza hesaplarına yükleme. Sürüm üç yerde **2.0.0** olarak sabitlendi; kalan iş mağaza yüklemesidir.
 
 ### PR 8E — Listelerde kanal adı/avatarı (2026-10-19)
 
@@ -60,14 +87,14 @@ PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F **Node testleriyle doğrulandı** (ara
 - **`tests/smoke/options.test.js` (bugün 7 test):** ilk açılış + veritabanı durumu, PIN kurulumu/kilitleme/yanlış-doğru giriş (PR 8C), eski düz metin PIN'in karma'ya yükseltilmesi (PR 8C), içerik ekle/listele/sil, çakışma modalının üç stratejisi, hızlı bandın URL yedeğiyle dolması, kanal ekleme → avatarlı satır (PR 8E).
 - **`tests/smoke/content.test.js` (bugün 5 test):** kara listedeki video banner'ı + oynatıcı gizleme, "Beyaz listeye ekle" ile depo güncelleme, kara listedeki kanalın kartını gizleme, "Bulanıklaştır" eylemi, SPA gezinmesinde olayla yeniden karar (PR 8D).
 - **`package.json`:** `jsdom ^27` devDependency + `npm test` betiği; `.gitignore` (node_modules). Smoke testleri için `npm install` gerekir (Node >= 20; saf testler Node 18+ ile çalışır).
-- PR 8B'de toplam 105 test yeşildi (96 saf + 9 smoke); 8F itibarıyla **113** (101 saf + 12 smoke).
+- PR 8B'de toplam 105 test yeşildi (96 saf + 9 smoke); düzeltme turuyla **116** (104 saf + 12 smoke).
 
 ### PR 8A — Manifest sertleştirmesi (2026-10-19)
 
 #### Kullanıcıya görünen değişiklikler
 - **Mağaza açıklaması** gerçek özellikleri anlatıyor; "video etiketleme" ve olmayan "otomatik senkronizasyon" ifadeleri kaldırıldı.
 - **Gereksiz izinler kaldırıldı:** `google.com` / `google.com.tr` host izni ve içerik betiği eşleşmeleri silindi (kod hiç kullanmıyordu). Eklenti artık yalnızca YouTube'da çalışır.
-- **Sürüm uyumu:** Firefox en düşük sürüm **128** (MAIN world desteği), Chromium en düşük sürüm **111**.
+- **Sürüm uyumu:** Firefox en düşük sürüm **128** (MAIN world desteği; düzeltme turu 2'de veri beyanı için **140**), Chromium en düşük sürüm **111**.
 
 #### Eklendi (geliştiriciler için)
 - **`tests/manifest.test.js`:** 2 test — açıklama/izin kontrolü ve sürüm/içerik betiği sırası kontrolü. Toplam **96 test** yeşil.
@@ -196,9 +223,9 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 ### Bilinen sınırlar (henüz yapılmadı / çözülüyor)
 - **Veritabanı neredeyse boş ve düzenleme sitesi yok:** çoğu içerik "bilinmeyen" kalıyor; konu/etiket kuralları test verisi veya PR 7'deki `db.json` içe aktarma ile görülebilir.
 - **PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır; 8C'de PIN akışı (kaydet → kilitle → eski düz metin yükseltme), 8D'de YouTube gezinmesi/geri tuşu, 8E'de kanal ekleme → avatar/ad görünümü tarayıcıda denenmeli. 8F yalnızca doküman ve sürüm kontrol testidir (davranış değişikliği yok).
-- **Testler** `node --test` ile yeşil (**113 test**: 101 saf + 12 jsdom smoke).
+- **Testler** `node --test` ile yeşil (**116 test**: 104 saf + 12 jsdom smoke).
 - **Hızlı ekleme bandının mesajlaşması** gerçek pop-up'ta denenmedi; içerik betiği yoksa URL yedeği kullanılır.
-- **Lider onayı bekleyen yorumlar:** ana konu ölçütü (net puan mı upvote mu), beraberlikte sıra, Serbest'te kararsız konu, Orta/Katı'da kararsız "engelle" anlamı, asgari oy eşiği — `docs/SISTEM_TASARIMI.md` bölüm 6.
+- **Lider onayı bekleyen yorumlar (`docs/SISTEM_TASARIMI.md` bölüm 6):** SISTEM #1 ana konu ölçütü (net puan mı upvote mu), #2 beraberlikte sıra, #3 kararsız = toplam 0 + en az bir oy, #8 Serbest'te kararsız konu, #10 Orta/Katı'da kararsız "engelle" anlamı, #11 Katı'da kararsız, #18 asgari oy eşiği, #19 beyaz liste ve etiket koruması.
 - **Tam yedek içe aktarma** hâlâ mevcut ayarların üzerine yazar (onay sorar); liste içe aktarma ise birleştirir/çakışma sorar. **Tam yedek dışa aktarma `dbOverride`'ı içermez** (dosya şişmesin diye); içe aktarma mevcut `dbOverride`'a dokunmaz.
 - Düzenleme sitesi ve oylama sistemi.
 - İzleme sayfasında kanal ID'si yok (yalnızca handle ile eşleşir).
@@ -207,7 +234,7 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Geliştirici notları
 - **Derleme:** `node scripts/build.js` → `chromium/` ve `firefox/`. Tarayıcıya bu klasörler yüklenir; kaynak `src/`'dir. **Her değişiklikten sonra yeniden derleyin.**
-- **Test:** `node --test` — 113 test (101 saf + 12 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
+- **Test:** `node --test` — 116 test (104 saf + 12 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20, `engines` alanında). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
 - **Yayın:** `docs/MAGAZA_HAZIRLIK.md` (listeleme metinleri, izin gerekçeleri, sürüm akışı, kontrol listesi) + `docs/GIZLILIK.md` (yayınlanabilir gizlilik metni).
 - **Uyumluluk:** eski yedek dosyaları yeni sürümde içe aktarılabilir; yeni yedekler eski sürümde **çalışmaz.** Yeni `db.json` alanları isteğe bağlıdır; ancak ana konusuz kayıtları eski eklenti sürümleri atlar.
 - **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `DEVIR_NOTU.md`, plan: `PLAN.md`.

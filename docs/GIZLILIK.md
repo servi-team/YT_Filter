@@ -1,7 +1,7 @@
 # Gizlilik Politikası — YouTube Filtreleyici
 
 > Bu metin Chrome Web Store ve Firefox Add-ons mağazalarına verilecek gizlilik politikası URL'i için hazırlanmıştır; olduğu gibi yayınlanabilir.
-> Son güncelleme: 2026-10-19 · [İLETİŞİM E-POSTASI BURAYA]
+> Son güncelleme: 2026-10-21 · İletişim: https://github.com/TalhaOzz/YouTubeFilter/issues
 
 ## Özet
 
@@ -14,6 +14,7 @@ Eklenti yalnızca youtube.com sayfalarında çalışır. Çalışırken şu bilg
 - **Ayarlarınız:** filtre modu, konu/etiket tercihleri, eylem seçimleri.
 - **İstisna listeleriniz:** eklediğiniz kanal ve videolar; kanal eklerken sayfada görünen **kanal adı ve avatarı** (liste içinde göstermek için saklanır).
 - **PIN karması:** PIN kodunuz düz metin olarak değil, rastgele tuzlu PBKDF2-SHA256 karması olarak saklanır.
+- **İsteğe bağlı `db.json` kopyası:** Sistem sekmesinden bir veritabanı içe aktarırsanız dosya `dbOverride` olarak yalnızca yerel depoda tutulur; "Paketli veritabanına dön" ile silinir.
 - **Oynatılan sayfaların filtre kararı:** video/kanal kimliği ve eşleşen konu/etiket bilgisi; bu bilgiler sayfada gösterilir, kaydedilmez (uçucudur).
 
 ## 2. Veriler nereye gider?
@@ -44,10 +45,10 @@ Bu politikada değişiklik olursa bu dosyanın "Son güncelleme" tarihi yenileni
 
 ## 7. İletişim
 
-Sorularınız için: [İLETİŞİM E-POSTASI BURAYA]
+Sorularınız için: https://github.com/TalhaOzz/YouTubeFilter/issues
 
 ---
 
 ### English summary
 
-YouTube Filtreleyici does **not** collect, store, or transmit any personal data. All settings, lists, and the hashed PIN live in your browser's local storage. The extension runs only on youtube.com and performs no analytics. Avatar images are loaded directly from YouTube's image hosts by your browser. For questions, contact the address above.
+YouTube Filtreleyici does **not** collect, store, or transmit any personal data. All settings, lists, a hash of the PIN, and an optional imported `db.json` copy live in your browser's local storage. The extension runs only on youtube.com and performs no analytics. Avatar images are loaded directly from YouTube's image hosts by your browser. For questions, use the GitHub Issues link above.

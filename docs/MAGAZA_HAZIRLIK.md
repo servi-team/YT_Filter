@@ -1,6 +1,6 @@
 # Mağaza Hazırlığı — YouTube Filtreleyici
 
-> Son güncelleme: 2026-10-19 (PR 8F). Bu belge, eklentiyi Chrome Web Store ve Firefox Add-ons (AMO) mağazalarına yüklemek için gereken metinleri, form cevaplarını ve sürüm akışını toplar.
+> Son güncelleme: 2026-10-21. Bu belge, eklentiyi Chrome Web Store ve Firefox Add-ons (AMO) mağazalarına yüklemek için gereken metinleri, görselleri, form cevaplarını ve sürüm akışını toplar.
 > Ekran görüntüleri ve gerçek mağaza hesapları tarayıcı/hesap gerektirir; bu belgedeki işaretli adımlar elle yapılır.
 
 ## 1. Mağaza listeleme metinleri
@@ -20,10 +20,10 @@
 > - **İstisna katmanı:** Tek tek kanalları veya videoları "Her zaman izin ver / Her zaman engelle" listelerine ekleyerek kuralı geçersiz kılabilirsiniz. Kanal eklerken adı ve avatarı sayfadan otomatik toplanır.
 >
 > **Öne çıkanlar**
-> - Sayfa açılmadan önce devreye giren tam sayfa engel uyarısı ve geri dön bağlantısı
-> - Kartları gizleme, bulanıklaştırma veya uyarı sayfasıyla açma
-> - Pop-up'ta sayfa sayfa hızlı istisna ekleme bandı
-> - Shorts, yorumlar ve önerilenler için bağımsız anahtarlar
+> - Engellenen video/kanal sayfasında sebebi ve geri dön bağlantısını gösteren tam sayfa uyarı
+> - Kartları gizleme, bulanıklaştırma veya uyarı kapağıyla kapatma
+> - Pop-up'ta geçerli sayfa için karar + sebep gösteren ve tek tıkla istisna ekleyen hızlı bant
+> - Shorts, yorumlar ve önerilenler için bağımsız gizleme anahtarları
 > - Liste ve ayar yedekleme / geri yükleme (JSON)
 > - PIN kilidi (kilit yalnızca arayüzdedir; PIN, PBKDF2-SHA256 karması olarak saklanır)
 >
@@ -54,46 +54,64 @@ Uzak kod yoktur; tüm betikler paket içindedir.
 - **Tek amaç beyanı (single purpose):** YouTube içeriğini kullanıcının belirlediği konu/etiket kurallarına göre filtrelemek.
 - **Gizlilik politikası metni:** `docs/GIZLILIK.md`. Barındırma önerisi: GitHub Pages ile bu dosyayı yayınlayıp mağaza formuna URL verin (ör. `https://<kullanıcı>.github.io/<repo>/GIZLILIK.html`).
 
-## 4. Ekran görüntüsü planı (elle çekilecek)
+## 4. Mağaza görselleri
 
-Boyut: 1280×800 (Chrome ve AMO ikisi de kabul eder). Öneri: 5 kare, `store/` klasörüne koyup **repoya eklemeyin** (`.gitignore`'da).
+Chrome Web Store'un güncel gereksinimleri: **128×128 mağaza ikonu**, **en az bir 1280×800 ekran görüntüsü** (en fazla 5) ve **440×280 küçük tanıtım karesi**. 1400×560 marquee isteğe bağlıdır. Chrome listeleme formu ayrıca **YouTube tanıtım videosu bağlantısı** ister; video hazır değilse yükleme öncesi eklenmelidir. AMO 1280×800 ekran görüntülerini kabul eder.
+
+| Görsel | Boyut | Durum |
+|---|---|---|
+| Uzantı / mağaza ikonu | 128×128 PNG | ✅ `src/icons/icon128.png` (depoda; `npm run ikon` ile yeniden üretilir) |
+| Ekran görüntüleri | 1280×800 PNG/JPEG, 1–5 | ⏳ gerçek tarayıcıda çekilecek (aşağıdaki plan) |
+| Küçük tanıtım karesi | 440×280 PNG/JPEG | ⏳ `npm run store:gorsel` → `store/promo-440x280.png` |
+| Tanıtım videosu | YouTube bağlantısı | ⏳ Chrome listeleme formu istiyor; hazır değil |
+| Marquee | 1400×560 PNG/JPEG | isteğe bağlı |
+
+`store/` klasörü `.gitignore`'dadır; üretilen görseller repoya eklenmez. Ekran görüntüleri gerçek arayüzü göstermelidir, mockup kullanılmamalıdır. Öneri: 5 kare
 
 1. Pop-up → **Filtre** sekmesi: mod ve konu ızgarası görünür.
 2. Pop-up → **İstisnalar** sekmesi: avatarlı kanal satırı ve "Her zaman izin ver/engelle" rozetleri.
 3. YouTube'da **hızlı bant**: "Şu an: ENGELLENİYOR — Konu: …" ve iki hızlı düğme.
-4. **Tam sayfa engel banner'ı** (kara listedeki video): sebep metni ve "Beyaz listeye ekle".
+4. **Tam sayfa engel uyarısı** (kara listedeki video): sebep metni ve "Beyaz listeye ekle".
 5. **Bulanıklaştırılmış kart** görünümü (kararsız/bulanıklaştır eylemi).
 
 ## 5. Sürüm akışı
 
-**Sürümün kaynakları:** `manifests/manifest.chromium.json` ve `manifests/manifest.firefox.json` içindeki `version` (ikisi eşit olmalı; `tests/manifest.test.js` bunu denetler) + `CHANGELOG.md` girişi + git etiketi.
+**Sürümün kaynakları:** `package.json` içindeki `version`, iki manifestteki `version` (üçü **eşit** olmalı; `tests/manifest.test.js` denetler) + `CHANGELOG.md` girişi + git etiketi. Firefox manifestinde `browser_specific_settings.gecko.data_collection_permissions.required` = `["none"]` bulunmalıdır; AMO 3 Kasım 2025'ten beri yeni gönderilerde bunu zorunlu tutar.
 
 Yayın adımları:
 
-```
-1) node --test                          # tüm testler yeşil olmalı (112+)
-2) manifests/manifest.*.json içinde version yükselt   # ör. 1.0 → 2.0 (mağaza yayını için önerilir)
-3) CHANGELOG.md: "[Yayınlanmamış]" -> "[2.0] - YYYY-AA-GG"
-4) node scripts/build.js                # chromium/ ve firefox/ güncellenir
-5) Zip paketleri (PowerShell):
-   Compress-Archive -Path chromium\* -DestinationPath yt-filter-chromium-2.0.zip -Force
-   Compress-Archive -Path firefox\*  -DestinationPath yt-filter-firefox-2.0.zip  -Force
-6) Yükleme:
-   - Chrome Web Store -> Developer Dashboard -> New item -> chrome zip'i yükle
-     (form: açıklama, ekran görüntüleri, gizlilik URL'i, tek amaç beyanı)
+```text
+1) npm install && npm test              # tüm testler + derleme güncellik kontrolü yeşil olmalı
+2) npm run ikon                         # ikonlar değiştiyse (src/icons/)
+3) Sürümü üç yerde yükselt: package.json + manifests/manifest.chromium.json + manifests/manifest.firefox.json
+4) CHANGELOG.md: "[Yayınlanmamış]" -> "[2.0.0] - YYYY-AA-GG"
+5) npm run build                        # chromium/ ve firefox/ güncellenir
+6) npm run store:gorsel                 # store/promo-440x280.png
+7) Zip paketleri (PowerShell):
+   Compress-Archive -Path chromium\* -DestinationPath yt-filter-chromium-2.0.0.zip -Force
+   Compress-Archive -Path firefox\*  -DestinationPath yt-filter-firefox-2.0.0.zip  -Force
+8) Yükleme:
+   - Chrome Web Store -> Developer Dashboard -> New item -> chromium zip'i yükle
+     (form: açıklama, en az bir 1280x800 ekran görüntüsü, 440x280 karo, 128x128 ikon,
+      YouTube tanıtım videosu bağlantısı, gizlilik URL'i, tek amaç beyanı, veri toplama: "veri toplamıyor")
    - Firefox AMO -> Add-on Developer Hub -> Submit a New Add-on -> firefox zip'i yükle
      (AMO kaynak kodu isteyebilir: aynı git etiketinin kaynak zip'ini inceleme notuna ekleyin)
-7) git tag v2.0; GitHub Release notlarını CHANGELOG'dan kopyala
+9) git tag v2.0.0; GitHub Release notlarını CHANGELOG'dan kopyala
 ```
 
-Not: `version` alanı iki manifestte eşit tutulmazsa Chrome/Firefox farklı sürümlerle yayınlanır; test bunu yakalar.
+Not: `version` alanı üç yerde eşit tutulmazsa Chrome/Firefox farklı sürümlerle yayınlanır veya test kalır. `scripts/build.js` sürümü manifestten okur; ayrıca güncellemeyin.
 
 ## 6. Yayın öncesi kontrol listesi
 
-- [ ] `node --test` yeşil; `node scripts/build.js` çalıştırıldı
+- [ ] `npm test` yeşil; `npm run build` çalıştırıldı
+- [ ] Sürüm `package.json` + iki manifestte eşit (`tests/manifest.test.js` yeşil)
+- [ ] Firefox `data_collection_permissions.required = ["none"]` ve `strict_min_version` 140
+- [ ] Uzantı ikonları (`src/icons/icon{16,32,48,128}.png`) ve manifest `icons` alanı mevcut
 - [ ] Gerçek tarayıcı doğrulaması (PLAN.md bölüm "Önce yapılacak" listesi)
-- [ ] Ekran görüntüleri (5 kare) çekildi
-- [ ] Gizlilik politikası URL'i yayında (`docs/GIZLILIK.md`)
-- [ ] Destek iletişim adresi hazır (ör. e-posta)
+- [ ] En az bir 1280×800 ekran görüntüsü (hedef: 5 kare) çekildi
+- [ ] 440×280 küçük tanıtım karesi üretildi (`npm run store:gorsel`)
+- [ ] YouTube tanıtım videosu bağlantısı hazır (Chrome listeleme formu)
+- [ ] Gizlilik politikası URL'i yayında (`docs/GIZLILIK.md`) ve iletişim adresi güncel
+- [ ] `README.md` güncel
 - [ ] `CHANGELOG.md` sürüm bölümü ve git etiketi atıldı
-- [ ] Chrome `minimum_chrome_version` (111) ve Firefox `strict_min_version` (128) mağaza formlarında görünür
+- [ ] Chrome `minimum_chrome_version` (111) ve Firefox `strict_min_version` (140) mağaza formlarında görünür

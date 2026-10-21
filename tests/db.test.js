@@ -11,7 +11,7 @@ const ornek = () => ({
 
 test('geçerli veritabanı indekslenir; kanal id ve handle (büyük/küçük harf duyarsız) ile bulunur', () => {
     const db = dbKur(ornek());
-    assert.deepStrictEqual(db.sayac, { kanal: 1, video: 1, atlanan: 0 });
+    assert.deepStrictEqual(db.sayac, { kanal: 1, video: 1, atlanan: 0, yokSayilan: 0 });
     assert.strictEqual(db.veriSurumu, 3);
     assert.strictEqual(db.kanalBul(KID, null).kayit.anaKonu, 'spor');
     assert.strictEqual(db.kanalBul(null, '@trtspor').id, KID);
@@ -33,6 +33,34 @@ test('geçersiz kayıtlar atlanır ve sayılır, diğerleri etkilenmez', () => {
     assert.strictEqual(db.sayac.kanal, 1);
     assert.strictEqual(db.sayac.atlanan, 5);
     assert.ok(db.hatalar.length > 0);
+});
+
+test('bilinmeyen taksonomi kimlikleri yok sayılır, bilinen alanlar korunur (ileri uyumluluk)', () => {
+    const j = {
+        sema: 1, veriSurumu: 4,
+        kanallar: [],
+        videolar: [
+            {
+                id: 'ddddddddddd',
+                anaKonu: 'site-yeni-konu',
+                yanKonular: ['oyun'],
+                etiketler: ['site-yeni-etiket', 'kufur'],
+                kararsizKonular: ['site-yeni-kararsiz'],
+                kararsizEtiketler: []
+            },
+            { id: 'eeeeeeeeeee', anaKonu: 'site-yeni-konu' }
+        ]
+    };
+    const db = dbKur(j);
+    assert.strictEqual(db.sayac.video, 1, 'bilinen etiketi kalan kayıt korunur');
+    assert.strictEqual(db.sayac.atlanan, 1, 'tamamen bilinmeyen kayıt boş kalınca atlanır');
+    assert.ok(db.sayac.yokSayilan >= 4);
+    assert.ok(db.uyarilar.some(u => u.includes('yok sayılan')));
+    const v = db.videoBul('ddddddddddd');
+    assert.strictEqual(v.anaKonu, null);
+    assert.deepStrictEqual(v.yanKonular, [], 'ana konu bilinmiyorsa yan konular da düşer');
+    assert.deepStrictEqual(v.etiketler, ['kufur']);
+    assert.deepStrictEqual(v.kararsizKonular, []);
 });
 
 test('desteklenmeyen şema, null ve bozuk alanlar çökmez, boş veritabanı döner', () => {

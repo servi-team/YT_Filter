@@ -25,36 +25,49 @@
 
     /**
      * json: db.json içeriği (veya null). Geçersiz kayıtlar atlanır ve sayılır; hiçbir kayıt çökmeye yol açmaz.
-     * Dönüş: { veriSurumu, sayac:{kanal, video, atlanan}, hatalar[], videoBul(id), kanalBul(id, handle) }
+     * Bu eklenti sürümünün tanımadığı konu/etiket kimlikleri kaydı düşürmez; yok sayılır ve sayaçta raporlanır
+     * (ileri uyumluluk: site yeni kimlikler eklediğinde eski eklenti bilinen alanları korur).
+     * Dönüş: { veriSurumu, sayac:{kanal, video, atlanan, yokSayilan}, hatalar[], uyarilar[], videoBul(id), kanalBul(id, handle) }
      */
     function dbKur(json) {
         const videolar = new Map();
         const kanalIdIndeks = new Map();
         const kanalHandleIndeks = new Map();
         const kanalIdKucukIndeks = new Map();
-        const sayac = { kanal: 0, video: 0, atlanan: 0 };
+        const sayac = { kanal: 0, video: 0, atlanan: 0, yokSayilan: 0 };
         const hatalar = [];
+        const uyarilar = [];
         let veriSurumu = 0;
 
         const atla = (neden) => { sayac.atlanan++; if (hatalar.length < 10) hatalar.push(neden); };
+        const toleransliKayit = (kayit, yer) => {
+            const ayikla = T.kayitBilinmeyenleriAyikla(kayit);
+            if (ayikla.yokSayilan.length) {
+                sayac.yokSayilan += ayikla.yokSayilan.length;
+                if (uyarilar.length < 10) uyarilar.push(`${yer}: yok sayılan ${ayikla.yokSayilan.join(', ')}`);
+            }
+            return ayikla.kayit;
+        };
 
         if (json && json.sema === SEMA) {
             veriSurumu = Number(json.veriSurumu) || 0;
 
             (Array.isArray(json.videolar) ? json.videolar : []).forEach((v, i) => {
                 if (!v || !VIDEO_ID.test(v.id || '')) return atla(`videolar[${i}]: geçersiz video id`);
-                const h = T.kayitDogrula(v);
+                const temiz = toleransliKayit(v, `videolar[${i}] (${v.id})`);
+                const h = T.kayitDogrula(temiz);
                 if (h.length) return atla(`videolar[${i}] (${v.id}): ${h[0]}`);
-                videolar.set(v.id, kayitAl(v));
+                videolar.set(v.id, kayitAl(temiz));
                 sayac.video++;
             });
 
             (Array.isArray(json.kanallar) ? json.kanallar : []).forEach((k, i) => {
                 if (!k || !KANAL_ID.test(k.id || '')) return atla(`kanallar[${i}]: geçersiz kanal id`);
                 if (k.handle && !HANDLE.test(k.handle)) return atla(`kanallar[${i}] (${k.id}): geçersiz handle`);
-                const h = T.kayitDogrula(k);
+                const temiz = toleransliKayit(k, `kanallar[${i}] (${k.id})`);
+                const h = T.kayitDogrula(temiz);
                 if (h.length) return atla(`kanallar[${i}] (${k.id}): ${h[0]}`);
-                const kayit = { id: k.id, handle: k.handle || null, ad: k.ad || null, avatar: k.avatar || null, kayit: kayitAl(k) };
+                const kayit = { id: k.id, handle: k.handle || null, ad: k.ad || null, avatar: k.avatar || null, kayit: kayitAl(temiz) };
                 kanalIdIndeks.set(k.id, kayit);
                 kanalIdKucukIndeks.set(k.id.toLowerCase(), kayit);
                 if (k.handle) kanalHandleIndeks.set(k.handle.toLowerCase(), kayit);
@@ -68,6 +81,7 @@
             veriSurumu,
             sayac,
             hatalar,
+            uyarilar,
             videoBul: (id) => (id && videolar.get(id)) || null,
             // Kullanıcı listelerindeki (küçük harfe çevrilmiş) anahtardan kanal kaydını bulur: arayüzde ad göstermek için.
             anahtarBul: (anahtar) => {
