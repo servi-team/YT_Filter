@@ -60,7 +60,7 @@ Chrome Web Store'un güncel gereksinimleri: **128×128 mağaza ikonu**, **en az 
 
 | Görsel | Boyut | Durum |
 |---|---|---|
-| Uzantı ikonu | 16/32/48/128 PNG | ✅ `src/icons/icon{16,32,48,128}.png` (kırmızı-beyaz kalkan; `npm run ikon`) |
+| Uzantı ikonu | 16/32/48/128 PNG | ✅ `src/icons/icon{16,32,48,128}.png` (şeffaf zeminli kırmızı-beyaz kalkan; `npm run ikon`) |
 | Mağaza ikonu | 128×128 PNG (96×96 görsel + 16 px saydam çerçeve) | ✅ `store/icon-128.png` (`npm run ikon`; yerel, repoya girmez) |
 | Ekran görüntüleri | 1280×800 PNG/JPEG, 1–5 | ⏳ gerçek tarayıcıda çekilecek (aşağıdaki plan) |
 | Küçük tanıtım karesi | 440×280 PNG/JPEG | ✅ `store/promo-440x280.png` (`npm run store:gorsel`; yerel, repoya girmez) |

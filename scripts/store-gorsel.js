@@ -58,8 +58,8 @@ const html = `<!doctype html>
     padding: 28px 30px;
   }
   .ikon {
-    width: 108px; height: 108px; border-radius: 26px;
-    box-shadow: 0 12px 28px rgba(0,0,0,.28);
+    width: 132px; height: 132px;
+    filter: drop-shadow(0 12px 20px rgba(0,0,0,.32));
     flex: 0 0 auto;
   }
   h1 { margin: 0 0 6px; font-size: 27px; line-height: 1.12; letter-spacing: -.4px; }

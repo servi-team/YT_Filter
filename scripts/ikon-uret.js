@@ -1,10 +1,10 @@
 #!/usr/bin/env node
 
 /**
- * YouTube Filtreleyici - uzantı ikonlarını üretir.
+ * YouTube Filtreleyici - uzantı ve mağaza ikonlarını üretir.
  *
- * Bağımlılık yoktur: 4x süper örnekleme ile basit bir "filtre hunisi"
- * ikonu çizip PNG olarak yazar (src/icons/icon{16,32,48,128}.png).
+ * Bağımlılık yoktur: 4x süper örnekleme ile kırmızı-beyaz kalkan ikonu
+ * çizip PNG olarak yazar (src/icons/icon{16,32,48,128}.png + store/icon-128.png).
  *
  * Kullanım: node scripts/ikon-uret.js
  */
@@ -17,58 +17,44 @@ const CIKTI_DIR = path.join(__dirname, '..', 'src', 'icons');
 const BOYUTLAR = [16, 32, 48, 128];
 const ORNEKLEME = 4;
 
-const ARKA_UST = [244, 63, 94];    // #F43F5E
-const ARKA_ALT = [185, 28, 28];    // #B91C1C
-const KALKAN = [255, 255, 255];
-const KALKAN_IC_KIRMIZI = [153, 27, 27]; // #991B1B
+const KALKAN_KENAR = [153, 27, 27];     // #991B1B
+const KALKAN_BEYAZ = [255, 255, 255];
+const KALKAN_KIRMIZI = [239, 68, 68];   // #EF4444 (açık kırmızı)
 
-// Üstü sivri, üst yanları kavisli kalkan (0..1 koordinatları).
+// Üstü logaritmik sivrilen, omuzları kavisli büyük kalkan (0..1 koordinatları).
 function kalkanNoktalari() {
-    const noktalar = [[0.50, 0.15]];
+    const tepeY = 0.04;
+    const omuzY = 0.28;
+    const omuzX = 0.90;
+    const logK = 8;
+    const adim = 24;
+    const noktalar = [[0.50, tepeY]];
 
-    // Merkez tepe -> sağ omuz (kübik Bezier)
-    const sagEgri = [
-        [0.50, 0.15],
-        [0.58, 0.16],
-        [0.68, 0.20],
-        [0.75, 0.30]
-    ];
-    for (let i = 1; i <= 12; i++) {
-        const t = i / 12;
-        const u = 1 - t;
-        const x = u * u * u * sagEgri[0][0] + 3 * u * u * t * sagEgri[1][0] +
-            3 * u * t * t * sagEgri[2][0] + t * t * t * sagEgri[3][0];
-        const y = u * u * u * sagEgri[0][1] + 3 * u * u * t * sagEgri[1][1] +
-            3 * u * t * t * sagEgri[2][1] + t * t * t * sagEgri[3][1];
+    // Merkez tepe -> sağ omuz: logaritmik genişleme.
+    for (let i = 1; i <= adim; i++) {
+        const t = i / adim;
+        const y = tepeY + (omuzY - tepeY) * (Math.log1p(logK * t) / Math.log1p(logK));
+        const x = 0.50 + t * (omuzX - 0.50);
         noktalar.push([x, y]);
     }
 
-    // Sağ kenar ve alt uç
+    // Sağ kenar ve alt uç.
     noktalar.push(
-        [0.75, 0.50],
-        [0.69, 0.63],
-        [0.58, 0.76],
-        [0.50, 0.85],
-        [0.42, 0.76],
-        [0.31, 0.63],
-        [0.25, 0.50],
-        [0.25, 0.30]
+        [0.90, 0.52],
+        [0.80, 0.70],
+        [0.64, 0.84],
+        [0.50, 0.96],
+        [0.36, 0.84],
+        [0.20, 0.70],
+        [0.10, 0.52],
+        [0.10, 0.28]
     );
 
-    // Sol omuz -> merkez tepe (kübik Bezier)
-    const solEgri = [
-        [0.25, 0.30],
-        [0.32, 0.20],
-        [0.42, 0.16],
-        [0.50, 0.15]
-    ];
-    for (let i = 1; i <= 12; i++) {
-        const t = i / 12;
-        const u = 1 - t;
-        const x = u * u * u * solEgri[0][0] + 3 * u * u * t * solEgri[1][0] +
-            3 * u * t * t * solEgri[2][0] + t * t * t * solEgri[3][0];
-        const y = u * u * u * solEgri[0][1] + 3 * u * u * t * solEgri[1][1] +
-            3 * u * t * t * solEgri[2][1] + t * t * t * solEgri[3][1];
+    // Sol omuz -> merkez tepe (aynı logaritmik eğrinin aynası).
+    for (let i = adim; i >= 1; i--) {
+        const t = i / adim;
+        const y = tepeY + (omuzY - tepeY) * (Math.log1p(logK * t) / Math.log1p(logK));
+        const x = 0.50 - t * (omuzX - 0.50);
         noktalar.push([x, y]);
     }
 
@@ -76,7 +62,7 @@ function kalkanNoktalari() {
 }
 
 const KALKAN_NOKTALARI = kalkanNoktalari();
-const KALKAN_IC_ORANI = 0.87;
+const KALKAN_IC_ORANI = 0.93;
 const KALKAN_IC_NOKTALARI = KALKAN_NOKTALARI.map(([x, y]) => [
     0.5 + (x - 0.5) * KALKAN_IC_ORANI,
     0.5 + (y - 0.5) * KALKAN_IC_ORANI
@@ -94,24 +80,6 @@ function noktaPoligonda(x, y, noktalar) {
     return icinde;
 }
 
-function yuvarlatilmisKareIcinde(x, y, r) {
-    if (x < 0 || x > 1 || y < 0 || y > 1) return false;
-    const kx = Math.min(x, 1 - x);
-    const ky = Math.min(y, 1 - y);
-    if (kx >= r || ky >= r) return true;
-    const dx = r - kx;
-    const dy = r - ky;
-    return dx * dx + dy * dy <= r * r;
-}
-
-function renkKaristir(ust, alt, oran) {
-    return [
-        Math.round(ust[0] + (alt[0] - ust[0]) * oran),
-        Math.round(ust[1] + (alt[1] - ust[1]) * oran),
-        Math.round(ust[2] + (alt[2] - ust[2]) * oran)
-    ];
-}
-
 function ikonPikselleri(boyut) {
     const S = boyut * ORNEKLEME;
     const ham = new Uint8Array(S * S * 4);
@@ -122,20 +90,17 @@ function ikonPikselleri(boyut) {
             const y = (py + 0.5) / S;
             const i = (py * S + px) * 4;
 
-            if (!yuvarlatilmisKareIcinde(x, y, 0.22)) {
+            if (!noktaPoligonda(x, y, KALKAN_NOKTALARI)) {
                 ham[i + 3] = 0;
                 continue;
             }
 
-            let renk = renkKaristir(ARKA_UST, ARKA_ALT, y);
-            if (noktaPoligonda(x, y, KALKAN_NOKTALARI)) {
-                renk = KALKAN;
-                if (noktaPoligonda(x, y, KALKAN_IC_NOKTALARI)) {
-                    // Çapraz dama: sol üst + sağ alt beyaz, diğer çeyrekler kırmızı.
-                    const solUst = x < 0.5 && y < 0.5;
-                    const sagAlt = x >= 0.5 && y >= 0.5;
-                    if (!solUst && !sagAlt) renk = KALKAN_IC_KIRMIZI;
-                }
+            // Dış kenar koyu kırmızı, içi çapraz dama (açık kırmızı + beyaz).
+            let renk = KALKAN_KENAR;
+            if (noktaPoligonda(x, y, KALKAN_IC_NOKTALARI)) {
+                const solUst = x < 0.5 && y < 0.5;
+                const sagAlt = x >= 0.5 && y >= 0.5;
+                renk = (solUst || sagAlt) ? KALKAN_BEYAZ : KALKAN_KIRMIZI;
             }
 
             ham[i] = renk[0];

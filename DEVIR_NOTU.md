@@ -8,7 +8,7 @@
 >
 > **2026-10-21 karar kayıtları:** Ürün sahibi onayıyla site rol matrisi ve SISTEM #1/#2/#3/#18/#19 kesinleşti; A/B kararı **A (site öne)**. `docs/MAGAZA_ELLE.md` (gerçek tarayıcı, ekran görüntüsü, yükleme) ve `scripts/gorsel-1280x800.ps1` eklendi. Site kodu hâlâ başlamadı; #8/#10/#11 ve S1 açık.
 >
-> **2026-10-21 yayın kararları:** Yeni kırmızı-beyaz kalkan ikonu (üstü sivri/kavislı, çapraz dama) üretildi; mağaza için `store/icon-128.png` 96 px görsel + 16 px saydam çerçeve olarak ayrıldı. GitHub Pages `main` / `/docs` için yapılandırıldı; yerel commit'ler `origin/main`e push edilince `https://talhaozz.github.io/YouTubeFilter/GIZLILIK.html` yayınlanacak. Tanıtım videosu kullanıcı kararıyla ertelendi.
+> **2026-10-21 yayın kararları:** Yeni kırmızı-beyaz kalkan ikonu (şeffaf zemin, logaritmik sivrilen üst, büyük kalkan, açık kırmızı çapraz dama) üretildi; mağaza için `store/icon-128.png` 96 px görsel + 16 px saydam çerçeve olarak ayrıldı. GitHub Pages `main` / `/docs` için yapılandırıldı; yerel commit'ler `origin/main`e push edilince `https://talhaozz.github.io/YouTubeFilter/GIZLILIK.html` yayınlanacak. Tanıtım videosu kullanıcı kararıyla ertelendi.
 >
 > **PR 8F özeti (2026-10-19):** Mağaza hazırlığı. `docs/MAGAZA_HAZIRLIK.md` (listeleme metinleri, izin gerekçeleri, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, adım adım sürüm akışı: test → version → build → zip → yükleme → etiket, yayın öncesi liste) ve `docs/GIZLILIK.md` (yayınlanabilir gizlilik politikası, TR + EN özet). `tests/manifest.test.js` +1: iki manifestte sürüm/ad eşitliği. PR 8F'de toplam **113 test** yeşil (101 saf + 12 smoke); düzeltme turuyla **116**. **Kalan (elle):** ekran görüntüleri, gizlilik URL'i barındırma, mağaza hesaplarına yükleme; sürüm artık **2.0.0**.
 >
@@ -126,7 +126,7 @@ src/
     engine.js          ayarCoz, icerikKarari (db araması+karar+eylem çözümleme), rozetBilgisi,
                        sebepMetni / kararOzeti (hızlı bant), istisnaSayisi + ISTISNA_UYARI_ESIGI
   data/db.json         paketle gelen veritabanı (şimdilik yalnızca bir örnek kanal)
-  icons/               16/32/48/128 px uzantı ikonları (kırmızı-beyaz kalkan; npm run ikon)
+  icons/               16/32/48/128 px uzantı ikonları (şeffaf zeminli kırmızı-beyaz kalkan; npm run ikon)
 manifests/             manifest.chromium.json, manifest.firefox.json (yalnızca youtube.com; Chrome >= 111, Firefox >= 140)
 scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır; --check bayat çıktıyı yakalar)
 scripts/ikon-uret.js   uzantı + mağaza ikonlarını üretir (bağımlılıksız PNG; mağaza 96+16 px)
@@ -233,6 +233,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | D2 | **Düzeltme turu 2** (2026-10-21, `checkpoint-duzeltme-2`): mağaza engelleri (Firefox veri beyanı, ikonlar, sürüm 2.0.0, README, görseller); derleme güncellik kontrolü + `.gitattributes`; DEVIR/db-sema/PLAN tutarlılığı; taksonomi ileri uyumluluğu (bilinmeyen kimlikleri yok say); site kararları/puan notu | ✅ `node --test` yeşil (116 test); ayrıntı `CHANGELOG.md` |
 | D3 | **Karar kayıtları + mağaza elle rehberi** (2026-10-21, `checkpoint-kararlar-1`): rol matrisi ve SISTEM #1/#2/#3/#18/#19 onaylandı; A/B = A; puan notu 3 oy eşiğine uyarlandı; `docs/MAGAZA_ELLE.md` + `scripts/gorsel-1280x800.ps1` | ✅ `node --test` yeşil (116 test); ayrıntı `CHANGELOG.md` |
 | D4 | **Yeni ikon + yayın kararları** (2026-10-21, `checkpoint-yayin-1`): kırmızı-beyaz sivri/kavislı kalkan + çapraz dama; mağaza ikonu 96+16 px; GitHub Pages yapılandırıldı; video ertelendi; belgeler güncellendi | ✅ build/test yeşil; Pages push sonrası doğrulanacak; ayrıntı `CHANGELOG.md` |
+| D5 | **İkon revizyonu** (2026-10-21, `checkpoint-yayin-2`): arka plan şeffaf, logaritmik sivrilme, büyük kalkan, açık kırmızı çeyrekler; promo gölgesi kalkan siluetine uyarlandı | ✅ 116 test; ayrıntı `CHANGELOG.md` |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -313,7 +314,7 @@ node --test                                  # tüm testler (saf testler Node 18
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.
 
-Geri alma: PR/düzeltme sonları annotated tag ile işaretlenir — PR 6C `checkpoint-pr6c` (`214944e`), PR 7 `checkpoint-pr7` (`76ccd8e`), PR 8A `checkpoint-pr8a` (`472f08e`), PR 8B `checkpoint-pr8b` (`f508c39`), PR 8C `checkpoint-pr8c` (`82bdbb7`), PR 8D `checkpoint-pr8d` (`75dfadd`), PR 8E `checkpoint-pr8e` (`52bcb45`), PR 8F `checkpoint-pr8f` (`74226fd`), düzeltme turu 1 `checkpoint-duzeltme-1` (`46b5afd`), düzeltme turu 2 `checkpoint-duzeltme-2` (`4039974`), karar kayıtları `checkpoint-kararlar-1`, yayın kararları `checkpoint-yayin-1`. İncelemek için `git show checkpoint-pr7`; tag'in hedef commit'i için `git rev-parse "checkpoint-pr7^0"`; tek dosyayı eski hâline döndürmek için `git checkout checkpoint-pr6c -- <dosya>`. Tüm çalışmayı geri almak gerekirse önce yeni bir checkpoint tag atın, sonra `git revert` kullanın.
+Geri alma: PR/düzeltme sonları annotated tag ile işaretlenir — PR 6C `checkpoint-pr6c` (`214944e`), PR 7 `checkpoint-pr7` (`76ccd8e`), PR 8A `checkpoint-pr8a` (`472f08e`), PR 8B `checkpoint-pr8b` (`f508c39`), PR 8C `checkpoint-pr8c` (`82bdbb7`), PR 8D `checkpoint-pr8d` (`75dfadd`), PR 8E `checkpoint-pr8e` (`52bcb45`), PR 8F `checkpoint-pr8f` (`74226fd`), düzeltme turu 1 `checkpoint-duzeltme-1` (`46b5afd`), düzeltme turu 2 `checkpoint-duzeltme-2` (`4039974`), karar kayıtları `checkpoint-kararlar-1`, yayın kararları `checkpoint-yayin-1`, ikon revizyonu `checkpoint-yayin-2`. İncelemek için `git show checkpoint-pr7`; tag'in hedef commit'i için `git rev-parse "checkpoint-pr7^0"`; tek dosyayı eski hâline döndürmek için `git checkout checkpoint-pr6c -- <dosya>`. Tüm çalışmayı geri almak gerekirse önce yeni bir checkpoint tag atın, sonra `git revert` kullanın.
 
 Elle deneme ipuçları:
 - İlk açılış seçimini yeniden görmek: pop-up konsolunda `chrome.storage.local.get('ayar', r => { r.ayar.etiketlenmemis = null; chrome.storage.local.set({ayar: r.ayar}) })`

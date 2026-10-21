@@ -11,8 +11,8 @@ PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F **Node testleriyle doğrulandı** (ara
 ### Yeni ikon ve yayın kararları (2026-10-21, `checkpoint-yayin-1`)
 
 #### Değişti
-- **İkon:** kırmızı-beyaz, üstü sivri ve kavislı kalkan; içi çapraz dama (iki çeyrek beyaz, iki çeyrek koyu kırmızı). `scripts/ikon-uret.js` yeniden yazıldı; 16/32/48/128 px üretiliyor.
-- **Mağaza ikonu:** Chrome'un 96×96 görsel + 16 px saydam çerçeve beklentisine uygun `store/icon-128.png` üretimi eklendi; `store/promo-440x280.png` yeni ikonla yenilendi.
+- **İkon:** şeffaf zeminli, kırmızı-beyaz kalkan; üstü logaritmik sivrilen kavislı omuzlar, içi çapraz dama (iki çeyrek beyaz, iki çeyrek açık kırmızı), koyu kırmızı dış kenar. `scripts/ikon-uret.js` yeniden yazıldı; 16/32/48/128 px üretiliyor.
+- **Mağaza ikonu:** Chrome'un 96×96 görsel + 16 px saydam çerçeve beklentisine uygun `store/icon-128.png` üretimi eklendi; `store/promo-440x280.png` yeni ikonla ve şeffaf kalkana uygun gölgeyle yenilendi.
 - **Gizlilik URL'i:** GitHub Pages `main` / `/docs` kaynağıyla yapılandırıldı. Hedef: `https://talhaozz.github.io/YouTubeFilter/GIZLILIK.html`; yerel commit'ler `origin/main`e push edildikten sonra doğrulanacak. Depo public olduğu için GitHub Issues iletişimi çalışıyor.
 - **Tanıtım videosu:** kullanıcı kararıyla **şimdilik ertelendi**; Chrome formu zorunlu tutarsa `docs/MAGAZA_ELLE.md` bölüm 3'teki plan kullanılacak.
 - **Belgeler:** `MAGAZA_HAZIRLIK.md`, `MAGAZA_ELLE.md`, `DEVIR_NOTU.md` ve `README.md` yeni ikon, mağaza ikonu ve yayın durumuna göre güncellendi.
