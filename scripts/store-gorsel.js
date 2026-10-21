@@ -18,6 +18,7 @@ const { execFileSync } = require('child_process');
 const KOK = path.join(__dirname, '..');
 const STORE = path.join(KOK, 'store');
 const IKON = path.join(KOK, 'src', 'icons', 'icon128.png');
+const STORE_IKON = path.join(STORE, 'icon-128.png');
 const HTML = path.join(STORE, 'promo.html');
 const CIKTI = path.join(STORE, 'promo-440x280.png');
 
@@ -88,7 +89,9 @@ const html = `<!doctype html>
 
 fs.mkdirSync(STORE, { recursive: true });
 fs.writeFileSync(HTML, html, 'utf8');
-fs.copyFileSync(IKON, path.join(STORE, 'icon-128.png'));
+// Mağaza ikonunu `npm run ikon` üretir (96x96 görsel + saydam çerçeve).
+// Komut atlanmışsa tam taşlı ikonla devam et; yükleme öncesi `npm run ikon` çalıştırılmalı.
+if (!fs.existsSync(STORE_IKON)) fs.copyFileSync(IKON, STORE_IKON);
 
 const tarayici = tarayiciBul();
 const profil = fs.mkdtempSync(path.join(os.tmpdir(), 'ytf-store-'));
@@ -115,4 +118,4 @@ const png = fs.readFileSync(CIKTI);
 const genislik = png.readUInt32BE(16);
 const yukseklik = png.readUInt32BE(20);
 console.log(`✓ ${path.relative(KOK, CIKTI)} (${genislik}x${yukseklik})`);
-console.log(`✓ ${path.relative(KOK, path.join(STORE, 'icon-128.png'))}`);
+console.log(`✓ ${path.relative(KOK, STORE_IKON)}`);

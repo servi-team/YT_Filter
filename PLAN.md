@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-21 (D3: site kararları + mağaza elle rehberi; öncesi D2 mağaza engelleri, 8F mağaza hazırlığı)
+> Son güncelleme: 2026-10-21 (D4: yeni ikon + GitHub Pages + video erteleme; öncesi D3 site kararları, D2 mağaza engelleri, 8F mağaza hazırlığı)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -30,7 +30,7 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **8C** | **PIN karma saklama:** `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon), arayüz akışları, eski düz metin yükseltme | ✅ kodlandı, `node --test` yeşil (109 test); tarayıcıda PIN akışı denenmeli |
 | **8D** | **Yoklama azaltma:** `content.js` olay tabanlı sayfa kontrolü, `inject_helper.js` MutationObserver taraması | ✅ kodlandı, `node --test` yeşil (110 test); tarayıcıda gezinme/geri tuşu denenmeli |
 | **8E** | **Listelerde kanal adı/avatarı:** `kanalBilgileri` deposu, sayfadan toplama, listede avatar + ad | ✅ kodlandı, `node --test` yeşil (112 test); tarayıcıda kanal ekleme denenmeli |
-| **8F** | **Mağaza hazırlığı:** listeleme metinleri, gizlilik politikası, sürüm akışı, kontrol listesi, ikonlar/mağaza görselleri | ✅ kodlandı (`docs/MAGAZA_HAZIRLIK.md`, `docs/MAGAZA_ELLE.md`, `docs/GIZLILIK.md`, `README.md`), 116 test; **elle:** tarayıcı testleri, ekran görüntüleri, video, gizlilik URL'i + mağaza yüklemesi |
+| **8F** | **Mağaza hazırlığı:** listeleme metinleri, gizlilik politikası, sürüm akışı, kontrol listesi, ikonlar/mağaza görselleri | ✅ kodlandı (`docs/MAGAZA_HAZIRLIK.md`, `docs/MAGAZA_ELLE.md`, `docs/GIZLILIK.md`, `README.md`), 116 test; **elle:** tarayıcı testleri, ekran görüntüleri, mağaza yüklemesi; video ertelendi, gizlilik URL'i GitHub Pages'te (build doğrulanacak) |
 | 8 | Sağlamlaştırma ve mağaza hazırlığı (8A ✅, 8B ✅, 8C ✅, 8D ✅, 8E ✅, 8F ✅ kod tarafı) | ✅ tamam: kalan işler tarayıcı/mağaza hesabı gerektirir (aşağıdaki doğrulama listesi) |
 | S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir; rol matrisi ve SISTEM #1/#2/#3/#18/#19 onaylandı; #8/#10/#11 ve S1 açık — `docs/SITE_HAZIRLIK.md`) |
 
@@ -134,9 +134,9 @@ Ayrıntı ve öneriler: `docs/SITE_HAZIRLIK.md` bölüm 2.
 
 ### PR 8F — ✅ Mağaza hazırlığı (2026-10-19)
 - `docs/MAGAZA_HAZIRLIK.md`: listeleme metinleri (≤132 karakter kısa açıklama, uzun açıklama, kategori), izin gerekçeleri tablosu, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, sürüm akışı (test → version → build → zip → yükleme → etiket), yayın öncesi kontrol listesi.
-- `docs/GIZLILIK.md`: yayınlanabilir gizlilik politikası (TR + kısa EN özet); barındırma önerisi GitHub Pages.
+- `docs/GIZLILIK.md`: yayınlanabilir gizlilik politikası (TR + kısa EN özet); GitHub Pages `main` / `/docs` için yapılandırıldı (push sonrası yayın).
 - `tests/manifest.test.js` +1: sürüm/ad iki manifestte eşit ve `\d+(\.\d+){1,3}` biçiminde. PR 8F'de toplam **113 test** (101 saf + 12 smoke); düzeltme turuyla **116** (manifest testi 4).
-- `.gitignore`: `store/`. Sürüm üç yerde **2.0.0**; **elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza hesaplarına yükleme.
+- `.gitignore`: `store/`. Sürüm üç yerde **2.0.0**; **elle kalan:** ekran görüntüleri ve mağaza hesaplarına yükleme; gizlilik URL'i GitHub Pages'te (ilk build doğrulanacak).
 
 ### PR 8E — ✅ Listelerde kanal adı/avatarı (2026-10-19)
 - Yeni depo anahtarı `kanalBilgileri` (`{ "@handle": { ad, avatar } }`, yalnızca görüntüleme; kuralları etkilemez). `background.js` kurulumda boş nesne yazar; tam yedek taşır, içe aktarmada `kanalBilgileriTemizle` ile doğrulanır.
@@ -167,7 +167,7 @@ Ayrıntı ve öneriler: `docs/SITE_HAZIRLIK.md` bölüm 2.
 - ~~Kanal adı/avatarını kullanıcı listelerinde göstermek (kullanıcı eklerken sayfadan toplama).~~ ✅ 8E'de yapıldı (pop-up ekleme yolları; banner'daki "Beyaz listeye ekle" kapsam dışı).
 - ~~Arayüz ve içerik betiği smoke testlerinin repoya alınması (`tests/smoke/`, jsdom devDependency).~~ ✅ 8B'de yapıldı.
 - ~~PIN: düz metin yerine karma saklama (hâlâ yalnızca arayüz kilidi olduğu belgelenir).~~ ✅ 8C'de yapıldı (PBKDF2-SHA256, eski kayıt yükseltme).
-- ~~Mağaza: gizlilik metni, ekran görüntüleri, sürüm akışı.~~ ✅ 8F'de doküman tarafı yapıldı (`docs/MAGAZA_HAZIRLIK.md`, `docs/GIZLILIK.md`); **elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza yüklemesi.
+- ~~Mağaza: gizlilik metni, ekran görüntüleri, sürüm akışı.~~ ✅ 8F'de doküman tarafı yapıldı (`docs/MAGAZA_HAZIRLIK.md`, `docs/MAGAZA_ELLE.md`, `docs/GIZLILIK.md`); **elle kalan:** ekran görüntüleri ve mağaza yüklemesi; gizlilik URL'i GitHub Pages'te.
 
 ### Düzenleme sitesi ("YouTube Filter Store", S) — `db.json` şeması dondu, paralel başlayabilir
 - **S0 — Prototip (önce):** link yapıştırınca kanal adı/avatar/ID'nin API'siz alınması (video: `oembed`; kanal sayfası: HTML meta). Kırılganlık ölçülür.
@@ -189,7 +189,7 @@ Ayrıntı ve öneriler: `docs/SITE_HAZIRLIK.md` bölüm 2.
 | Şema değişikliği geç gelir | Kullanıcı verisi geçişi pahalı | Şema kararları erken kapatıldı; yeni alanlar isteğe bağlı eklendi (sema 1 korunur) |
 | **Belge–kod uyuşmazlığı** | "Tamam" denen iş dosyada yok (PR 5 örneği) | Yüklenen dosyalar esastır; her PR sonunda ilgili davranışı jsdom/Node ile gösteren test; DEVIR_NOTU'nda "doğrulandı / doğrulanmadı" ayrımı |
 | **Liderin belirsiz bıraktığı kurallar** | Yanlış yorumla kodlanan davranış | `SISTEM_TASARIMI.md` bölüm 6 (❓ maddeler) + her yorum için test; teyit gelince tek satır değişir |
-| **Tek oyla etiket oluşması** | Yanlış/kötü niyetli oyla video engellenir | Asgari oy eşiği (4.2/#7); site tarafında yönetim |
+| **Tek oyla etiket oluşması** | Yanlış/kötü niyetli oyla video engellenir | Asgari **3 oy** eşiği (SISTEM #18) site tarafında uygulanacak; moderasyon |
 | **Gerçek tarayıcı doğrulaması eksik** | jsdom'da geçen kod YouTube'da çalışmayabilir | Yukarıdaki test listesi; `YT Filter:` günlükleri |
 | Tek geliştirici | Süreklilik | Bu belge, `DEVIR_NOTU.md`, `SISTEM_TASARIMI.md`, testler |
 

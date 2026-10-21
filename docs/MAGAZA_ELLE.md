@@ -7,9 +7,9 @@
 
 - [ ] Node.js **20+** ve `npm install` tamam.
 - [ ] Chrome/Edge ve Firefox'ta test için ayrı, temiz bir profil (mevcut veriler karışmasın).
-- [ ] `store/` klasörü oluşturuldu (`.gitignore`'da; görseller repoya girmez).
-- [ ] GitHub deposu **herkese açık** (gizlilik iletişimi GitHub Issues; repo özelse Issues bağlantısı çalışmaz).
-- [ ] Chrome Web Store ve Firefox AMO geliştirici hesapları hazır.
+- [ ] `store/` klasörü oluşturuldu (`.gitignore`'da; görseller repoya girmez).\n- [ ] Mağaza ikonu üretildi: `npm run ikon` → `store/icon-128.png` (96 px görsel + 16 px saydam çerçeve).
+- [x] GitHub deposu **herkese açık** (2026-10-21 doğrulandı; gizlilik iletişimi GitHub Issues çalışıyor).
+- [ ] Chrome Web Store ve Firefox AMO geliştirici hesapları hazır (kullanıcı sorumluluğunda).
 
 ## 1. Yerel doğrulama (yaklaşık 30–45 dk)
 
@@ -77,9 +77,11 @@ powershell -ExecutionPolicy Bypass -File scripts/gorsel-1280x800.ps1
 
 > Kişisel bilgi (e-posta, gerçek ad, izleme geçmişi) görünmesin. Örnek kanal/video adları kullanın.
 
-## 3. YouTube tanıtım videosu
+## 3. YouTube tanıtım videosu (şimdilik ertelendi)
 
-Chrome listeleme formu YouTube bağlantısı ister. Video **30–45 saniye**, 1080p, Türkçe altyazılı olabilir; telifli müzik kullanılmamalıdır.
+> **Karar (2026-10-21): video şimdilik hazırlanmayacak.** Chrome formunda video alanı varsa boş bırakılacak; form zorunlu tutarsa aşağıdaki plan kullanılacak. Bu adım mağaza yüklemesini bekletmiyor.
+
+Video **30–45 saniye**, 1080p, Türkçe altyazılı olabilir; telifli müzik kullanılmamalıdır.
 
 | Süre | Sahne | Anlatım |
 |---|---|---|
@@ -98,15 +100,15 @@ Chrome listeleme formu YouTube bağlantısı ister. Video **30–45 saniye**, 10
 
 Metin hazır: `docs/GIZLILIK.md`. İletişim kanalı **GitHub Issues**: `https://github.com/TalhaOzz/YouTubeFilter/issues`.
 
-### GitHub Pages (depo herkese açıksa önerilen)
+### GitHub Pages (yapılandırıldı — 2026-10-21)
 
-1. GitHub → **Settings → Pages**.
-2. **Build and deployment → Source:** `Deploy from a branch`.
-3. **Branch:** `main`, **Folder:** `/docs` → **Save**.
-4. Birkaç dakika bekle; adres genellikle:
-   `https://talhaozz.github.io/YouTubeFilter/GIZLILIK.html`
-5. Gizli sekmede aç; sayfa yükleniyor mu, Issues bağlantısı çalışıyor mu kontrol et.
-6. URL'i Chrome/Firefox mağaza formlarına ve `docs/MAGAZA_HAZIRLIK.md`'ye yaz.
+1. GitHub → **Settings → Pages**; kaynak `main` / `/docs` olarak ayarlandı.
+2. **Önce yerel commit'leri `origin/main`e push et.** Uzak `main` gerideyken Pages `/docs` klasörünü bulamadığı için ilk build başarısız oldu.
+3. Push sonrası hedef adres: `https://talhaozz.github.io/YouTubeFilter/GIZLILIK.html`
+4. Gizli sekmede aç; sayfa yükleniyor mu, Issues bağlantısı çalışıyor mu kontrol et.
+5. URL'i Chrome/Firefox mağaza formlarına ve `docs/MAGAZA_HAZIRLIK.md`'ye yaz.
+
+> Build birkaç dakika sürebilir. 404 alırsan Pages → **Build and deployment** altındaki son build durumunu kontrol et; `main` dalına yeni commit geldikçe sayfa yeniden yayınlanır.
 
 > Depo özelese GitHub Pages ücretsiz planda yayınlanmaz ve Issues bağlantısı da çalışmaz. Bu durumda iletişim için e-posta, barındırma için Cloudflare Pages/Netlify kullanılmalı; karar değişirse `docs/GIZLILIK.md` güncellenir.
 
@@ -126,9 +128,9 @@ Compress-Archive -Path firefox\*  -DestinationPath yt-filter-firefox-2.0.0.zip  
 1. Developer Dashboard → **New item** → `yt-filter-chromium-2.0.0.zip`.
 2. Formu `docs/MAGAZA_HAZIRLIK.md` bölüm 1–3'ten doldur:
    - ad, kısa/uzun açıklama, kategori (Verimlilik), dil (Türkçe);
-   - 128×128 ikon, en az bir 1280×800 ekran görüntüsü, 440×280 karo;
-   - YouTube tanıtım video bağlantısı;
-   - gizlilik politikası URL'i;
+   - `store/icon-128.png` (96 px görsel + 16 px saydam çerçeve), en az bir 1280×800 ekran görüntüsü, 440×280 karo;
+   - YouTube tanıtım video bağlantısı (şimdilik boş; form zorunlu tutarsa bölüm 3);
+   - gizlilik politikası URL'i: `https://talhaozz.github.io/YouTubeFilter/GIZLILIK.html`;
    - tek amaç beyanı; veri toplama: **Hayır**; uzak kod: **Hayır**.
 3. İncelemeye gönder. Yayınlanmadan önce mağaza panelindeki uyarıları kontrol et.
 
@@ -155,8 +157,8 @@ Compress-Archive -Path firefox\*  -DestinationPath yt-filter-firefox-2.0.0.zip  
 | Chrome gerçek tarayıcı testi | Kullanıcı | ☐ | |
 | Firefox gerçek tarayıcı testi | Kullanıcı | ☐ | |
 | 5 ekran görüntüsü (1280×800) | Kullanıcı | ☐ | |
-| Tanıtım videosu (YouTube) | Kullanıcı | ☐ | |
-| Gizlilik URL'i (GitHub Pages) | Kullanıcı | ☐ | |
+| Tanıtım videosu (YouTube) | Kullanıcı | ⏸️ ertelendi | 2026-10-21 kararı |
+| Gizlilik URL'i (GitHub Pages) | Kullanıcı | ⏳ yapılandırıldı | 2026-10-21; push sonrası build doğrulanacak |
 | Chrome mağaza yüklemesi | Kullanıcı | ☐ | |
 | Firefox AMO yüklemesi | Kullanıcı | ☐ | |
 | `v2.0.0` etiketi + Release | Geliştirici | ☐ | |

@@ -46,7 +46,7 @@ npm run build:check      # chromium/ + firefox/ src ile uyumlu mu?
 src/                 uzantı kaynakları (background, content, options, core/, data/, icons/)
 manifests/           Chromium ve Firefox manifestleri
 scripts/build.js     src/ + manifest -> chromium/ ve firefox/
-scripts/ikon-uret.js uzantı ikonlarını üretir (npm run ikon)
+scripts/ikon-uret.js uzantı + mağaza ikonlarını üretir (npm run ikon; mağaza 96+16 px)
 scripts/gorsel-1280x800.ps1  mağaza ekran görüntülerini 1280x800'e ortalar
 tests/               Node testleri + tests/smoke/ (jsdom)
 docs/                sistem tasarımı, db şeması, mağaza ve gizlilik belgeleri

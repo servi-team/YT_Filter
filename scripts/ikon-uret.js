@@ -17,19 +17,70 @@ const CIKTI_DIR = path.join(__dirname, '..', 'src', 'icons');
 const BOYUTLAR = [16, 32, 48, 128];
 const ORNEKLEME = 4;
 
-const ARKA_UST = [99, 102, 241];   // #6366F1
-const ARKA_ALT = [67, 56, 202];    // #4338CA
-const HUNI = [255, 255, 255];
+const ARKA_UST = [244, 63, 94];    // #F43F5E
+const ARKA_ALT = [185, 28, 28];    // #B91C1C
+const KALKAN = [255, 255, 255];
+const KALKAN_IC_KIRMIZI = [153, 27, 27]; // #991B1B
 
-// Filtre hunisi (0..1 koordinatları)
-const HUNI_NOKTALARI = [
-    [0.24, 0.27],
-    [0.76, 0.27],
-    [0.56, 0.50],
-    [0.56, 0.72],
-    [0.44, 0.78],
-    [0.44, 0.50]
-];
+// Üstü sivri, üst yanları kavisli kalkan (0..1 koordinatları).
+function kalkanNoktalari() {
+    const noktalar = [[0.50, 0.15]];
+
+    // Merkez tepe -> sağ omuz (kübik Bezier)
+    const sagEgri = [
+        [0.50, 0.15],
+        [0.58, 0.16],
+        [0.68, 0.20],
+        [0.75, 0.30]
+    ];
+    for (let i = 1; i <= 12; i++) {
+        const t = i / 12;
+        const u = 1 - t;
+        const x = u * u * u * sagEgri[0][0] + 3 * u * u * t * sagEgri[1][0] +
+            3 * u * t * t * sagEgri[2][0] + t * t * t * sagEgri[3][0];
+        const y = u * u * u * sagEgri[0][1] + 3 * u * u * t * sagEgri[1][1] +
+            3 * u * t * t * sagEgri[2][1] + t * t * t * sagEgri[3][1];
+        noktalar.push([x, y]);
+    }
+
+    // Sağ kenar ve alt uç
+    noktalar.push(
+        [0.75, 0.50],
+        [0.69, 0.63],
+        [0.58, 0.76],
+        [0.50, 0.85],
+        [0.42, 0.76],
+        [0.31, 0.63],
+        [0.25, 0.50],
+        [0.25, 0.30]
+    );
+
+    // Sol omuz -> merkez tepe (kübik Bezier)
+    const solEgri = [
+        [0.25, 0.30],
+        [0.32, 0.20],
+        [0.42, 0.16],
+        [0.50, 0.15]
+    ];
+    for (let i = 1; i <= 12; i++) {
+        const t = i / 12;
+        const u = 1 - t;
+        const x = u * u * u * solEgri[0][0] + 3 * u * u * t * solEgri[1][0] +
+            3 * u * t * t * solEgri[2][0] + t * t * t * solEgri[3][0];
+        const y = u * u * u * solEgri[0][1] + 3 * u * u * t * solEgri[1][1] +
+            3 * u * t * t * solEgri[2][1] + t * t * t * solEgri[3][1];
+        noktalar.push([x, y]);
+    }
+
+    return noktalar;
+}
+
+const KALKAN_NOKTALARI = kalkanNoktalari();
+const KALKAN_IC_ORANI = 0.87;
+const KALKAN_IC_NOKTALARI = KALKAN_NOKTALARI.map(([x, y]) => [
+    0.5 + (x - 0.5) * KALKAN_IC_ORANI,
+    0.5 + (y - 0.5) * KALKAN_IC_ORANI
+]);
 
 function noktaPoligonda(x, y, noktalar) {
     let icinde = false;
@@ -77,7 +128,15 @@ function ikonPikselleri(boyut) {
             }
 
             let renk = renkKaristir(ARKA_UST, ARKA_ALT, y);
-            if (noktaPoligonda(x, y, HUNI_NOKTALARI)) renk = HUNI;
+            if (noktaPoligonda(x, y, KALKAN_NOKTALARI)) {
+                renk = KALKAN;
+                if (noktaPoligonda(x, y, KALKAN_IC_NOKTALARI)) {
+                    // Çapraz dama: sol üst + sağ alt beyaz, diğer çeyrekler kırmızı.
+                    const solUst = x < 0.5 && y < 0.5;
+                    const sagAlt = x >= 0.5 && y >= 0.5;
+                    if (!solUst && !sagAlt) renk = KALKAN_IC_KIRMIZI;
+                }
+            }
 
             ham[i] = renk[0];
             ham[i + 1] = renk[1];
@@ -172,3 +231,30 @@ for (const boyut of BOYUTLAR) {
     fs.writeFileSync(dosya, pngOlustur(boyut, ikonPikselleri(boyut)));
     console.log(`✓ ${path.relative(path.join(__dirname, '..'), dosya)} (${boyut}x${boyut})`);
 }
+
+// Chrome Web Store ikonu: 96x96 görsel + her kenarda 16 px saydam boşluk.
+// Manifest ikonu tam taşlı kalır; mağazaya bu dosya yüklenir.
+const STORE_DIR = path.join(__dirname, '..', 'store');
+const STORE_IKON = path.join(STORE_DIR, 'icon-128.png');
+const IC_BOYUT = 96;
+const BOSLUK = 16;
+
+function storeIkonPikselleri() {
+    const ic = ikonPikselleri(IC_BOYUT);
+    const cikti = new Uint8Array(128 * 128 * 4);
+    for (let y = 0; y < IC_BOYUT; y++) {
+        for (let x = 0; x < IC_BOYUT; x++) {
+            const kaynak = (y * IC_BOYUT + x) * 4;
+            const hedef = ((y + BOSLUK) * 128 + (x + BOSLUK)) * 4;
+            cikti[hedef] = ic[kaynak];
+            cikti[hedef + 1] = ic[kaynak + 1];
+            cikti[hedef + 2] = ic[kaynak + 2];
+            cikti[hedef + 3] = ic[kaynak + 3];
+        }
+    }
+    return cikti;
+}
+
+fs.mkdirSync(STORE_DIR, { recursive: true });
+fs.writeFileSync(STORE_IKON, pngOlustur(128, storeIkonPikselleri()));
+console.log(`✓ ${path.relative(path.join(__dirname, '..'), STORE_IKON)} (128x128, 96x96 görsel + 16 px boşluk)`);

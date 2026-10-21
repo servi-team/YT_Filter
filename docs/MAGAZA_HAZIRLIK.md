@@ -52,18 +52,19 @@ Uzak kod yoktur; tüm betikler paket içindedir.
 - **Ağ isteği:** Eklenti kendi sunucusuna istek atmaz. Avatar görselleri doğrudan YouTube'un görsel alan adlarından (`yt3.ggpht.com` vb.) tarayıcı tarafından yüklenir.
 - **Yerel depolama:** ayarlar, istisna listeleri, PIN karması, sayfadan toplanan kanal adı/avatarı, isteğe bağlı `db.json` kopyası.
 - **Tek amaç beyanı (single purpose):** YouTube içeriğini kullanıcının belirlediği konu/etiket kurallarına göre filtrelemek.
-- **Gizlilik politikası metni:** `docs/GIZLILIK.md`. Barındırma önerisi: GitHub Pages ile bu dosyayı yayınlayıp mağaza formuna URL verin (ör. `https://<kullanıcı>.github.io/<repo>/GIZLILIK.html`).
+- **Gizlilik politikası metni:** `docs/GIZLILIK.md`. GitHub Pages **2026-10-21'de `main` / `/docs` için yapılandırıldı**. Yerel commit'ler `origin/main`e push edildikten sonra hedef URL: `https://talhaozz.github.io/YouTubeFilter/GIZLILIK.html` (yayın URL'sini mağaza formuna girin).
 
 ## 4. Mağaza görselleri
 
-Chrome Web Store'un güncel gereksinimleri: **128×128 mağaza ikonu**, **en az bir 1280×800 ekran görüntüsü** (en fazla 5) ve **440×280 küçük tanıtım karesi**. 1400×560 marquee isteğe bağlıdır. Chrome listeleme formu ayrıca **YouTube tanıtım videosu bağlantısı** ister; video hazır değilse yükleme öncesi eklenmelidir. AMO 1280×800 ekran görüntülerini kabul eder.
+Chrome Web Store'un güncel gereksinimleri: **128×128 mağaza ikonu**, **en az bir 1280×800 ekran görüntüsü** (en fazla 5) ve **440×280 küçük tanıtım karesi**. 1400×560 marquee isteğe bağlıdır. Chrome listeleme formunda **YouTube tanıtım videosu** alanı vardır; **video 2026-10-21 itibarıyla ertelendi** (kullanıcı kararı). Form video alanını zorunlu tutarsa yükleme öncesi eklenmelidir. AMO 1280×800 ekran görüntülerini kabul eder.
 
 | Görsel | Boyut | Durum |
 |---|---|---|
-| Uzantı / mağaza ikonu | 128×128 PNG | ✅ `src/icons/icon128.png` (depoda; `npm run ikon` ile yeniden üretilir) |
+| Uzantı ikonu | 16/32/48/128 PNG | ✅ `src/icons/icon{16,32,48,128}.png` (kırmızı-beyaz kalkan; `npm run ikon`) |
+| Mağaza ikonu | 128×128 PNG (96×96 görsel + 16 px saydam çerçeve) | ✅ `store/icon-128.png` (`npm run ikon`; yerel, repoya girmez) |
 | Ekran görüntüleri | 1280×800 PNG/JPEG, 1–5 | ⏳ gerçek tarayıcıda çekilecek (aşağıdaki plan) |
 | Küçük tanıtım karesi | 440×280 PNG/JPEG | ✅ `store/promo-440x280.png` (`npm run store:gorsel`; yerel, repoya girmez) |
-| Tanıtım videosu | YouTube bağlantısı | ⏳ Chrome listeleme formu istiyor; hazır değil |
+| Tanıtım videosu | YouTube bağlantısı | ⏸️ şimdilik ertelendi; Chrome formu zorunlu tutarsa eklenecek |
 | Marquee | 1400×560 PNG/JPEG | isteğe bağlı |
 
 `store/` klasörü `.gitignore`'dadır; üretilen görseller repoya eklenmez. Ekran görüntüleri gerçek arayüzü göstermelidir, mockup kullanılmamalıdır. Çekim ve 1280×800'e sabitleme adımları `docs/MAGAZA_ELLE.md` bölüm 2'dedir (`scripts/gorsel-1280x800.ps1`). Öneri: 5 kare
@@ -82,7 +83,7 @@ Yayın adımları:
 
 ```text
 1) npm install && npm test              # tüm testler + derleme güncellik kontrolü yeşil olmalı
-2) npm run ikon                         # ikonlar değiştiyse (src/icons/)
+2) npm run ikon                         # src/icons/ + store/icon-128.png (96 px + 16 px boşluk)
 3) Sürümü üç yerde yükselt: package.json + manifests/manifest.chromium.json + manifests/manifest.firefox.json
 4) CHANGELOG.md: "[Yayınlanmamış]" -> "[2.0.0] - YYYY-AA-GG"
 5) npm run build                        # chromium/ ve firefox/ güncellenir
@@ -92,8 +93,10 @@ Yayın adımları:
    Compress-Archive -Path firefox\*  -DestinationPath yt-filter-firefox-2.0.0.zip  -Force
 8) Yükleme:
    - Chrome Web Store -> Developer Dashboard -> New item -> chromium zip'i yükle
-     (form: açıklama, en az bir 1280x800 ekran görüntüsü, 440x280 karo, 128x128 ikon,
-      YouTube tanıtım videosu bağlantısı, gizlilik URL'i, tek amaç beyanı, veri toplama: "veri toplamıyor")
+     (form: açıklama, en az bir 1280x800 ekran görüntüsü, 440x280 karo, store/icon-128.png,
+      YouTube tanıtım videosu: şimdilik ertele, form zorunlu tutarsa ekle;
+      gizlilik URL'i: https://talhaozz.github.io/YouTubeFilter/GIZLILIK.html,
+      tek amaç beyanı, veri toplama: "veri toplamıyor")
    - Firefox AMO -> Add-on Developer Hub -> Submit a New Add-on -> firefox zip'i yükle
      (AMO kaynak kodu isteyebilir: aynı git etiketinin kaynak zip'ini inceleme notuna ekleyin)
 9) git tag v2.0.0; GitHub Release notlarını CHANGELOG'dan kopyala
@@ -106,12 +109,12 @@ Not: `version` alanı üç yerde eşit tutulmazsa Chrome/Firefox farklı sürüm
 - [ ] `npm test` yeşil; `npm run build` çalıştırıldı
 - [ ] Sürüm `package.json` + iki manifestte eşit (`tests/manifest.test.js` yeşil)
 - [ ] Firefox `data_collection_permissions.required = ["none"]` ve `strict_min_version` 140
-- [ ] Uzantı ikonları (`src/icons/icon{16,32,48,128}.png`) ve manifest `icons` alanı mevcut
+- [ ] İkon tasarımı onaylandı; `src/icons/icon{16,32,48,128}.png` ve mağaza için `store/icon-128.png` (96 px görsel + 16 px boşluk) güncel
 - [ ] Gerçek tarayıcı doğrulaması (`docs/MAGAZA_ELLE.md` bölüm 1)
 - [ ] En az bir 1280×800 ekran görüntüsü (hedef: 5 kare) çekildi
 - [ ] 440×280 küçük tanıtım karesi üretildi (`npm run store:gorsel`)
-- [ ] YouTube tanıtım videosu bağlantısı hazır (Chrome listeleme formu)
-- [ ] Gizlilik politikası URL'i yayında (`docs/GIZLILIK.md`) ve iletişim adresi güncel
+- [ ] YouTube tanıtım videosu: şimdilik ertelendi; Chrome formu zorunlu tutarsa ekle
+- [ ] Gizlilik politikası URL'i yayında: `https://talhaozz.github.io/YouTubeFilter/GIZLILIK.html` (önce `origin/main`e push) ve iletişim adresi güncel
 - [ ] `README.md` güncel
 - [ ] `CHANGELOG.md` sürüm bölümü ve git etiketi atıldı
 - [ ] Chrome `minimum_chrome_version` (111) ve Firefox `strict_min_version` (140) mağaza formlarında görünür
