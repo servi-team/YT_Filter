@@ -1,7 +1,7 @@
 # Mağaza Hazırlığı — YouTube Filtreleyici
 
 > Son güncelleme: 2026-10-21. Bu belge, eklentiyi Chrome Web Store ve Firefox Add-ons (AMO) mağazalarına yüklemek için gereken metinleri, görselleri, form cevaplarını ve sürüm akışını toplar.
-> Ekran görüntüleri ve gerçek mağaza hesapları tarayıcı/hesap gerektirir; bu belgedeki işaretli adımlar elle yapılır.
+> Ekran görüntüleri, video ve gerçek mağaza hesapları tarayıcı/hesap gerektirir; adım adım elle yapılacaklar için **`docs/MAGAZA_ELLE.md`** dosyasını kullanın.
 
 ## 1. Mağaza listeleme metinleri
 
@@ -62,11 +62,11 @@ Chrome Web Store'un güncel gereksinimleri: **128×128 mağaza ikonu**, **en az 
 |---|---|---|
 | Uzantı / mağaza ikonu | 128×128 PNG | ✅ `src/icons/icon128.png` (depoda; `npm run ikon` ile yeniden üretilir) |
 | Ekran görüntüleri | 1280×800 PNG/JPEG, 1–5 | ⏳ gerçek tarayıcıda çekilecek (aşağıdaki plan) |
-| Küçük tanıtım karesi | 440×280 PNG/JPEG | ⏳ `npm run store:gorsel` → `store/promo-440x280.png` |
+| Küçük tanıtım karesi | 440×280 PNG/JPEG | ✅ `store/promo-440x280.png` (`npm run store:gorsel`; yerel, repoya girmez) |
 | Tanıtım videosu | YouTube bağlantısı | ⏳ Chrome listeleme formu istiyor; hazır değil |
 | Marquee | 1400×560 PNG/JPEG | isteğe bağlı |
 
-`store/` klasörü `.gitignore`'dadır; üretilen görseller repoya eklenmez. Ekran görüntüleri gerçek arayüzü göstermelidir, mockup kullanılmamalıdır. Öneri: 5 kare
+`store/` klasörü `.gitignore`'dadır; üretilen görseller repoya eklenmez. Ekran görüntüleri gerçek arayüzü göstermelidir, mockup kullanılmamalıdır. Çekim ve 1280×800'e sabitleme adımları `docs/MAGAZA_ELLE.md` bölüm 2'dedir (`scripts/gorsel-1280x800.ps1`). Öneri: 5 kare
 
 1. Pop-up → **Filtre** sekmesi: mod ve konu ızgarası görünür.
 2. Pop-up → **İstisnalar** sekmesi: avatarlı kanal satırı ve "Her zaman izin ver/engelle" rozetleri.
@@ -107,7 +107,7 @@ Not: `version` alanı üç yerde eşit tutulmazsa Chrome/Firefox farklı sürüm
 - [ ] Sürüm `package.json` + iki manifestte eşit (`tests/manifest.test.js` yeşil)
 - [ ] Firefox `data_collection_permissions.required = ["none"]` ve `strict_min_version` 140
 - [ ] Uzantı ikonları (`src/icons/icon{16,32,48,128}.png`) ve manifest `icons` alanı mevcut
-- [ ] Gerçek tarayıcı doğrulaması (PLAN.md bölüm "Önce yapılacak" listesi)
+- [ ] Gerçek tarayıcı doğrulaması (`docs/MAGAZA_ELLE.md` bölüm 1)
 - [ ] En az bir 1280×800 ekran görüntüsü (hedef: 5 kare) çekildi
 - [ ] 440×280 küçük tanıtım karesi üretildi (`npm run store:gorsel`)
 - [ ] YouTube tanıtım videosu bağlantısı hazır (Chrome listeleme formu)

@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-19 (PR 8F: mağaza hazırlığı; öncesi 8E avatar, 8D yoklama azaltma, 8C PIN karma, 8B smoke, 8A manifest)
+> Son güncelleme: 2026-10-21 (D3: site kararları + mağaza elle rehberi; öncesi D2 mağaza engelleri, 8F mağaza hazırlığı)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -30,11 +30,13 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **8C** | **PIN karma saklama:** `core/pin.js` (PBKDF2-SHA256, 120.000 iterasyon), arayüz akışları, eski düz metin yükseltme | ✅ kodlandı, `node --test` yeşil (109 test); tarayıcıda PIN akışı denenmeli |
 | **8D** | **Yoklama azaltma:** `content.js` olay tabanlı sayfa kontrolü, `inject_helper.js` MutationObserver taraması | ✅ kodlandı, `node --test` yeşil (110 test); tarayıcıda gezinme/geri tuşu denenmeli |
 | **8E** | **Listelerde kanal adı/avatarı:** `kanalBilgileri` deposu, sayfadan toplama, listede avatar + ad | ✅ kodlandı, `node --test` yeşil (112 test); tarayıcıda kanal ekleme denenmeli |
-| **8F** | **Mağaza hazırlığı:** listeleme metinleri, gizlilik politikası, sürüm akışı, kontrol listesi, ikonlar/mağaza görselleri | ✅ kodlandı (`docs/MAGAZA_HAZIRLIK.md`, `docs/GIZLILIK.md`, `README.md`), 116 test; **elle:** ekran görüntüleri + mağaza yüklemesi |
+| **8F** | **Mağaza hazırlığı:** listeleme metinleri, gizlilik politikası, sürüm akışı, kontrol listesi, ikonlar/mağaza görselleri | ✅ kodlandı (`docs/MAGAZA_HAZIRLIK.md`, `docs/MAGAZA_ELLE.md`, `docs/GIZLILIK.md`, `README.md`), 116 test; **elle:** tarayıcı testleri, ekran görüntüleri, video, gizlilik URL'i + mağaza yüklemesi |
 | 8 | Sağlamlaştırma ve mağaza hazırlığı (8A ✅, 8B ✅, 8C ✅, 8D ✅, 8E ✅, 8F ✅ kod tarafı) | ✅ tamam: kalan işler tarayıcı/mağaza hesabı gerektirir (aşağıdaki doğrulama listesi) |
-| S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir; roller/kararlar `docs/SITE_HAZIRLIK.md`) |
+| S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir; rol matrisi ve SISTEM #1/#2/#3/#18/#19 onaylandı; #8/#10/#11 ve S1 açık — `docs/SITE_HAZIRLIK.md`) |
 
-### Önce yapılacak: PR 6 / 6B / 6C / 7 / 8A / 8C gerçek tarayıcı doğrulaması
+### Önce yapılacak: mağaza öncesi gerçek tarayıcı doğrulaması
+Adım adım kontrol listesi: **`docs/MAGAZA_ELLE.md` bölüm 1**. Aşağıdaki maddeler o listenin ayrıntılı tanılama notlarıdır.
+
 **Hazırlık:** `node scripts/build.js`, `chrome://extensions` → eklentiyi yenile, YouTube'u F5 ile yenile, **eski `chromium/` klasörü yüklü kalmasın.** 8A sonrası manifest izinleri değişti; yükleme hatası olmadan açıldığını ve eklenti simgesinin çalıştığını doğrulayın. Konsolu açıp **"YT Filter"** ile filtreleyin. Beklenen: sayfa başına bir `YT Filter: hazır {…}` ve her sayfa için `YT Filter: sayfa kararı …` satırı. (`typeof YTF` konsolda anlamsız; içerik betiği izole dünyada.)
 
 1. Kara listedeki **video** sayfası → tam sayfa banner (titremiyor).
@@ -82,23 +84,28 @@ Alternatif: özel liste = kullanıcının **kendi konusu** (ör. "Ders kanallar�
 - **Orta modda incelenmemiş video** — ✅ lider: "video verisi yoksa kanala bak"; kanal ana konusunun da izinli olması ek şartı kalktı.
 - **Video+kanal birlikte mi, video-yoksa-kanal mı** — ✅ video-yoksa-kanal.
 
-### 4.2 Liderden teyit bekleyenler (`docs/SISTEM_TASARIMI.md` bölüm 6'daki ❓ maddeleri)
-Mevcut yorumla kodlandı; liderin cevabına göre tek satır değişir. Aşağıdaki **SISTEM #N** numaraları `docs/SISTEM_TASARIMI.md` bölüm 6'daki tabloya aittir (PLAN sıra numarası değildir). Kodlanan maddeler için test var; site tarafındakiler site yazılınca test edilecek.
+### 4.2 SISTEM bölüm 6 yorumları
 
-1. **SISTEM #1 — Ana konu ölçütü:** "en çok upvote" mu, **net puan** mı? (Örnek net puana uyuyor: Oyun 30 upvote ama ana konu Teknoloji +23.) *Site tarafı.*
-2. **SISTEM #2 — Beraberlik:** "listedeki ilki" = `KONULAR` sırası mı? (Alternatif: önce upvote.) *Site tarafı.*
-3. **SISTEM #3 — Kararsız = toplam 0 ve en az bir oy:** hiç oy almamış 0/0/0 kararsız sayılmaz. *Site tarafı.*
-4. **SISTEM #8 — Serbest + kararsız konu:** kararsız konu "izinli konu" mu sayılsın (ana konusu engelli bir video açılır), yoksa yalnızca engellemesin mi? *Şu an: izinli konu sayılır.*
-5. **SISTEM #10 — Orta "Kararsızlar: Engelle" anlamı:** kullanıcının zaten engellediği kararsız konu/etiket kesinleşmiş gibi mi sayılsın? *Şu an evet.*
-6. **SISTEM #11 — Katı'da kararsızlar:** dökümanda yok. *Şu an: kullanıcının engellediği kararsız konu/etiket engeller.*
-7. **SISTEM #18 — Asgari oy eşiği:** Argo +1 ile aktif etiket olup "her zaman engelle" kuralıyla videoyu engelletebiliyor. Eşik (örn. ≥3 oy) isteniyor mu? *Site tarafı.*
-8. **SISTEM #19 — Beyaz liste ve etiket koruması:** beyaz liste, veritabanındaki "kumar" etiketli kanalı bile açar. Kabul mü, yoksa etiket-bazlı koruma ("ebeveyn kilidi") ayrı bir ayar mı olsun? *(Bu madde SISTEM tablosuna 2026-10-21'de eklendi.)*
+**2026-10-21'de onaylandı** (site uygulayacak; eklenti tarafında ek değişiklik gerekmiyor):
 
-### 4.3 Veri köprüsü — Talha'nın kararı gerekiyor
-Konu/etiketi yalnızca site üretir; site yokken eklenti fiilen "iki listeli filtre" ve konu/etiket kuralları denenemiyor. İki yol:
-- **A) Siteyi öne al (S).** İstek listesine en sadık yol; tek geliştiriciyle uzun sürer. O zamana kadar `docs/db.test-ornek*.json` ile elle test.
-- **B) Köprü: eklentide küçük yerel düzenleyici.** Kullanıcı hızlı ekleme alanından bir kanalı/videoyu konu ve etikete atar; kayıtlar `db.json` ile aynı şemada `storage.local`'de tutulur ve veritabanı kaydını geçer (şema artık aynı: ana konu, yan konular, etiketler, kararsızlar). Site hazır olunca aynı şema sayesinde atıl kalmaz. İstek listesine ekleme sayılır.
-- **Durum (2026-10-19):** PR 6C ve 7 tamamlandı; B'ye geçilmedi. A/B kararı hâlâ Talha'da. B seçilirse `engine.icerikKarari`'nın veritabanı arama adımına yerel kayıtlar eklenir; `decision.js`'e dokunulmaz. Ayrıntılı seçenek/öneri: `docs/SITE_HAZIRLIK.md` bölüm 3.
+- **SISTEM #1 — Ana konu:** net puan esas alınır.
+- **SISTEM #2 — Beraberlik:** `taxonomy.KONULAR` sırasındaki ilk konu.
+- **SISTEM #3 — Kararsız:** net 0 **ve** en az bir oy; 0/0/0 kayda girmez.
+- **SISTEM #18 — Asgari oy eşiği:** en az 3 oy. Eşik altındaki konu/etiket değerlendirilmez.
+- **SISTEM #19 — Beyaz liste:** mutlak; etiket koruması/ebeveyn kilidi 2.0.0 dışında ayrı ayar olarak değerlendirilecek.
+
+**Hâlâ teyit bekleyen** (mevcut kod davranışı korunuyor):
+
+- **SISTEM #8 — Serbest + kararsız konu:** kararsız konu izinli sayılsın mı?
+- **SISTEM #10 — Orta "Kararsızlar: Engelle":** kullanıcının engellediği kararsız kesinleşmiş gibi mi sayılsın?
+- **SISTEM #11 — Katı'da kararsızlar:** aynı davranış uygulanmalı mı?
+
+Ayrıntı ve öneriler: `docs/SITE_HAZIRLIK.md` bölüm 2.
+
+### 4.3 Veri köprüsü — karar verildi
+
+- **Karar (2026-10-21): A — site beklenecek.** B yerel köprü uygulanmayacak. Site hazır olana kadar `docs/db.test-ornek*.json` ile elle test.
+- Seçeneklerin geçmişi: **A)** siteyi öne al; **B)** eklentiye aynı şemada yerel kayıt düzenleyicisi ekle. Ayrıntı: `docs/SITE_HAZIRLIK.md` bölüm 3.
 
 ## 5. Yol haritası
 

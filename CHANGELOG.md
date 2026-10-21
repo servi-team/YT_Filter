@@ -8,6 +8,18 @@ Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket +
 PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)**, **PR 8B (jsdom smoke testleri repoda)**, **PR 8C (PIN karma saklama)**, **PR 8D (yoklama azaltma)**, **PR 8E (listelerde kanal adı/avatarı)** ve **PR 8F (mağaza hazırlığı, 2026-10-19)** kodlandı.
 PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**
 
+### Karar kayıtları ve mağaza elle rehberi (2026-10-21, `checkpoint-kararlar-1`)
+
+#### Değişti
+- **Site rol matrisi onaylandı:** Admin / Editör / Ziyaretçi yetkileri `docs/SITE_HAZIRLIK.md` bölüm 1'de kesinleşti. Uygulama ayrıntıları (admin kimliği, editör kabulü, oy görünürlüğü, KVKK) açık kaldı.
+- **SISTEM kararları:** #1 ana konu = net puan, #2 beraberlik = `KONULAR` sırası, #3 kararsız = net 0 + en az bir oy, #18 asgari 3 oy, #19 beyaz liste mutlak. #8/#10/#11 teyit bekliyor.
+- **Veri köprüsü:** A/B kararı **A (site öne)**; yerel köprü uygulanmayacak. Testler `docs/db.test-ornek*.json` ile sürecek.
+- **Puan notu:** `docs/puan-sistemi-onerisi.md` onaylı kurallara uyarlandı; Argo 1 oyla eşik altı, Küfür 15 oyla kararsız.
+
+#### Eklendi
+- **`docs/MAGAZA_ELLE.md`:** gerçek tarayıcı testleri, 5 karelik ekran görüntüsü planı, YouTube tanıtım video senaryosu, GitHub Pages gizlilik URL'i, paketleme/yükleme ve yayın sonrası kontrol listesi.
+- **`scripts/gorsel-1280x800.ps1`:** mağaza ekran görüntülerini 1280×800 tuvale oranı koruyarak ortalar (`store/ham` → `store/ekran`).
+
 ### Düzeltme turu 2 — mağaza engelleri ve belge tutarlılığı (2026-10-21, `checkpoint-duzeltme-2`)
 
 #### Eklendi
@@ -225,7 +237,8 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 - **PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F gerçek tarayıcıda doğrulanmadı.** Tarayıcıda test ve tanılama adımları: `DEVIR_NOTU.md` 6/#14; hızlı bant için 6/#16; liste/db aktarma için PR 7 bölümü; 8A için yalnızca yeniden yükleme denemesi. 8B yalnızca test altyapısıdır; 8C'de PIN akışı (kaydet → kilitle → eski düz metin yükseltme), 8D'de YouTube gezinmesi/geri tuşu, 8E'de kanal ekleme → avatar/ad görünümü tarayıcıda denenmeli. 8F yalnızca doküman ve sürüm kontrol testidir (davranış değişikliği yok).
 - **Testler** `node --test` ile yeşil (**116 test**: 104 saf + 12 jsdom smoke).
 - **Hızlı ekleme bandının mesajlaşması** gerçek pop-up'ta denenmedi; içerik betiği yoksa URL yedeği kullanılır.
-- **Lider onayı bekleyen yorumlar (`docs/SISTEM_TASARIMI.md` bölüm 6):** SISTEM #1 ana konu ölçütü (net puan mı upvote mu), #2 beraberlikte sıra, #3 kararsız = toplam 0 + en az bir oy, #8 Serbest'te kararsız konu, #10 Orta/Katı'da kararsız "engelle" anlamı, #11 Katı'da kararsız, #18 asgari oy eşiği, #19 beyaz liste ve etiket koruması.
+- **Teyit bekleyen yorumlar (`docs/SISTEM_TASARIMI.md` bölüm 6):** SISTEM #8 Serbest'te kararsız konu, #10 Orta/Katı'da kararsız "engelle" anlamı, #11 Katı'da kararsız. SISTEM #1/#2/#3/#18/#19 2026-10-21'de onaylandı; site uygulayacak.
+- **Mağaza yüklemesi için elle adımlar:** `docs/MAGAZA_ELLE.md`. Gerçek tarayıcı testleri, ekran görüntüleri, tanıtım videosu ve gizlilik URL'i hâlâ kullanıcıda.
 - **Tam yedek içe aktarma** hâlâ mevcut ayarların üzerine yazar (onay sorar); liste içe aktarma ise birleştirir/çakışma sorar. **Tam yedek dışa aktarma `dbOverride`'ı içermez** (dosya şişmesin diye); içe aktarma mevcut `dbOverride`'a dokunmaz.
 - Düzenleme sitesi ve oylama sistemi.
 - İzleme sayfasında kanal ID'si yok (yalnızca handle ile eşleşir).

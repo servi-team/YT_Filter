@@ -105,13 +105,13 @@ Kullanıcıların veya editörlerin (örn. "Kullanıcı: Editör Ali") video ve 
 
 ## 6. Uygulamada netleştirilen noktalar (lider dökümanında açık olmayanlar)
 
-Aşağıdakiler **bizim yorumumuzdur**. ✅ = kodlandı ve testlendi, ❓ = liderden teyit bekliyor.
+Aşağıdakiler **bizim yorumumuzdur**. ✅ = kodlandı/test edildi veya 2026-10-21'de onaylandı (site uygulayacak), ❓ = hâlâ liderden teyit bekliyor.
 
 | # | Konu | Yorum / karar | Durum |
 |---|---|---|---|
-| 1 | **Ana konu ölçütü** | Parantezde "en çok upvote" yazıyor, ama örnekte Oyun 30 upvote alırken ana konu Teknoloji (25 upvote, +23 net). Örnek net puanla tutarlı; **net puan** esas alınır. Sitede "upvote" ibaresi silinmeli. | ❓ teyit |
-| 2 | **Beraberlik** | "Listedeki ilki" = konu listesindeki (`taxonomy.KONULAR`) sıra. Sıra sabit olduğu için sonuç belirlidir. (Alternatif: önce upvote sayısı, sonra liste sırası.) | ❓ teyit |
-| 3 | **Kararsız = toplam 0 *ve* en az bir oy** | Hiç oy almamış (0/0/0) konu kararsız sayılmaz, kayıtta hiç yer almaz. | ❓ teyit (site uygular) |
+| 1 | **Ana konu ölçütü** | Parantezde "en çok upvote" yazıyor, ama örnekte Oyun 30 upvote alırken ana konu Teknoloji (25 upvote, +23 net). Örnek net puanla tutarlı; **net puan** esas alınır. Sitede "upvote" ibaresi silinmeli. | ✅ onaylandı (2026-10-21) |
+| 2 | **Beraberlik** | "Listedeki ilki" = konu listesindeki (`taxonomy.KONULAR`) sıra. Sıra sabit olduğu için sonuç belirlidir. (Alternatif: önce upvote sayısı, sonra liste sırası.) | ✅ onaylandı (2026-10-21) |
+| 3 | **Kararsız = toplam 0 *ve* en az bir oy** | Hiç oy almamış (0/0/0) konu kararsız sayılmaz, kayıtta hiç yer almaz. | ✅ onaylandı (2026-10-21; site uygular) |
 | 4 | **Kaynak seçimi** | Video verisi **varsa yalnızca video**, yoksa (ve kanal kontrol açıksa) yalnızca kanal değerlendirilir; ikisi asla birleştirilmez. Eski özet (`DEVIR_NOTU` 2.5, eski sürüm) "video veya kanal" diyordu; bu belgeyle değiştirildi. | ✅ |
 | 5 | **Yalnızca kararsız verisi olan video** | "Bilgi girilmiş" sayılır → **bilinmeyen değildir**, kanala bakılmaz. | ✅ |
 | 6 | **Ana konusuz kayıt** | Oylamada hiçbir konu pozitif çıkmazsa ana konu olmaz. Böyle kayıt geçerlidir (yalnızca etiket ve/veya kararsız bilgi taşıyabilir). Yan konu varsa ana konu zorunludur. Tamamen boş kayıt geçersizdir ("bilinmeyen"). Düzenleme sitesinde editör girişinde ana konu yine zorunlu kalır. | ✅ |
@@ -126,8 +126,8 @@ Aşağıdakiler **bizim yorumumuzdur**. ✅ = kodlandı ve testlendi, ❓ = lide
 | 15 | **Eylem sertliği** | Birden çok sebepte en sert eylem kazanır: **Gizle > Uyarı sayfası > Bulanıklaştır.** | ✅ |
 | 16 | **Konu/etiket dışı engellerin görünümü** | Liste, bilinmeyen ve "izinli konu yok" kaynaklı engeller tek bir **genel eylem** kullanır (Görünüm sekmesi → "Diğer Engeller"). | ✅ |
 | 17 | **PIN** | Yeni kurulumda PIN önceden **atanmaz**; ilk açılışta tam 4 rakamlı PIN seçtirilir ("Şimdilik atla" mümkün). Mevcut kullanıcıların `1234` PIN'i ve değiştirme uyarısı aynen kalır. PIN hâlâ yalnızca arayüz kilididir. | ✅ |
-| 18 | **Asgari oy eşiği** | Örnekte Argo yalnızca +1 ile aktif etiket oluyor. "Her zaman engelle" kuralıyla tek bir oy videoyu engelletebilir. Eşik (örn. en az 3 oy) düşünülmeli; **şu an uygulanmıyor.** | ❓ teyit |
-| 19 | **Beyaz liste ve etiket koruması** | Beyaz liste, veritabanındaki "kumar" etiketli kanalı bile açar (tasarım gereği "asla engellenmez"). Bu kabul mü, yoksa etiket-bazlı koruma ("ebeveyn kilidi") ayrı bir ayar mı olsun? | ❓ teyit |
+| 18 | **Asgari oy eşiği** | **En az 3 oy** kabul edildi (2026-10-21). Toplam oy (up + kararsız + down) 3'ün altındaysa konu/etiket değerlendirilmez. Eklenti veriyi hazır alır; eşiği site uygular. | ✅ onaylandı (2026-10-21; site uygular) |
+| 19 | **Beyaz liste ve etiket koruması** | Beyaz liste, veritabanındaki "kumar" etiketli kanalı bile açar (tasarım gereği "asla engellenmez"). Bu davranış **mutlak** kabul edildi; etiket-bazlı koruma ("ebeveyn kilidi") 2.0.0 kapsamı dışında, ileride ayrı ayar olarak değerlendirilecek. | ✅ onaylandı (2026-10-21) |
 
 ### Ayar şemasındaki karşılıkları (`ayar`)
 | Döküman | Alan |

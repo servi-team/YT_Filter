@@ -47,6 +47,7 @@ src/                 uzantı kaynakları (background, content, options, core/, d
 manifests/           Chromium ve Firefox manifestleri
 scripts/build.js     src/ + manifest -> chromium/ ve firefox/
 scripts/ikon-uret.js uzantı ikonlarını üretir (npm run ikon)
+scripts/gorsel-1280x800.ps1  mağaza ekran görüntülerini 1280x800'e ortalar
 tests/               Node testleri + tests/smoke/ (jsdom)
 docs/                sistem tasarımı, db şeması, mağaza ve gizlilik belgeleri
 ```
@@ -56,8 +57,9 @@ docs/                sistem tasarımı, db şeması, mağaza ve gizlilik belgele
 - [`docs/SISTEM_TASARIMI.md`](docs/SISTEM_TASARIMI.md) — ürün kurallarının tek kaynağı.
 - [`docs/db-sema.md`](docs/db-sema.md) — `db.json` sözleşmesi.
 - [`docs/MAGAZA_HAZIRLIK.md`](docs/MAGAZA_HAZIRLIK.md) — mağaza metinleri, görseller, sürüm akışı.
-- [`docs/SITE_HAZIRLIK.md`](docs/SITE_HAZIRLIK.md) — site rolleri, kararlar, "Bildir" sözleşmesi.
-- [`docs/puan-sistemi-onerisi.md`](docs/puan-sistemi-onerisi.md) — bağlayıcı olmayan puan/oylama önerisi.
+- [`docs/MAGAZA_ELLE.md`](docs/MAGAZA_ELLE.md) — tarayıcı testi, ekran görüntüsü, video ve yükleme adımları.
+- [`docs/SITE_HAZIRLIK.md`](docs/SITE_HAZIRLIK.md) — site rolleri, onaylanan kararlar, "Bildir" sözleşmesi.
+- [`docs/puan-sistemi-onerisi.md`](docs/puan-sistemi-onerisi.md) — onaylı puan kurallarının uygulama notu.
 - [`docs/GIZLILIK.md`](docs/GIZLILIK.md) — gizlilik politikası.
 - [`CHANGELOG.md`](CHANGELOG.md) — sürüm geçmişi.
 - [`DEVIR_NOTU.md`](DEVIR_NOTU.md) — mimari, bilinen sınırlar, devir notları.
@@ -68,7 +70,7 @@ Uzantı hiçbir kişisel veri toplamaz, sunucuya göndermez ve satmaz. Ayarlar, 
 
 ## Sürümleme
 
-Sürüm numarası üç yerde eşit tutulur: `package.json`, `manifests/manifest.chromium.json`, `manifests/manifest.firefox.json`. `tests/manifest.test.js` bunu denetler. Yayın akışı için `docs/MAGAZA_HAZIRLIK.md` bölüm 5'e bakın.
+Sürüm numarası üç yerde eşit tutulur: `package.json`, `manifests/manifest.chromium.json`, `manifests/manifest.firefox.json`. `tests/manifest.test.js` bunu denetler. Yayın akışı için `docs/MAGAZA_HAZIRLIK.md` bölüm 5, elle yapılacaklar için `docs/MAGAZA_ELLE.md`.
 
 ## Lisans
 

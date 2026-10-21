@@ -1,10 +1,12 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-21 (düzeltme turu) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-21 (düzeltme turu + karar kayıtları) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
 
-> **2026-10-21 düzeltme turu:** Mağaza engelleri kapatıldı: Firefox `data_collection_permissions.required = ["none"]` (AMO, 3 Kasım 2025'ten beri zorunlu), `strict_min_version` 140; 16/32/48/128 ikonları (`src/icons/`, `npm run ikon`) + manifest `icons` / `action.default_icon`; sürüm üç yerde **2.0.0** (`package.json` + iki manifest); `README.md`; mağaza görselleri (128×128 ikon, 440×280 karo, 1280×800 ekran görüntüsü planı) ve gizlilik metni güncellendi. Önceki düzeltme turu (`46b5afd`) CHANGELOG'a işlendi. Taksonomi ileri uyumluluğu: bilinmeyen konu/etiket kimlikleri artık kaydı düşürmez, yok sayılır ve sayılır. Toplam **116 test**. Kalan (elle): gerçek ekran görüntüleri, mağaza hesapları, site kararları.
+> **2026-10-21 düzeltme turu:** Mağaza engelleri kapatıldı: Firefox `data_collection_permissions.required = ["none"]` (AMO, 3 Kasım 2025'ten beri zorunlu), `strict_min_version` 140; 16/32/48/128 ikonları (`src/icons/`, `npm run ikon`) + manifest `icons` / `action.default_icon`; sürüm üç yerde **2.0.0** (`package.json` + iki manifest); `README.md`; mağaza görselleri (128×128 ikon, 440×280 karo, 1280×800 ekran görüntüsü planı) ve gizlilik metni güncellendi. Önceki düzeltme turu (`46b5afd`) CHANGELOG'a işlendi. Taksonomi ileri uyumluluğu: bilinmeyen konu/etiket kimlikleri artık kaydı düşürmez, yok sayılır ve sayılır. Toplam **116 test**. Kalan (elle): gerçek tarayıcı testleri, ekran görüntüleri, video, gizlilik URL'i, mağaza hesapları; site kodu (S0/S1) henüz başlamadı.
+>
+> **2026-10-21 karar kayıtları:** Ürün sahibi onayıyla site rol matrisi ve SISTEM #1/#2/#3/#18/#19 kesinleşti; A/B kararı **A (site öne)**. `docs/MAGAZA_ELLE.md` (gerçek tarayıcı, ekran görüntüsü, video, gizlilik URL'i, yükleme) ve `scripts/gorsel-1280x800.ps1` eklendi. Site kodu hâlâ başlamadı; #8/#10/#11 ve S1 açık.
 >
 > **PR 8F özeti (2026-10-19):** Mağaza hazırlığı. `docs/MAGAZA_HAZIRLIK.md` (listeleme metinleri, izin gerekçeleri, veri güvenliği formu cevapları, 5 karelik ekran görüntüsü planı, adım adım sürüm akışı: test → version → build → zip → yükleme → etiket, yayın öncesi liste) ve `docs/GIZLILIK.md` (yayınlanabilir gizlilik politikası, TR + EN özet). `tests/manifest.test.js` +1: iki manifestte sürüm/ad eşitliği. PR 8F'de toplam **113 test** yeşil (101 saf + 12 smoke); düzeltme turuyla **116**. **Kalan (elle):** ekran görüntüleri, gizlilik URL'i barındırma, mağaza hesaplarına yükleme; sürüm artık **2.0.0**.
 >
@@ -96,7 +98,7 @@ Belirsiz kalan noktaların yorumları ve liderden teyit bekleyenler: `SISTEM_TAS
 - Banner'daki **doğrulanmamış** nokta: gerçek YouTube'da tetiklenmesi (bkz. 6/#14).
 
 ### 2.7 Düzenleme sitesi (henüz yapılmadı)
-**Rol önerisi (lider onayı bekliyor):** **Admin**, **Editör** (link yapıştırır → ID/başlık otomatik gelir → konu/etiket **oyları** girer), **Ziyaretçi** (girişsiz: güncel `db.json`'u indirir, rapor gönderir). Bu roller `SISTEM_TASARIMI.md`'de tanımlı değildir; yetki matrisi ve açık sorular `docs/SITE_HAZIRLIK.md` bölüm 1'dedir. Oylama ve sonuç hesabı: `SISTEM_TASARIMI.md` bölüm 5. Site, `db.json`'a **yalnızca sonucu** yazar (ham oylar sitede kalır).
+**Rol matrisi (2026-10-21'de onaylandı):** **Admin**, **Editör** (link yapıştırır → ID/başlık otomatik gelir → konu/etiket **oyları** girer), **Ziyaretçi** (girişsiz: güncel `db.json`'u indirir, rapor gönderir). Bu roller `SISTEM_TASARIMI.md`'de tanımlı değildir; yetki matrisi `docs/SITE_HAZIRLIK.md` bölüm 1'dedir. Uygulama ayrıntıları (admin kimliği, editör kabulü, oy görünürlüğü, KVKK) hâlâ açık. Oylama ve sonuç hesabı: `SISTEM_TASARIMI.md` bölüm 5. Site, `db.json`'a **yalnızca sonucu** yazar (ham oylar sitede kalır).
 
 ---
 
@@ -127,12 +129,14 @@ manifests/             manifest.chromium.json, manifest.firefox.json (yalnızca 
 scripts/build.js       src/ + manifest -> chromium/ ve firefox/ klasörleri (yükleme için bunlar kullanılır; --check bayat çıktıyı yakalar)
 scripts/ikon-uret.js   uzantı ikonlarını üretir (bağımlılıksız PNG)
 scripts/store-gorsel.js 440x280 mağaza tanıtım karesini headless Chrome/Edge ile üretir
+scripts/gorsel-1280x800.ps1 mağaza ekran görüntülerini 1280x800 tuvale ortalar
 tests/                 decision/migrate/db/engine .test.js + karar-v2 + pr6c + pr7 + manifest + build + pin
 tests/smoke/           jsdom + sahte chrome.* ile options.html (7 test) ve content.js (5 test) smoke testleri
 docs/                  SISTEM_TASARIMI.md (lider dökümanı), db-sema.md (sözleşme), db.test-ornek.json,
                        db.test-ornek-kararsiz.json, MAGAZA_HAZIRLIK.md (listeleme/izin/görsel/sürüm akışı),
+                       MAGAZA_ELLE.md (tarayıcı testi, ekran görüntüsü, video, yükleme adımları),
                        GIZLILIK.md (yayınlanabilir gizlilik metni), SITE_HAZIRLIK.md (site kararları/öneriler),
-                       puan-sistemi-onerisi.md (gayriresmî puan notu; bağlayıcı değil)
+                       puan-sistemi-onerisi.md (onaylı puan kurallarının uygulama notu)
 README.md              proje girişi, kurulum, test ve belge bağlantıları
 DEVIR_NOTU.md          bu belge (kök dizin)
 PLAN.md                yol haritası ve karar bekleyen konular
@@ -225,6 +229,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | 8F | **Mağaza hazırlığı** (2026-10-19): `docs/MAGAZA_HAZIRLIK.md` + `docs/GIZLILIK.md`; manifest sürüm/ad eşitlik testi; `.gitignore`'a `store/` | ✅ `node --test` yeşil (PR 8F'de **113 test**: 101 saf + 12 smoke; D2 ile 116); **elle kalan:** ekran görüntüleri, gizlilik URL'i, mağaza yüklemesi |
 | D1 | **Düzeltme turu 1** (`46b5afd`, 2026-10-20): belge tutarlılığı; `db.json` avatarı; PIN güncellemede `/^\d{4}$/`; Node 18 WebCrypto yedeği; tam yedekten `dbOverride` çıkarma | ✅ `node --test` yeşil (113 test); `checkpoint-duzeltme-1` |
 | D2 | **Düzeltme turu 2** (2026-10-21, `checkpoint-duzeltme-2`): mağaza engelleri (Firefox veri beyanı, ikonlar, sürüm 2.0.0, README, görseller); derleme güncellik kontrolü + `.gitattributes`; DEVIR/db-sema/PLAN tutarlılığı; taksonomi ileri uyumluluğu (bilinmeyen kimlikleri yok say); site kararları/puan notu | ✅ `node --test` yeşil (116 test); ayrıntı `CHANGELOG.md` |
+| D3 | **Karar kayıtları + mağaza elle rehberi** (2026-10-21, `checkpoint-kararlar-1`): rol matrisi ve SISTEM #1/#2/#3/#18/#19 onaylandı; A/B = A; puan notu 3 oy eşiğine uyarlandı; `docs/MAGAZA_ELLE.md` + `scripts/gorsel-1280x800.ps1` | ✅ `node --test` yeşil (116 test); ayrıntı `CHANGELOG.md` |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -305,7 +310,7 @@ node --test                                  # tüm testler (saf testler Node 18
 ```
 Chrome: `chrome://extensions` → Geliştirici modu → "Paketlenmemiş yükle" → `chromium/`. Her değişiklikte uzantıyı yenile **ve** YouTube sekmesini F5 ile yenile.
 
-Geri alma: PR/düzeltme sonları annotated tag ile işaretlenir — PR 6C `checkpoint-pr6c` (`214944e`), PR 7 `checkpoint-pr7` (`76ccd8e`), PR 8A `checkpoint-pr8a` (`472f08e`), PR 8B `checkpoint-pr8b` (`f508c39`), PR 8C `checkpoint-pr8c` (`82bdbb7`), PR 8D `checkpoint-pr8d` (`75dfadd`), PR 8E `checkpoint-pr8e` (`52bcb45`), PR 8F `checkpoint-pr8f` (`74226fd`), düzeltme turu 1 `checkpoint-duzeltme-1` (`46b5afd`). İncelemek için `git show checkpoint-pr7`; tag'in hedef commit'i için `git rev-parse "checkpoint-pr7^0"`; tek dosyayı eski hâline döndürmek için `git checkout checkpoint-pr6c -- <dosya>`. Tüm çalışmayı geri almak gerekirse önce yeni bir checkpoint tag atın, sonra `git revert` kullanın.
+Geri alma: PR/düzeltme sonları annotated tag ile işaretlenir — PR 6C `checkpoint-pr6c` (`214944e`), PR 7 `checkpoint-pr7` (`76ccd8e`), PR 8A `checkpoint-pr8a` (`472f08e`), PR 8B `checkpoint-pr8b` (`f508c39`), PR 8C `checkpoint-pr8c` (`82bdbb7`), PR 8D `checkpoint-pr8d` (`75dfadd`), PR 8E `checkpoint-pr8e` (`52bcb45`), PR 8F `checkpoint-pr8f` (`74226fd`), düzeltme turu 1 `checkpoint-duzeltme-1` (`46b5afd`), düzeltme turu 2 `checkpoint-duzeltme-2` (`4039974`), karar kayıtları `checkpoint-kararlar-1`. İncelemek için `git show checkpoint-pr7`; tag'in hedef commit'i için `git rev-parse "checkpoint-pr7^0"`; tek dosyayı eski hâline döndürmek için `git checkout checkpoint-pr6c -- <dosya>`. Tüm çalışmayı geri almak gerekirse önce yeni bir checkpoint tag atın, sonra `git revert` kullanın.
 
 Elle deneme ipuçları:
 - İlk açılış seçimini yeniden görmek: pop-up konsolunda `chrome.storage.local.get('ayar', r => { r.ayar.etiketlenmemis = null; chrome.storage.local.set({ayar: r.ayar}) })`
