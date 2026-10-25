@@ -19,6 +19,20 @@ const tagLabels = {
     "untagged": "Etiketlenmemiş" 
 };
 
+const MOD_ACIKLAMALARI = {
+    serbest: "Konulardan herhangi biri izinliyse video açılır. Kararsız içerikler lehinize yorumlanır, konusu bilinmeyen videolar açılır.",
+    orta: "Videonun ana konusu izinliyse video açılır. Bilinmeyen ve kararsız içerikler için aşağıdaki seçimler kullanılır.",
+    kati: "Konulardan ya da etiketlerden herhangi biri engelliyse video engellenir. Konusu veya etiketi bilinmeyen videolar da engellenir."
+};
+const MOD_IBRE_ACILARI = { serbest: -60, orta: 0, kati: 60 };
+const BICIM_ADLARI = { gizle: "Gizle", uyari: "Uyarı sayfası", bulaniklastir: "Bulanıklaştır" };
+const ORTA_SECENEKLERI = [
+    ["bilinmeyenKonu", "Bilinmeyen konular"],
+    ["bilinmeyenEtiket", "Bilinmeyen etiketler"],
+    ["kararsizKonu", "Kararsız konular"],
+    ["kararsizEtiket", "Kararsız etiketler"]
+];
+
 // Storage Yardımcıları
 async function getStorageData(keys = null) {
     if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
@@ -58,7 +72,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     if (!mevcutVeri.customMapping) mevcutVeri.customMapping = {};
     if (!mevcutVeri.preferences) mevcutVeri.preferences = {};
     if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
-    
+    if (!mevcutVeri.filtre) {
+        mevcutVeri.filtre = YTFiltreMotoru.varsayilanFiltreAyarlari(mevcutVeri.veritabani);
+    } else {
+        YTFiltreMotoru.eksikBasliklariTamamla(mevcutVeri.filtre, mevcutVeri.veritabani);
+    }
+
     // Varsayılan Etiketleri Tanımla
     coreTags.forEach(tag => {
         if (!mevcutVeri.preferences[tag]) {
@@ -203,6 +222,9 @@ function initEvents() {
 
     // Yeniden Kilitleme Butonu
     document.getElementById('btnPinKilitle').addEventListener('click', kilitle);
+
+    // Filtre Sekmesi
+    initFiltreEvents();
 
     // Sekmeler (Tabs)
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -413,9 +435,168 @@ function arayuzuDoldur() {
     document.getElementById('chkOtomatikOynatma').checked = mevcutVeri.ayarlar.otomatikOynatmaKapat || false;
     document.getElementById('chkPinIptal').checked = mevcutVeri.ayarlar.pinIptal || false;
 
+    renderFiltre();
     renderFilterChips();
     renderItemList();
     renderKurallar();
+}
+
+// Filtre Ayarlarını Kaydet
+async function filtreyiKaydet(mesaj) {
+    await setStorageData({ filtre: mevcutVeri.filtre });
+    if (mesaj) showToast(mesaj);
+}
+
+function bicimSeciciOlustur(seciliBicim) {
+    const select = document.createElement('select');
+    select.className = 'bicim-secici';
+    for (const bicim in BICIM_ADLARI) {
+        const opt = document.createElement('option');
+        opt.value = bicim;
+        opt.textContent = BICIM_ADLARI[bicim];
+        opt.selected = bicim === seciliBicim;
+        select.appendChild(opt);
+    }
+    return select;
+}
+
+// İki seçenekli (İzin ver / Engelle) segment düğmesi
+function izinEngelSecimiOlustur(deger, degisince) {
+    const segment = document.createElement('div');
+    segment.className = 'segment segment-kucuk';
+    [["izin", "İzin ver"], ["engel", "Engelle"]].forEach(([anahtar, etiket]) => {
+        const btn = document.createElement('button');
+        btn.className = `segment-btn ${deger === anahtar ? 'active' : ''}`;
+        btn.dataset.deger = anahtar;
+        btn.textContent = etiket;
+        btn.addEventListener('click', () => degisince(anahtar));
+        segment.appendChild(btn);
+    });
+    return segment;
+}
+
+// Filtre Sekmesini Render Et
+function renderFiltre() {
+    const filtre = mevcutVeri.filtre;
+
+    document.body.dataset.mod = filtre.mod;
+    document.getElementById('modIbre').style.transform = `rotate(${MOD_IBRE_ACILARI[filtre.mod]}deg)`;
+    document.querySelectorAll('#modSecici .segment-btn').forEach(btn => {
+        const aktif = btn.dataset.mod === filtre.mod;
+        btn.classList.toggle('active', aktif);
+        btn.setAttribute('aria-checked', aktif);
+    });
+    document.getElementById('lblModAciklama').textContent = MOD_ACIKLAMALARI[filtre.mod];
+
+    // Bilinmeyen/kararsız seçimleri yalnızca orta modda kullanılır
+    document.getElementById('kartOrtaMod').style.display = filtre.mod === 'orta' ? 'block' : 'none';
+    renderOrtaSecenekleri();
+
+    renderBasliklar('konular', 'konuListesi');
+    renderBasliklar('etiketler', 'etiketListesi');
+
+    document.getElementById('chkKanalKontrol').checked = filtre.kanalKontrol !== false;
+    document.getElementById('chkRozetGoster').checked = filtre.rozetGoster !== false;
+
+    const varsayilanSecici = document.getElementById('selVarsayilanBicim');
+    varsayilanSecici.innerHTML = '';
+    bicimSeciciOlustur(filtre.varsayilanBicim).querySelectorAll('option').forEach(opt => varsayilanSecici.appendChild(opt));
+}
+
+function renderOrtaSecenekleri(kapsayiciId = 'ortaModSecenekleri') {
+    const kapsayici = document.getElementById(kapsayiciId);
+    if (!kapsayici) return;
+    kapsayici.innerHTML = '';
+
+    ORTA_SECENEKLERI.forEach(([anahtar, etiket]) => {
+        const satir = document.createElement('div');
+        satir.className = 'orta-satir';
+        const ad = document.createElement('span');
+        ad.className = 'switch-title';
+        ad.textContent = etiket;
+        satir.appendChild(ad);
+        satir.appendChild(izinEngelSecimiOlustur(mevcutVeri.filtre.orta[anahtar], async (deger) => {
+            mevcutVeri.filtre.orta[anahtar] = deger;
+            renderOrtaSecenekleri(kapsayiciId);
+            await filtreyiKaydet(`${etiket}: ${deger === 'izin' ? 'izin veriliyor' : 'engelleniyor'}`);
+        }));
+        kapsayici.appendChild(satir);
+    });
+}
+
+// Konu veya etiket satırlarını render eder (tur: 'konular' | 'etiketler')
+function renderBasliklar(tur, kapsayiciId) {
+    const kapsayici = document.getElementById(kapsayiciId);
+    if (!kapsayici) return;
+    kapsayici.innerHTML = '';
+
+    const tercihler = mevcutVeri.filtre[tur];
+    const tanimlar = (mevcutVeri.veritabani && mevcutVeri.veritabani[tur]) || Object.keys(tercihler).map(id => ({ id, ad: id }));
+
+    tanimlar.forEach(({ id, ad }) => {
+        const tercih = tercihler[id];
+        if (!tercih) return;
+
+        const satir = document.createElement('div');
+        satir.className = 'baslik-satir';
+
+        const adEl = document.createElement('span');
+        adEl.className = 'baslik-adi';
+        adEl.textContent = ad;
+        adEl.title = ad;
+
+        const bicimSecici = bicimSeciciOlustur(tercih.bicim);
+        bicimSecici.disabled = !tercih.filtrele;
+        bicimSecici.title = 'Engelleme biçimi';
+        bicimSecici.addEventListener('change', async () => {
+            tercih.bicim = bicimSecici.value;
+            await filtreyiKaydet(`${ad}: ${BICIM_ADLARI[tercih.bicim]}`);
+        });
+
+        const anahtar = document.createElement('label');
+        anahtar.className = 'switch';
+        anahtar.title = 'Filtrele';
+        const kutu = document.createElement('input');
+        kutu.type = 'checkbox';
+        kutu.checked = !!tercih.filtrele;
+        kutu.setAttribute('aria-label', `${ad} filtrelensin`);
+        const kaydirici = document.createElement('span');
+        kaydirici.className = 'slider';
+        anahtar.append(kutu, kaydirici);
+        kutu.addEventListener('change', async () => {
+            tercih.filtrele = kutu.checked;
+            bicimSecici.disabled = !kutu.checked;
+            await filtreyiKaydet(`${ad} ${kutu.checked ? 'filtreleniyor' : 'filtrelenmiyor'}`);
+        });
+
+        satir.append(adEl, bicimSecici, anahtar);
+        kapsayici.appendChild(satir);
+    });
+}
+
+function initFiltreEvents() {
+    document.querySelectorAll('#modSecici .segment-btn').forEach(btn => {
+        btn.addEventListener('click', async () => {
+            mevcutVeri.filtre.mod = btn.dataset.mod;
+            renderFiltre();
+            await filtreyiKaydet(`${btn.textContent} mod seçildi`);
+        });
+    });
+
+    document.getElementById('chkKanalKontrol').addEventListener('change', async (e) => {
+        mevcutVeri.filtre.kanalKontrol = e.target.checked;
+        await filtreyiKaydet("Kanal kontrolü güncellendi");
+    });
+
+    document.getElementById('chkRozetGoster').addEventListener('change', async (e) => {
+        mevcutVeri.filtre.rozetGoster = e.target.checked;
+        await filtreyiKaydet("Rozet ayarı güncellendi");
+    });
+
+    document.getElementById('selVarsayilanBicim').addEventListener('change', async (e) => {
+        mevcutVeri.filtre.varsayilanBicim = e.target.value;
+        await filtreyiKaydet("Varsayılan biçim güncellendi");
+    });
 }
 
 // Kategori Filtre Çipleri
@@ -668,7 +849,8 @@ async function kaydetTumAyarlar(bildirimVer = true) {
     await setStorageData({
         preferences: mevcutVeri.preferences,
         customMapping: mevcutVeri.customMapping,
-        ayarlar: mevcutVeri.ayarlar
+        ayarlar: mevcutVeri.ayarlar,
+        filtre: mevcutVeri.filtre
     });
 
     if (bildirimVer) {

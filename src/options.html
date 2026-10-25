@@ -98,7 +98,11 @@
 
         <!-- Sekmeli Gezinme Çubuğu -->
         <nav class="tab-nav">
-            <button class="tab-btn active" data-tab="tabListeler">
+            <button class="tab-btn active" data-tab="tabFiltre">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="22 3 2 3 10 12.46 10 19 14 21 14 12.46 22 3"></polygon></svg>
+                Filtre
+            </button>
+            <button class="tab-btn" data-tab="tabListeler">
                 <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"></path></svg>
                 Listeler
             </button>
@@ -116,8 +120,96 @@
             </button>
         </nav>
 
-        <!-- SEKME 1: Listeler & Kurallar -->
-        <div id="tabListeler" class="tab-content active">
+        <!-- SEKME: Filtre (Mod, Konular, Etiketler) -->
+        <div id="tabFiltre" class="tab-content active">
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2a10 10 0 1 0 10 10"></path><path d="M12 12l5-5"></path></svg>
+                    Filtreleme Modu
+                </div>
+                <div class="mod-gosterge">
+                    <svg viewBox="0 0 200 110" aria-hidden="true">
+                        <path class="mod-yay mod-yay-serbest" d="M20 100 A80 80 0 0 1 60 30.72"></path>
+                        <path class="mod-yay mod-yay-orta" d="M60 30.72 A80 80 0 0 1 140 30.72"></path>
+                        <path class="mod-yay mod-yay-kati" d="M140 30.72 A80 80 0 0 1 180 100"></path>
+                        <g id="modIbre" class="mod-ibre">
+                            <line x1="100" y1="100" x2="100" y2="38"></line>
+                        </g>
+                        <circle cx="100" cy="100" r="7" class="mod-ibre-merkez"></circle>
+                    </svg>
+                </div>
+                <div class="segment" id="modSecici" role="radiogroup" aria-label="Filtreleme modu">
+                    <button class="segment-btn" data-mod="serbest" role="radio">Serbest</button>
+                    <button class="segment-btn" data-mod="orta" role="radio">Orta</button>
+                    <button class="segment-btn" data-mod="kati" role="radio">Katı</button>
+                </div>
+                <p id="lblModAciklama" class="mod-aciklama"></p>
+            </div>
+
+            <div class="card" id="kartOrtaMod">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"></path><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
+                    Bilinmeyen ve Kararsız İçerikler
+                </div>
+                <div class="card-desc">Orta modda, hakkında yeterli veri olmayan içeriklere ne yapılacağını seçin.</div>
+                <div id="ortaModSecenekleri"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path></svg>
+                    Konular
+                </div>
+                <div class="card-desc">Filtrelenen konular engellenir. Engellemenin nasıl yapılacağını her konu için ayrı seçin.</div>
+                <div id="konuListesi" class="baslik-listesi"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M4 15s1-1 4-1 5 2 8 2 4-1 4-1V3s-1 1-4 1-5-2-8-2-4 1-4 1z"></path><line x1="4" y1="22" x2="4" y2="15"></line></svg>
+                    Etiketler
+                </div>
+                <div class="card-desc">Filtrelenen bir etiketi taşıyan içerik, mod ne olursa olsun engellenir.</div>
+                <div id="etiketListesi" class="baslik-listesi"></div>
+            </div>
+
+            <div class="card">
+                <div class="card-title">
+                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"></circle><path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"></path></svg>
+                    Genel Filtre Ayarları
+                </div>
+                <div class="switch-item">
+                    <div class="switch-label-group">
+                        <span class="switch-title">Kanal Kontrolü</span>
+                        <span class="switch-subtext">Video hakkında veri yoksa kanalın konu ve etiketlerine bakılır.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkKanalKontrol">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="switch-item">
+                    <div class="switch-label-group">
+                        <span class="switch-title">Rozetleri Göster</span>
+                        <span class="switch-subtext">Videoların üstünde ana konu ve etiketleri gösterir.</span>
+                    </div>
+                    <label class="switch">
+                        <input type="checkbox" id="chkRozetGoster">
+                        <span class="slider"></span>
+                    </label>
+                </div>
+                <div class="switch-item">
+                    <div class="switch-label-group">
+                        <span class="switch-title">Varsayılan Engelleme Biçimi</span>
+                        <span class="switch-subtext">Kara liste, bilinmeyen ve kararsız içerikler için kullanılır.</span>
+                    </div>
+                    <select id="selVarsayilanBicim" class="bicim-secici"></select>
+                </div>
+            </div>
+        </div>
+
+        <!-- SEKME: Listeler -->
+        <div id="tabListeler" class="tab-content">
             <!-- Kanal / Video Ekleme Kartı -->
             <div class="card">
                 <div class="card-title">
@@ -312,6 +404,7 @@
         <span id="toastMessage">Ayarlar kaydedildi!</span>
     </div>
 
+    <script src="filtre_motoru.js"></script>
     <script src="options.js"></script>
 </body>
 </html>
