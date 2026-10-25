@@ -44,8 +44,8 @@
         <div class="quick-banner-content">
             <div id="quickTitle" class="quick-banner-title">@ornekkanal</div>
             <div class="quick-banner-btns">
-                <button id="btnQuickBlock" class="btn-quick btn-quick-danger" title="Engelle / Şiddet">Engelle</button>
-                <button id="btnQuickAllow" class="btn-quick btn-quick-safe" title="İzin Ver / Güvenli">Güvenli</button>
+                <button id="btnQuickBlock" class="btn-quick btn-quick-danger" title="Kara listeye ekle">Engelle</button>
+                <button id="btnQuickAllow" class="btn-quick btn-quick-safe" title="Beyaz listeye ekle">İzin Ver</button>
             </div>
         </div>
     </div>
@@ -214,12 +214,15 @@
             <div class="card">
                 <div class="card-title">
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-                    Kanal veya Video Ata
+                    Kanal veya Video Ekle
                 </div>
-                <div class="card-desc">URL, Video ID veya @KanalAdı girerek kategoriye atayın.</div>
+                <div class="card-desc">Beyaz listedekiler asla engellenmez, kara listedekiler her zaman engellenir. Listeler filtre kurallarından önce uygulanır.</div>
                 <div class="input-row">
                     <input type="text" id="yeniEtiketId" placeholder="@kanal, link veya ID...">
-                    <select id="yeniEtiketTuru" style="width: 125px;"></select>
+                    <select id="yeniEtiketTuru" style="width: 110px;">
+                        <option value="beyaz">Beyaz liste</option>
+                        <option value="kara">Kara liste</option>
+                    </select>
                     <button id="btnEtiketEkle" class="btn btn-primary">Ekle</button>
                 </div>
             </div>
@@ -240,32 +243,16 @@
                     <input type="text" id="txtArama" placeholder="Listede ara (@kanal veya ID)...">
                 </div>
 
-                <!-- Kategori Filtreleme Çipleri -->
+                <!-- Liste Filtreleme Çipleri -->
                 <div id="filterChipsContainer" class="filter-chips">
                     <button class="chip active" data-filter="all">Tümü</button>
+                    <button class="chip" data-filter="beyaz">Beyaz liste</button>
+                    <button class="chip" data-filter="kara">Kara liste</button>
                 </div>
 
                 <!-- İçerik Listesi Kutusu -->
                 <div id="itemListContainer" class="item-list">
                     <!-- Dinamik doldurulur -->
-                </div>
-            </div>
-
-            <!-- Kategori Davranış Kuralları -->
-            <div class="card">
-                <div class="card-title">
-                    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-                    Kategori Eylem Kuralları
-                </div>
-                <div class="card-desc">Her kategorinin YouTube üzerindeki davranışını belirleyin.</div>
-                
-                <div class="input-row" style="margin-bottom: 12px;">
-                    <input type="text" id="yeniKuralAdi" placeholder="Yeni Kategori Adı (Örn: Oyun, Spor)">
-                    <button id="btnKuralEkle" class="btn btn-secondary">Oluştur</button>
-                </div>
-
-                <div id="settings-container">
-                    <!-- Dinamik Kural Kartları -->
                 </div>
             </div>
         </div>

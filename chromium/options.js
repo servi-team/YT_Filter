@@ -10,14 +10,8 @@ let aktifFiltre = 'all';
 let aramaMetni = '';
 let aktifYouTubeIcerigi = null;
 
-const coreTags = ["profanity", "violence", "educational", "safe", "untagged"];
-const tagLabels = { 
-    "profanity": "Küfür/Argo", 
-    "violence": "Şiddet", 
-    "educational": "Eğitici", 
-    "safe": "Güvenli", 
-    "untagged": "Etiketlenmemiş" 
-};
+const LISTE_ADLARI = { beyaz: "Beyaz liste", kara: "Kara liste" };
+const LISTE_ANAHTARLARI = { beyaz: "beyazListe", kara: "karaListe" };
 
 const MOD_ACIKLAMALARI = {
     serbest: "Konulardan herhangi biri izinliyse video açılır. Kararsız içerikler lehinize yorumlanır, konusu bilinmeyen videolar açılır.",
@@ -69,22 +63,15 @@ function showToast(message) {
 document.addEventListener('DOMContentLoaded', async () => {
     const veri = await getStorageData(null);
     mevcutVeri = veri || {};
-    if (!mevcutVeri.customMapping) mevcutVeri.customMapping = {};
-    if (!mevcutVeri.preferences) mevcutVeri.preferences = {};
     if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
+    if (!mevcutVeri.beyazListe) mevcutVeri.beyazListe = [];
+    if (!mevcutVeri.karaListe) mevcutVeri.karaListe = [];
     if (!mevcutVeri.filtre) {
         mevcutVeri.filtre = YTFiltreMotoru.varsayilanFiltreAyarlari(mevcutVeri.veritabani);
     } else {
         YTFiltreMotoru.eksikBasliklariTamamla(mevcutVeri.filtre, mevcutVeri.veritabani);
     }
 
-    // Varsayılan Etiketleri Tanımla
-    coreTags.forEach(tag => {
-        if (!mevcutVeri.preferences[tag]) {
-            mevcutVeri.preferences[tag] = { visibility: "Show Badge", enforcement: "Allow Video", adi: tagLabels[tag] };
-        }
-    });
-    
     document.getElementById('lblKurulumTarihi').innerText = veri.kurulumTarihi || "Bilinmiyor";
 
     // Temayı Başlat
@@ -251,22 +238,13 @@ function initEvents() {
         if (e.key === 'Enter') icerikEkle();
     });
 
-    // Yeni Kategori Oluştur
-    document.getElementById('btnKuralEkle').addEventListener('click', () => {
-        const orjinalYazim = document.getElementById('yeniKuralAdi').value.trim();
-        const etiketAnahtari = orjinalYazim.toLowerCase();
-        
-        if (orjinalYazim && !mevcutVeri.preferences[etiketAnahtari]) {
-            mevcutVeri.preferences[etiketAnahtari] = { 
-                visibility: "Show Badge", 
-                enforcement: "Allow Video", 
-                adi: orjinalYazim 
-            };
-            document.getElementById('yeniKuralAdi').value = '';
-            renderKurallar();
+    // Liste Filtre Çipleri
+    document.querySelectorAll('#filterChipsContainer .chip').forEach(chip => {
+        chip.addEventListener('click', () => {
+            aktifFiltre = chip.dataset.filter;
             renderFilterChips();
-            showToast(`"${orjinalYazim}" kategorisi oluşturuldu`);
-        }
+            renderItemList();
+        });
     });
 
     // Uyarı Banner'ından PIN Değiştirmeye Yönlendirme
@@ -338,10 +316,24 @@ function initEvents() {
         okuyucu.onload = async (olay) => {
             try {
                 const yuklenen = JSON.parse(olay.target.result);
+                let beyazListe = yuklenen.beyazListe || mevcutVeri.beyazListe;
+                let karaListe = yuklenen.karaListe || mevcutVeri.karaListe;
+                const filtre = yuklenen.filtre
+                    ? YTFiltreMotoru.eksikBasliklariTamamla(yuklenen.filtre, mevcutVeri.veritabani)
+                    : mevcutVeri.filtre;
+
+                // v1 yedekleri (kategori eşlemeleri) beyaz/kara listeye taşınır
+                if (yuklenen.customMapping) {
+                    const tasinan = YTFiltreMotoru.eskiVeriyiTasi(yuklenen.customMapping, yuklenen.preferences, filtre);
+                    beyazListe = [...new Set([...beyazListe, ...tasinan.beyaz])];
+                    karaListe = [...new Set([...karaListe, ...tasinan.kara])];
+                }
+
                 await setStorageData({
-                    customMapping: yuklenen.customMapping || mevcutVeri.customMapping,
+                    filtre,
+                    beyazListe,
+                    karaListe,
                     ayarlar: yuklenen.ayarlar || mevcutVeri.ayarlar,
-                    preferences: yuklenen.preferences || mevcutVeri.preferences,
                     pinKodu: yuklenen.pinKodu || mevcutVeri.pinKodu,
                     pinDegistirildi: yuklenen.pinDegistirildi || mevcutVeri.pinDegistirildi,
                     ilkGirisYapildi: yuklenen.ilkGirisYapildi || mevcutVeri.ilkGirisYapildi
@@ -408,19 +400,8 @@ async function algilaAktifYouTubeSekmesi() {
             // DİKKAT: Burada banner display yapılmaz!
             // Sadece PIN açıldıktan sonra kilidiAc() fonksiyonunda görünür olur.
 
-            document.getElementById('btnQuickBlock').onclick = () => {
-                mevcutVeri.customMapping[tespit.toLowerCase()] = "violence"; // Varsayılan engelleme
-                setStorageData({ customMapping: mevcutVeri.customMapping });
-                renderItemList();
-                showToast(`${tespit} engellenenlere eklendi`);
-            };
-
-            document.getElementById('btnQuickAllow').onclick = () => {
-                mevcutVeri.customMapping[tespit.toLowerCase()] = "safe"; // Varsayılan izin
-                setStorageData({ customMapping: mevcutVeri.customMapping });
-                renderItemList();
-                showToast(`${tespit} güvenli listeye eklendi`);
-            };
+            document.getElementById('btnQuickBlock').onclick = () => listeyeEkle(tespit, 'kara');
+            document.getElementById('btnQuickAllow').onclick = () => listeyeEkle(tespit, 'beyaz');
         }
     } catch (e) {
         // Tab sorgulama hatası durumunda sessizce geç
@@ -438,7 +419,6 @@ function arayuzuDoldur() {
     renderFiltre();
     renderFilterChips();
     renderItemList();
-    renderKurallar();
 }
 
 // Filtre Ayarlarını Kaydet
@@ -599,100 +579,64 @@ function initFiltreEvents() {
     });
 }
 
-// Kategori Filtre Çipleri
+// Liste Filtre Çipleri
 function renderFilterChips() {
-    const container = document.getElementById('filterChipsContainer');
-    if (!container) return;
-
-    container.innerHTML = `
-        <button class="chip ${aktifFiltre === 'all' ? 'active' : ''}" data-filter="all">Tümü</button>
-    `;
-
-    for (let tag in mevcutVeri.preferences) {
-        const pref = mevcutVeri.preferences[tag];
-        const isCore = coreTags.includes(tag);
-        const displayName = isCore ? tagLabels[tag] : (pref.adi || tag);
-        
-        const btn = document.createElement('button');
-        btn.className = `chip ${aktifFiltre === tag ? 'active' : ''}`;
-        btn.setAttribute('data-filter', tag);
-        btn.textContent = displayName;
-        
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            aktifFiltre = tag;
-            renderItemList();
-        });
-        
-        container.appendChild(btn);
-    }
-
-    // "Tümü" çipi tıklaması
-    container.querySelector('[data-filter="all"]').addEventListener('click', (e) => {
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        e.target.classList.add('active');
-        aktifFiltre = 'all';
-        renderItemList();
+    document.querySelectorAll('#filterChipsContainer .chip').forEach(chip => {
+        chip.classList.toggle('active', chip.dataset.filter === aktifFiltre);
     });
 }
 
-// Tanımlı İçerik Listesini Render Et
+const IKON_KANAL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+const IKON_VIDEO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+const IKON_SIL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+
+// Beyaz ve Kara Liste İçeriklerini Render Et
 function renderItemList() {
     const listContainer = document.getElementById('itemListContainer');
     const countLabel = document.getElementById('lblToplamIcerik');
     if (!listContainer) return;
 
     listContainer.innerHTML = '';
-    const tumIdler = Object.keys(mevcutVeri.customMapping || {});
+    const tumKayitlar = [
+        ...mevcutVeri.beyazListe.map(id => ({ id, liste: 'beyaz' })),
+        ...mevcutVeri.karaListe.map(id => ({ id, liste: 'kara' }))
+    ];
     let gosterilenSayac = 0;
 
-    tumIdler.forEach(id => {
-        const tag = mevcutVeri.customMapping[id];
-        
-        // Kategori filtresi kontrolü
-        if (aktifFiltre !== 'all' && tag !== aktifFiltre) return;
-
-        // Arama filtresi kontrolü
-        if (aramaMetni && !id.toLowerCase().includes(aramaMetni)) return;
+    tumKayitlar.forEach(({ id, liste }) => {
+        if (aktifFiltre !== 'all' && liste !== aktifFiltre) return;
+        if (aramaMetni && !id.includes(aramaMetni)) return;
 
         gosterilenSayac++;
-        const pref = mevcutVeri.preferences[tag] || {};
-        const isCore = coreTags.includes(tag);
-        const tagLabel = isCore ? tagLabels[tag] : (pref.adi || tag);
         const isChannel = id.startsWith('@');
 
         const row = document.createElement('div');
         row.className = 'item-row';
         row.innerHTML = `
             <div class="item-info">
-                <div class="item-type-icon" title="${isChannel ? 'Kanal' : 'Video'}">
-                    ${isChannel ? `
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    ` : `
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    `}
-                </div>
-                <span class="item-identifier" title="${id}">${id}</span>
-                <span class="item-tag-badge">${tagLabel}</span>
+                <div class="item-type-icon" title="${isChannel ? 'Kanal' : 'Video'}">${isChannel ? IKON_KANAL : IKON_VIDEO}</div>
+                <span class="item-identifier"></span>
+                <span class="item-tag-badge item-liste-${liste}">${LISTE_ADLARI[liste]}</span>
             </div>
-            <button class="btn-delete-item" data-id="${id}" title="Listeden Kaldır">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
+            <button class="btn-delete-item" title="Listeden Kaldır">${IKON_SIL}</button>
         `;
+        const kimlik = row.querySelector('.item-identifier');
+        kimlik.textContent = id;
+        kimlik.title = id;
 
         row.querySelector('.btn-delete-item').addEventListener('click', async () => {
-            delete mevcutVeri.customMapping[id];
-            await setStorageData({ customMapping: mevcutVeri.customMapping });
+            const anahtar = LISTE_ANAHTARLARI[liste];
+            mevcutVeri[anahtar] = mevcutVeri[anahtar].filter(x => x !== id);
+            await setStorageData({ [anahtar]: mevcutVeri[anahtar] });
             renderItemList();
-            showToast(`${id} silindi`);
+            showToast(`${id} ${LISTE_ADLARI[liste].toLocaleLowerCase('tr-TR')}den kaldırıldı`);
         });
 
         listContainer.appendChild(row);
     });
 
     if (countLabel) {
-        countLabel.textContent = `${tumIdler.length} İçerik`;
+        countLabel.textContent = `${tumKayitlar.length} İçerik`;
     }
 
     if (gosterilenSayac === 0) {
@@ -705,138 +649,43 @@ function renderItemList() {
     }
 }
 
+// ID'yi bir listeye ekler; diğer listede varsa oradan çıkarır
+async function listeyeEkle(id, liste) {
+    const hedef = LISTE_ANAHTARLARI[liste];
+    const diger = LISTE_ANAHTARLARI[liste === 'beyaz' ? 'kara' : 'beyaz'];
+    const temizId = id.toLowerCase();
+
+    mevcutVeri[diger] = mevcutVeri[diger].filter(x => x !== temizId);
+    if (!mevcutVeri[hedef].includes(temizId)) mevcutVeri[hedef].push(temizId);
+    await setStorageData({ [hedef]: mevcutVeri[hedef], [diger]: mevcutVeri[diger] });
+
+    renderItemList();
+    showToast(`${temizId} ${LISTE_ADLARI[liste].toLocaleLowerCase('tr-TR')}ye eklendi`);
+}
+
 // İçerik Ekleme Fonksiyonu
 async function icerikEkle() {
     let rawInput = document.getElementById('yeniEtiketId').value.trim();
-    const tag = document.getElementById('yeniEtiketTuru').value;
-    
+    const liste = document.getElementById('yeniEtiketTuru').value;
+
     if (rawInput !== "") {
         let finalId = rawInput;
         const videoMatch = rawInput.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([a-zA-Z0-9_-]{11})/);
         const channelMatch = rawInput.match(/(@[a-zA-Z0-9._-]+)/);
-        
+
         if (videoMatch && videoMatch[1]) {
             finalId = videoMatch[1];
         } else if (channelMatch && channelMatch[1]) {
             finalId = channelMatch[1];
         }
-        
-        finalId = finalId.toLowerCase();
-        mevcutVeri.customMapping[finalId] = tag;
-        await setStorageData({ customMapping: mevcutVeri.customMapping });
-        
+
+        await listeyeEkle(finalId, liste);
         document.getElementById('yeniEtiketId').value = '';
-        renderItemList();
-        showToast(`${finalId} listeye eklendi`);
-    }
-}
-
-// Kural Kartlarını Render Et
-function renderKurallar() {
-    const container = document.getElementById('settings-container');
-    const selectEkle = document.getElementById('yeniEtiketTuru');
-    if (!container || !selectEkle) return;
-    
-    container.innerHTML = "";
-    selectEkle.innerHTML = "";
-    
-    for (let tag in mevcutVeri.preferences) {
-        const pref = mevcutVeri.preferences[tag];
-        const isCore = coreTags.includes(tag);
-        const displayName = isCore ? tagLabels[tag] : (pref.adi || tag);
-        
-        // Ekleme Select Kutusu Seçeneği
-        const opt = document.createElement('option');
-        opt.value = tag;
-        opt.textContent = displayName;
-        selectEkle.appendChild(opt);
-
-        // Kural Kartı
-        const card = document.createElement('div');
-        card.className = 'kural-card';
-        
-        let silButonuHTML = isCore ? '' : `
-            <button class="btnSilKural btn-delete-item" data-tag="${tag}" title="Kategoriyi Sil">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
-        `;
-
-        card.innerHTML = `
-            <div class="kural-card-header">
-                <span class="kural-card-name">${displayName}</span>
-                ${silButonuHTML}
-            </div>
-            <div class="kural-options">
-                <div class="kural-field">
-                    <label>Rozet Görünümü</label>
-                    <select id="${tag}-visibility">
-                        <option value="Show Badge" ${pref.visibility === 'Show Badge' ? 'selected' : ''}>Rozet Göster</option>
-                        <option value="Hide Badge" ${pref.visibility === 'Hide Badge' ? 'selected' : ''}>Rozet Gizle</option>
-                    </select>
-                </div>
-                <div class="kural-field">
-                    <label>Video Eylemi</label>
-                    <select id="${tag}-enforcement">
-                        <option value="Allow Video" ${pref.enforcement === 'Allow Video' ? 'selected' : ''}>İzin Ver</option>
-                        <option value="Blur Thumbnail" ${pref.enforcement === 'Blur Thumbnail' ? 'selected' : ''}>Bulanıklaştır</option>
-                        <option value="Remove Video Entirely" ${pref.enforcement === 'Remove Video Entirely' ? 'selected' : ''}>Tamamen Kaldır</option>
-                    </select>
-                </div>
-            </div>
-        `;
-
-        // Canlı Değişiklik Dinleyicileri
-        card.querySelector(`#${tag}-visibility`).addEventListener('change', async (e) => {
-            mevcutVeri.preferences[tag].visibility = e.target.value;
-            await setStorageData({ preferences: mevcutVeri.preferences });
-            showToast("Görünüm güncellendi");
-        });
-
-        card.querySelector(`#${tag}-enforcement`).addEventListener('change', async (e) => {
-            mevcutVeri.preferences[tag].enforcement = e.target.value;
-            await setStorageData({ preferences: mevcutVeri.preferences });
-            showToast("Eylem kuralı güncellendi");
-        });
-
-        // Silme Butonu
-        if (!isCore) {
-            card.querySelector('.btnSilKural').addEventListener('click', async () => {
-                if (confirm(`"${displayName}" kategorisini silmek istediğinize emin misiniz?`)) {
-                    delete mevcutVeri.preferences[tag];
-                    for (let id in mevcutVeri.customMapping) {
-                        if (mevcutVeri.customMapping[id] === tag) delete mevcutVeri.customMapping[id];
-                    }
-                    await setStorageData({ 
-                        preferences: mevcutVeri.preferences,
-                        customMapping: mevcutVeri.customMapping
-                    });
-                    renderKurallar();
-                    renderFilterChips();
-                    renderItemList();
-                    showToast(`"${displayName}" silindi`);
-                }
-            });
-        }
-
-        container.appendChild(card);
     }
 }
 
 // Tüm Ayarları Manuel Kaydet
 async function kaydetTumAyarlar(bildirimVer = true) {
-    for (let tag in mevcutVeri.preferences) {
-        const visEl = document.getElementById(`${tag}-visibility`);
-        const enfEl = document.getElementById(`${tag}-enforcement`);
-        if (visEl && enfEl) {
-            const isCore = coreTags.includes(tag);
-            mevcutVeri.preferences[tag] = {
-                visibility: visEl.value,
-                enforcement: enfEl.value,
-                adi: isCore ? tagLabels[tag] : (mevcutVeri.preferences[tag].adi || tag)
-            };
-        }
-    }
-
     mevcutVeri.ayarlar = {
         shortsGizle: document.getElementById('chkShorts').checked,
         yorumGizle: document.getElementById('chkYorum').checked,
@@ -847,8 +696,8 @@ async function kaydetTumAyarlar(bildirimVer = true) {
     };
 
     await setStorageData({
-        preferences: mevcutVeri.preferences,
-        customMapping: mevcutVeri.customMapping,
+        beyazListe: mevcutVeri.beyazListe,
+        karaListe: mevcutVeri.karaListe,
         ayarlar: mevcutVeri.ayarlar,
         filtre: mevcutVeri.filtre
     });

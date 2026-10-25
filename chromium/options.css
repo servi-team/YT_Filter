@@ -1016,3 +1016,16 @@ body[data-mod="kati"] .mod-yay-kati {
   border-bottom: none;
   padding-bottom: 0;
 }
+
+/* Beyaz / Kara Liste Rozetleri */
+.item-liste-beyaz {
+  background: var(--success-bg);
+  color: var(--success);
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.item-liste-kara {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border-color: rgba(239, 68, 68, 0.25);
+}
