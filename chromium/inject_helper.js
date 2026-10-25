@@ -26,7 +26,7 @@
             }
             if (typeof val === 'string') {
                 const handleMatch = val.match(/\/(@[a-zA-Z0-9._-]+)/);
-                if (handleMatch) return `@${handleMatch[1]}`;
+                if (handleMatch) return handleMatch[1];
                 const channelMatch = val.match(/\/(?:user|channel)\/([a-zA-Z0-9._-]+)/);
                 if (channelMatch) return channelMatch[1];
             }
