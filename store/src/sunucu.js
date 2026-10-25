@@ -34,6 +34,7 @@ function uygulamaOlustur() {
     app.use('/api/editorler', require('./rotalar/editorler'));
     app.use('/api/basliklar', require('./rotalar/basliklar'));
     app.use('/api/icerikler', require('./rotalar/icerikler').router);
+    app.use('/api/disa-aktarimlar', require('./rotalar/disa_aktarimlar'));
 
     app.use('/api', (req, res) => {
         res.status(404).json({ hata: 'Bulunamadı' });
