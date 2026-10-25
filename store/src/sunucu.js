@@ -7,6 +7,7 @@ const path = require('path');
 const express = require('express');
 const { pool, gocleriCalistir } = require('./veritabani');
 const { HttpHatasi } = require('./hatalar');
+const { oturumAraciOlustur, jsonZorunlu, ilkAdminiOlustur } = require('./oturum');
 
 const PORT = Number(process.env.PORT || 3000);
 
@@ -28,6 +29,9 @@ function uygulamaOlustur() {
     app.use(express.static(path.join(__dirname, '..', 'public')));
 
     // API rotaları
+    app.use('/api', oturumAraciOlustur(), jsonZorunlu);
+    app.use('/api/oturum', require('./rotalar/oturum'));
+    app.use('/api/editorler', require('./rotalar/editorler'));
 
     app.use('/api', (req, res) => {
         res.status(404).json({ hata: 'Bulunamadı' });
@@ -50,6 +54,7 @@ function uygulamaOlustur() {
 
 async function baslat() {
     await gocleriCalistir();
+    await ilkAdminiOlustur();
     uygulamaOlustur().listen(PORT, () => {
         console.log(`YouTube Filter Store çalışıyor: http://localhost:${PORT}`);
     });

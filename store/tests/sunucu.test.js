@@ -3,6 +3,7 @@ const assert = require('node:assert/strict');
 
 // Erişilemeyen bir veritabanı adresi: sağlık kontrolü 503 dönmeli
 process.env.DATABASE_URL = 'postgres://kullanici:sifre@127.0.0.1:1/yok';
+process.env.OTURUM_GIZLI_ANAHTAR = 'test-icin-yeterince-uzun-anahtar';
 const { uygulamaOlustur } = require('../src/sunucu.js');
 
 test('sunucu statik sayfayı sunar, veritabanı yoksa sağlık 503 döner', async (t) => {
@@ -19,4 +20,15 @@ test('sunucu statik sayfayı sunar, veritabanı yoksa sağlık 503 döner', asyn
 
     const bilinmeyen = await fetch(kok + '/api/yok');
     assert.equal(bilinmeyen.status, 404);
+});
+
+test('JSON olmayan veri değiştirme istekleri reddedilir (CSRF koruması)', async (t) => {
+    const sunucu = uygulamaOlustur().listen(0);
+    t.after(() => sunucu.close());
+    const yanit = await fetch(`http://127.0.0.1:${sunucu.address().port}/api/oturum/giris`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: 'kullaniciAdi=admin&sifre=x'
+    });
+    assert.equal(yanit.status, 415);
 });

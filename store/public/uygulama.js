@@ -86,7 +86,7 @@ function ustBilgiyiCiz() {
     const k = Uygulama.kullanici;
     if (!k) return;
     alan.append(
-        el('span', { class: 'kullanici-adi', title: k.kullaniciAdi }, k.ad || k.kullaniciAdi),
+        el('a', { class: 'kullanici-adi', href: '#/hesap', title: 'Hesabım' }, k.ad || k.kullaniciAdi),
         el('span', { class: `rozet ${k.rol === 'admin' ? 'rozet-admin' : ''}` }, k.rol === 'admin' ? 'Yönetici' : 'Editör'),
         el('button', {
             class: 'dugme dugme-ikincil dugme-kucuk',
