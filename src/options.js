@@ -74,6 +74,12 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     document.getElementById('lblKurulumTarihi').innerText = veri.kurulumTarihi || "Bilinmiyor";
 
+    const vt = mevcutVeri.veritabani;
+    document.getElementById('lblVeritabaniSurumu').innerText = vt ? vt.surum : "Yüklenmedi";
+    document.getElementById('lblVeritabaniKayit').innerText = vt
+        ? `${Object.keys(vt.videolar || {}).length} video, ${Object.keys(vt.kanallar || {}).length} kanal`
+        : "-";
+
     // Temayı Başlat
     if (mevcutVeri.ayarlar.koyuTema) {
         document.body.classList.add('dark-theme');
