@@ -94,8 +94,15 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Aktif YouTube Sekmesini Algıla (Ama henüz açma)
     await algilaAktifYouTubeSekmesi();
 
-    // PIN Kontrolü
-    if (mevcutVeri.ayarlar.pinIptal || !mevcutVeri.pinKodu) {
+    // Kurulumdan sonra tam sayfa sekmede açıldıysa düzeni ortala
+    if (new URLSearchParams(location.search).get('karsilama') === '1') {
+        document.documentElement.classList.add('tam-sayfa');
+    }
+
+    // İlk kurulum tamamlanmadıysa karşılama ekranı, değilse PIN kontrolü
+    if (mevcutVeri.karsilamaTamamlandi === false) {
+        karsilamayiBaslat();
+    } else if (mevcutVeri.ayarlar.pinIptal || !mevcutVeri.pinKodu) {
         kilidiAc();
     } else {
         kilitle();
@@ -121,7 +128,7 @@ function kilidiAc() {
     // PIN hala 1234 ise uyarı banner'ını göster
     const uyariBanner = document.getElementById('pinDegistirUyarisi');
     if (uyariBanner) {
-        if (mevcutVeri.pinKodu === "1234" && !mevcutVeri.pinDegistirildi) {
+        if (mevcutVeri.pinKodu === "1234" && !mevcutVeri.pinDegistirildi && !mevcutVeri.ayarlar.pinIptal) {
             uyariBanner.style.display = 'flex';
         } else {
             uyariBanner.style.display = 'none';
@@ -146,6 +153,73 @@ function kilidiAc() {
     }
     
     arayuzuDoldur();
+}
+
+// Karşılama Ekranı (İlk Kurulum)
+function karsilamayiBaslat() {
+    document.getElementById('pinEkrani').style.display = 'none';
+    document.getElementById('anaArayuz').style.display = 'none';
+    document.getElementById('karsilamaEkrani').style.display = 'flex';
+
+    renderOrtaSecenekleri('karsilamaOrtaSecenekleri');
+    karsilamaAdiminaGit(1);
+
+    document.querySelectorAll('[data-karsilama-ileri]').forEach(btn => {
+        btn.addEventListener('click', () => {
+            const adim = Number(btn.closest('.karsilama-adim').dataset.adim);
+            karsilamaAdiminaGit(adim + 1);
+        });
+    });
+
+    const pinKaydet = async () => {
+        const pin = document.getElementById('karsilamaPin').value.trim();
+        const tekrar = document.getElementById('karsilamaPinTekrar').value.trim();
+        const hata = document.getElementById('karsilamaPinHata');
+        if (pin.length < 4) {
+            hata.textContent = "PIN en az 4 haneli olmalıdır.";
+            return;
+        }
+        if (pin !== tekrar) {
+            hata.textContent = "PIN'ler eşleşmiyor.";
+            return;
+        }
+        hata.textContent = "";
+        mevcutVeri.pinKodu = pin;
+        mevcutVeri.pinDegistirildi = true;
+        mevcutVeri.ilkGirisYapildi = true;
+        mevcutVeri.ayarlar.pinIptal = false;
+        await setStorageData({ pinKodu: pin, pinDegistirildi: true, ilkGirisYapildi: true, ayarlar: mevcutVeri.ayarlar });
+        karsilamaAdiminaGit(3);
+    };
+    document.getElementById('btnKarsilamaPin').addEventListener('click', pinKaydet);
+    document.getElementById('karsilamaPinTekrar').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') pinKaydet();
+    });
+
+    document.getElementById('btnKarsilamaPinAtla').addEventListener('click', async () => {
+        mevcutVeri.ayarlar.pinIptal = true;
+        mevcutVeri.ilkGirisYapildi = true;
+        await setStorageData({ ayarlar: mevcutVeri.ayarlar, ilkGirisYapildi: true });
+        karsilamaAdiminaGit(3);
+    });
+
+    document.getElementById('btnKarsilamaBitir').addEventListener('click', async () => {
+        mevcutVeri.karsilamaTamamlandi = true;
+        await setStorageData({ karsilamaTamamlandi: true, filtre: mevcutVeri.filtre });
+        document.getElementById('karsilamaEkrani').style.display = 'none';
+        kilidiAc();
+        showToast("Kurulum tamamlandı");
+    });
+}
+
+function karsilamaAdiminaGit(adim) {
+    document.querySelectorAll('.karsilama-adim').forEach(bolum => {
+        bolum.classList.toggle('active', Number(bolum.dataset.adim) === adim);
+    });
+    document.querySelectorAll('.karsilama-noktalar span').forEach(nokta => {
+        nokta.classList.toggle('active', Number(nokta.dataset.adim) === adim);
+    });
+    if (adim === 2) setTimeout(() => document.getElementById('karsilamaPin').focus(), 50);
 }
 
 // Arayüzü Kilitle

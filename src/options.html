@@ -50,6 +50,54 @@
         </div>
     </div>
 
+    <!-- Karşılama Ekranı (İlk Kurulum) -->
+    <div id="karsilamaEkrani" class="karsilama" style="display: none;">
+        <div class="karsilama-noktalar" aria-hidden="true">
+            <span data-adim="1"></span><span data-adim="2"></span><span data-adim="3"></span><span data-adim="4"></span>
+        </div>
+
+        <section class="karsilama-adim" data-adim="1">
+            <div class="karsilama-ikon">
+                <svg width="26" height="26" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-3zm0 10.99h7c-.53 4.12-3.28 7.79-7 8.94V12H5V6.3l7-2.33v8.02z"/></svg>
+            </div>
+            <h2>Hoş Geldiniz!</h2>
+            <p>YouTube Filtreleyici, videoları konularına ve etiketlerine göre filtreler. Kurulumu birkaç adımda tamamlayalım.</p>
+            <button class="btn btn-primary btn-full" data-karsilama-ileri>Başlayalım</button>
+        </section>
+
+        <section class="karsilama-adim" data-adim="2">
+            <div class="karsilama-ikon">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect><path d="M7 11V7a5 5 0 0 1 10 0v4"></path></svg>
+            </div>
+            <h2>PIN Seçin</h2>
+            <p>Ayarların izinsiz değiştirilmemesi için en az 4 haneli bir PIN belirleyin.</p>
+            <div class="karsilama-form">
+                <input type="password" id="karsilamaPin" placeholder="PIN" maxlength="12" inputmode="numeric" autocomplete="new-password">
+                <input type="password" id="karsilamaPinTekrar" placeholder="PIN (tekrar)" maxlength="12" inputmode="numeric" autocomplete="new-password">
+                <p id="karsilamaPinHata" class="karsilama-hata" role="alert"></p>
+            </div>
+            <button id="btnKarsilamaPin" class="btn btn-primary btn-full">Devam</button>
+            <button id="btnKarsilamaPinAtla" class="btn-metin">PIN kullanmadan devam et</button>
+        </section>
+
+        <section class="karsilama-adim" data-adim="3">
+            <div class="karsilama-ikon karsilama-ikon-bilgi">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="16" x2="12" y2="12"></line><line x1="12" y1="8" x2="12.01" y2="8"></line></svg>
+            </div>
+            <h2>Henüz yeni bir eklentiyiz</h2>
+            <p>Konu ve etiket veritabanımızı editörlerimiz hazırlıyor ve her ay güncelliyoruz. Şu an hakkında bilgi bulunmayan (<strong>bilinmeyen</strong>) çok sayıda video ve kanal var.</p>
+            <p>Veritabanı, sizden gelen bildirimlerle gelişiyor. Önerileriniz için <a href="https://serviekibi.com/iletisim" target="_blank">serviekibi.com/iletisim</a></p>
+            <button class="btn btn-primary btn-full" data-karsilama-ileri>Anladım</button>
+        </section>
+
+        <section class="karsilama-adim" data-adim="4">
+            <h2>Bilinmeyen ve Kararsız İçerikler</h2>
+            <p>Hakkında yeterli veri olmayan içeriklere ne yapılsın? Bu seçimler <strong>Orta</strong> modda kullanılır; daha sonra Filtre sekmesinden değiştirebilirsiniz.</p>
+            <div id="karsilamaOrtaSecenekleri" class="karsilama-secenekler"></div>
+            <button id="btnKarsilamaBitir" class="btn btn-primary btn-full">Kurulumu Tamamla</button>
+        </section>
+    </div>
+
     <!-- PIN Giriş Ekranı (Kilitliyken) -->
     <div id="pinEkrani" class="pin-wrapper">
         <div class="pin-lock-icon">

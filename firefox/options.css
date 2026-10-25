@@ -1029,3 +1029,145 @@ body[data-mod="kati"] .mod-yay-kati {
   color: var(--danger);
   border-color: rgba(239, 68, 68, 0.25);
 }
+
+/* Karşılama Ekranı */
+html.tam-sayfa,
+html.tam-sayfa body {
+  width: auto;
+  min-width: 0;
+  max-width: none;
+  max-height: none;
+}
+
+html.tam-sayfa body > * {
+  width: 430px;
+  max-width: 100%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.karsilama {
+  padding: 22px 22px 26px;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  margin: auto 0;
+}
+
+.karsilama-noktalar {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  margin-bottom: 18px;
+}
+
+.karsilama-noktalar span {
+  width: 6px;
+  height: 6px;
+  border-radius: var(--radius-full);
+  background: var(--border-strong);
+  transition: all var(--transition-normal);
+}
+
+.karsilama-noktalar span.active {
+  width: 18px;
+  background: var(--accent-yt);
+}
+
+.karsilama-adim {
+  display: none;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 10px;
+  animation: fadeIn 0.25s ease-in-out;
+}
+
+.karsilama-adim.active {
+  display: flex;
+}
+
+.karsilama-adim h2 {
+  font-size: 18px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+}
+
+.karsilama-adim p {
+  font-size: 12.5px;
+  color: var(--text-secondary);
+  line-height: 1.55;
+}
+
+.karsilama-adim a {
+  color: var(--accent-indigo);
+  font-weight: 600;
+  text-decoration: none;
+}
+
+.karsilama-adim .btn-full {
+  margin-top: 6px;
+  padding: 10px;
+}
+
+.karsilama-ikon {
+  width: 52px;
+  height: 52px;
+  border-radius: var(--radius-full);
+  background: var(--danger-bg);
+  color: var(--accent-yt);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 4px;
+}
+
+.karsilama-ikon-bilgi {
+  background: rgba(99, 102, 241, 0.12);
+  color: var(--accent-indigo);
+}
+
+.karsilama-form {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.karsilama-form input {
+  text-align: center;
+  font-size: 15px;
+  letter-spacing: 4px;
+  padding: 10px;
+}
+
+.karsilama-hata {
+  min-height: 16px;
+  font-size: 11.5px !important;
+  font-weight: 600;
+  color: var(--danger) !important;
+}
+
+.karsilama-secenekler {
+  width: 100%;
+  text-align: left;
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  padding: 4px 12px 10px;
+}
+
+.btn-metin {
+  background: none;
+  border: none;
+  color: var(--text-muted);
+  font-size: 11.5px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px;
+}
+
+.btn-metin:hover {
+  color: var(--text-primary);
+  text-decoration: underline;
+}

@@ -73,4 +73,9 @@ browserAPI.runtime.onInstalled.addListener(async (details) => {
         const veritabani = await veritabaniniYukle();
         await filtreAyarlariniHazirla(veritabani);
     }
+
+    // İlk kurulumda karşılama ekranını yeni sekmede aç
+    if (details.reason === "install") {
+        browserAPI.tabs.create({ url: browserAPI.runtime.getURL('options.html?karsilama=1') });
+    }
 });
