@@ -1,0 +1,103 @@
+{
+  "semaSurumu": 1,
+  "surum": "2026.10.0",
+  "olusturulma": "2026-10-25T00:00:00.000Z",
+  "konular": [
+    {
+      "id": "ders-okul",
+      "ad": "Ders / Okul"
+    },
+    {
+      "id": "egitici",
+      "ad": "Eğitici"
+    },
+    {
+      "id": "bilim",
+      "ad": "Bilim"
+    },
+    {
+      "id": "teknoloji",
+      "ad": "Teknoloji"
+    },
+    {
+      "id": "haber",
+      "ad": "Haber / Güncel olaylar"
+    },
+    {
+      "id": "din",
+      "ad": "Din / Maneviyat"
+    },
+    {
+      "id": "eglence",
+      "ad": "Eğlence / Mizah"
+    },
+    {
+      "id": "oyun",
+      "ad": "Oyun"
+    },
+    {
+      "id": "spor",
+      "ad": "Spor"
+    },
+    {
+      "id": "muzik",
+      "ad": "Müzik"
+    },
+    {
+      "id": "film-sanat",
+      "ad": "Film / Dizi / Sanat"
+    },
+    {
+      "id": "yasam",
+      "ad": "Yaşam / Vlog"
+    },
+    {
+      "id": "finans",
+      "ad": "Finans / Girişim"
+    },
+    {
+      "id": "saglik",
+      "ad": "Sağlık / Kişisel gelişim"
+    },
+    {
+      "id": "cocuk",
+      "ad": "Çocuk içerikleri"
+    }
+  ],
+  "etiketler": [
+    {
+      "id": "kufur",
+      "ad": "Küfürlü içerik"
+    },
+    {
+      "id": "argo",
+      "ad": "Argolu içerik"
+    },
+    {
+      "id": "ai",
+      "ad": "AI ile üretilmiş içerik"
+    },
+    {
+      "id": "kumar",
+      "ad": "Kumar / bahis"
+    },
+    {
+      "id": "siddet",
+      "ad": "Şiddet"
+    },
+    {
+      "id": "zararli",
+      "ad": "Zararlı / uygunsuz içerik"
+    },
+    {
+      "id": "olumsuz-ornek",
+      "ad": "Olumsuz örnek"
+    },
+    {
+      "id": "spam",
+      "ad": "Spam / sahte içerik"
+    }
+  ],
+  "videolar": {},
+  "kanallar": {}
+}

@@ -5,7 +5,22 @@
 
 const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
 
+// Paketteki konu/etiket veritabanını storage'a yükler (her kurulum ve güncellemede)
+async function veritabaniniYukle() {
+    try {
+        const yanit = await fetch(browserAPI.runtime.getURL('data/veritabani.json'));
+        const veritabani = await yanit.json();
+        await browserAPI.storage.local.set({ veritabani });
+    } catch (e) {
+        console.error("Veritabanı yüklenemedi", e);
+    }
+}
+
 browserAPI.runtime.onInstalled.addListener((details) => {
+    if (details.reason === "install" || details.reason === "update") {
+        veritabaniniYukle();
+    }
+
     if (details.reason === "install") {
         const simdi = new Date();
         const tarihSaat = simdi.toLocaleDateString('tr-TR') + ", " + simdi.toLocaleTimeString('tr-TR', { hour: '2-digit', minute: '2-digit' });
