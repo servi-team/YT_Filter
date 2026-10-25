@@ -1,0 +1,20 @@
+{
+  "name": "yt-filter-store",
+  "version": "1.0.0",
+  "private": true,
+  "description": "YouTube Filter Store - editörlerin konu/etiket oyladığı ortak çalışma sitesi",
+  "main": "src/sunucu.js",
+  "scripts": {
+    "start": "node src/sunucu.js",
+    "test": "node --test \"tests/*.test.js\""
+  },
+  "engines": {
+    "node": ">=24"
+  },
+  "author": "Servi Ekibi",
+  "license": "Apache-2.0",
+  "dependencies": {
+    "express": "5.3.0",
+    "pg": "8.23.1"
+  }
+}
