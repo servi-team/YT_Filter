@@ -32,6 +32,7 @@ function uygulamaOlustur() {
     app.use('/api', oturumAraciOlustur(), jsonZorunlu);
     app.use('/api/oturum', require('./rotalar/oturum'));
     app.use('/api/editorler', require('./rotalar/editorler'));
+    app.use('/api/basliklar', require('./rotalar/basliklar'));
 
     app.use('/api', (req, res) => {
         res.status(404).json({ hata: 'Bulunamadı' });

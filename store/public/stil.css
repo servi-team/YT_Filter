@@ -275,6 +275,7 @@ input:focus, select:focus { border-color: var(--accent-indigo); }
   cursor: pointer;
 }
 .oy-dugme:hover { border-color: var(--border-strong); color: var(--text-primary); }
+.oy-dugme:disabled { opacity: 0.35; cursor: not-allowed; }
 .oy-dugme.secili[data-oy="1"] { background: var(--success-bg); border-color: var(--success); color: var(--success); }
 .oy-dugme.secili[data-oy="0"] { background: var(--warning-bg); border-color: var(--warning); color: var(--warning); }
 .oy-dugme.secili[data-oy="-1"] { background: var(--danger-bg); border-color: var(--danger); color: var(--danger); }
