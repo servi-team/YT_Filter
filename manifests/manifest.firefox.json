@@ -18,7 +18,7 @@
     "*://*.google.com.tr/*"
   ],
   "background": {
-    "scripts": ["background.js"]
+    "scripts": ["filtre_motoru.js", "background.js"]
   },
   "content_scripts": [
     {

@@ -45,6 +45,26 @@
         return filtre;
     }
 
+    /**
+     * v1 verisini (customMapping + preferences) v2 yapısına taşır.
+     * "İzin Ver" eylemli kategorilere atanmış ID'ler beyaz listeye,
+     * diğerleri kara listeye gider. "Etiketlenmemiş" engelleniyorsa
+     * orta modda bilinmeyen konular engellenir.
+     */
+    function eskiVeriyiTasi(customMapping, preferences, filtre) {
+        const tercihler = preferences || {};
+        const beyaz = [];
+        const kara = [];
+        Object.entries(customMapping || {}).forEach(([id, kategori]) => {
+            const eylem = tercihler[kategori] ? tercihler[kategori].enforcement : 'Remove Video Entirely';
+            (eylem === 'Allow Video' ? beyaz : kara).push(id.toLowerCase());
+        });
+        if (tercihler.untagged && tercihler.untagged.enforcement !== 'Allow Video') {
+            filtre.orta.bilinmeyenKonu = 'engel';
+        }
+        return { beyaz, kara };
+    }
+
     function kaydiNormallestir(kayit) {
         const k = kayit || {};
         return {
@@ -157,7 +177,7 @@
         return izin(konuBilinmeyen ? 'bilinmeyen-konu' : 'ana-konu', kaynak, k);
     }
 
-    const api = { MODLAR, BICIMLER, varsayilanFiltreAyarlari, eksikBasliklariTamamla, kararVer };
+    const api = { MODLAR, BICIMLER, varsayilanFiltreAyarlari, eksikBasliklariTamamla, eskiVeriyiTasi, kararVer };
 
     if (typeof module !== 'undefined' && module.exports) {
         module.exports = api;

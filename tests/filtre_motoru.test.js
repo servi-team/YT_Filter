@@ -1,6 +1,6 @@
 const test = require('node:test');
 const assert = require('node:assert/strict');
-const { kararVer, varsayilanFiltreAyarlari } = require('../src/filtre_motoru.js');
+const { kararVer, varsayilanFiltreAyarlari, eskiVeriyiTasi } = require('../src/filtre_motoru.js');
 
 const vt = {
     konular: ['teknoloji', 'haber', 'muzik', 'eglence', 'spor', 'oyun'].map(id => ({ id, ad: id })),
@@ -152,4 +152,19 @@ test('birden fazla engelde en sert biçim uygulanır', () => {
     assert.equal(kararVer({ videoId: 'ornekVideo1' }, vt, f).bicim, 'uyari');
     f.etiketler.ai.bicim = 'gizle';
     assert.equal(kararVer({ videoId: 'ornekVideo1' }, vt, f).bicim, 'gizle');
+});
+
+test('v1 verisi beyaz/kara listeye taşınır', () => {
+    const f = varsayilanFiltreAyarlari(vt);
+    const preferences = {
+        safe: { enforcement: 'Allow Video' },
+        violence: { enforcement: 'Remove Video Entirely' },
+        profanity: { enforcement: 'Blur Thumbnail' },
+        untagged: { enforcement: 'Remove Video Entirely' }
+    };
+    const customMapping = { '@guvenli': 'safe', '@kotu': 'violence', 'abcdefghijk': 'profanity', '@silinmis': 'yok' };
+    const sonuc = eskiVeriyiTasi(customMapping, preferences, f);
+    assert.deepEqual(sonuc.beyaz, ['@guvenli']);
+    assert.deepEqual(sonuc.kara, ['@kotu', 'abcdefghijk', '@silinmis']);
+    assert.equal(f.orta.bilinmeyenKonu, 'engel');
 });
