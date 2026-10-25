@@ -5,6 +5,16 @@ function turRozeti(tur) {
     return el('span', { class: 'rozet' }, tur === 'video' ? 'Video' : 'Kanal');
 }
 
+// Listedeki "Sonuç" sütunu: ana konu ve etiketler ya da oylamanın durumu
+function sonucOzeti(sonuc) {
+    if (!sonuc || sonuc.durum === 'oysuz') return el('span', { class: 'rozet' }, 'Oy bekliyor');
+    return el('div', { class: 'sonuc-deger' },
+        sonuc.anaKonu ? el('span', { class: 'rozet rozet-konu' }, sonuc.anaKonu) : null,
+        sonuc.etiketler.map(e => el('span', { class: 'rozet rozet-etiket' }, e)),
+        sonuc.durum === 'kararsiz' ? el('span', { class: 'rozet rozet-kararsiz' }, 'Kararsız') : null
+    );
+}
+
 function kapakGorseli(icerik, sinif = 'kapak') {
     return icerik.kapakUrl
         ? el('img', { class: sinif, src: icerik.kapakUrl, alt: '', loading: 'lazy' })
@@ -17,11 +27,11 @@ sayfaKaydet({
     menu: 'İçerikler',
     menuYolu: '#/icerikler',
     ciz: async (kok) => {
-        const durum = { arama: '', tur: '', sayfa: 1 };
+        const durum = { arama: '', tur: '', durum: '', sayfa: 1 };
         const listeAlani = el('div');
 
         const listeyiCiz = async () => {
-            const sorgu = new URLSearchParams({ arama: durum.arama, tur: durum.tur, sayfa: durum.sayfa });
+            const sorgu = new URLSearchParams({ arama: durum.arama, tur: durum.tur, durum: durum.durum, sayfa: durum.sayfa });
             const veri = await api(`/icerikler?${sorgu}`);
             const sayfaSayisi = Math.max(1, Math.ceil(veri.toplam / veri.sayfaBoyutu));
 
@@ -35,7 +45,7 @@ sayfaKaydet({
                     el('div', { class: 'icerik-alt' }, icerik.tur === 'video' ? (icerik.kanalAdi || icerik.kanalHandle || '') : icerik.youtubeId)
                 ),
                 el('td', {}, turRozeti(icerik.tur)),
-                el('td', { class: 'sonuc-hucre', dataset: { icerikId: icerik.id } }),
+                el('td', {}, sonucOzeti(icerik.sonuc)),
                 el('td', { class: 'icerik-alt' }, icerik.ekleyen || '—', el('br'), new Date(icerik.eklenme).toLocaleDateString('tr-TR'))
             ));
 
@@ -54,7 +64,6 @@ sayfaKaydet({
                     el('button', { class: 'dugme dugme-ikincil dugme-kucuk', disabled: durum.sayfa >= sayfaSayisi, onclick: () => { durum.sayfa++; listeyiCiz(); } }, 'Sonraki ›')
                 )
             );
-            document.dispatchEvent(new CustomEvent('icerik-listesi-cizildi', { detail: { icerikler: veri.icerikler, kok: listeAlani } }));
         };
 
         // Link ekleme formu
@@ -101,18 +110,25 @@ sayfaKaydet({
                 }, 300);
             }
         });
-        const cipler = el('div', { class: 'cipler' }, [['', 'Tümü'], ['video', 'Videolar'], ['kanal', 'Kanallar']].map(([deger, etiket]) =>
-            el('button', {
-                class: `cip ${durum.tur === deger ? 'aktif' : ''}`,
-                onclick: (e) => {
-                    durum.tur = deger;
-                    durum.sayfa = 1;
-                    cipler.querySelectorAll('.cip').forEach(c => c.classList.remove('aktif'));
-                    e.target.classList.add('aktif');
-                    listeyiCiz();
-                }
-            }, etiket)
-        ));
+        const cipGrubu = (alan, secenekler) => {
+            const grup = el('div', { class: 'cipler' }, secenekler.map(([deger, etiket]) =>
+                el('button', {
+                    class: `cip ${durum[alan] === deger ? 'aktif' : ''}`,
+                    onclick: (e) => {
+                        durum[alan] = deger;
+                        durum.sayfa = 1;
+                        grup.querySelectorAll('.cip').forEach(c => c.classList.remove('aktif'));
+                        e.target.classList.add('aktif');
+                        listeyiCiz();
+                    }
+                }, etiket)
+            ));
+            return grup;
+        };
+        const cipler = el('div', { class: 'cipler', style: 'gap: 14px' },
+            cipGrubu('tur', [['', 'Tümü'], ['video', 'Videolar'], ['kanal', 'Kanallar']]),
+            cipGrubu('durum', [['', 'Her durum'], ['oysuz', 'Oy bekleyen'], ['kararsiz', 'Kararsız'], ['sonuclu', 'Sonuçlu']])
+        );
 
         kok.append(
             el('div', { class: 'sayfa-baslik' },

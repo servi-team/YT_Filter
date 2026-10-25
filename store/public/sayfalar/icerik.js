@@ -36,6 +36,6 @@ sayfaKaydet({
             ),
             el('div', { id: 'oylamaAlani' })
         );
-        document.dispatchEvent(new CustomEvent('icerik-sayfasi-cizildi', { detail: { icerik, alan: document.getElementById('oylamaAlani') } }));
+        await oylamaAlaniniCiz(document.getElementById('oylamaAlani'), icerik);
     }
 });
