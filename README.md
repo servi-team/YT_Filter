@@ -11,12 +11,13 @@ Proje, **Tek Gerçek Kaynak (Single Source of Truth)** mimarisine göre yapılan
 ```text
 YT_Filter/
 ├── src/                          # Ortak Kaynak Kodlar (Tek Gerçek Kaynak)
-│   ├── background.js             # Kurulum ve varsayılan ayarları yükleyen servis
-│   ├── content.js                # YouTube DOM denetleyicisi, filtreleme & rozetleme motoru
+│   ├── background.js             # Kurulum, veritabanı yükleme ve ayar taşıma servisi
+│   ├── filtre_motoru.js          # Serbest/orta/katı karar algoritması (saf fonksiyonlar)
+│   ├── content.js                # YouTube DOM denetleyicisi, filtreleme & rozetleme
 │   ├── inject_helper.js          # YouTube dahili nesnelerine erişen MAIN world yardımcısı
 │   ├── inject.css                # Filtre ve rozet CSS stilleri
-│   ├── options.html              # Yönetim, PIN, kural ve ayar arayüzü
-│   └── options.js                # Arayüz mantığı, veri yönetimi & içe/dışa aktarma
+│   ├── options.html/.js/.css     # Karşılama, filtre, liste, PIN ve sistem arayüzü
+│   └── data/veritabani.json      # Store'dan dışa aktarılan konu/etiket veritabanı
 │
 ├── manifests/                    # Tarayıcıya Özel Manifest V3 Tanımları
 │   ├── manifest.chromium.json    # Chromium MV3 (Service Worker, Web Accessible Resources)
@@ -26,8 +27,14 @@ YT_Filter/
 ├── firefox/                      # Firefox için doğrudan yüklenebilir eklenti klasörü
 │
 ├── scripts/
-│   └── build.js                  # Bağımsız, hızlı Node.js derleme ve senkronizasyon aracı
+│   ├── build.js                  # Bağımsız, hızlı Node.js derleme ve senkronizasyon aracı
+│   └── db-import.js              # Store dışa aktarımını doğrulayıp içe aktarır
 │
+├── tests/                        # node:test birim testleri
+├── store/                        # Editör sitesi: YouTube Filter Store (Docker)
+├── docs/
+│   ├── SPESIFIKASYON.md          # Konu/etiket, modlar ve algoritma kuralları
+│   └── veritabani-semasi.md      # Store ↔ eklenti JSON sözleşmesi
 ├── package.json                  # Proje ve derleme komutları
 └── README.md
 ```
@@ -69,7 +76,21 @@ npm run build:firefox
 
 # Canlı izleme modu (src/ veya manifests/ değiştiğinde otomatik senkronize eder)
 npm run watch
+
+# Birim testleri (filtre motoru ve veritabanı içe aktarma)
+npm test
 ```
+
+### Veritabanı Güncelleme (Aylık)
+
+Eklenti hiçbir sunucuya bağlanmaz. Konu/etiket verisi, editörlerin Store sitesinde (`store/`) birlikte oyladığı veritabanından gelir:
+
+1. Store yönetim panelinden veritabanını **JSON olarak dışa aktarın**.
+2. Dosyayı içe aktarın. Şema doğrulanır, eski sürüm reddedilir ve değişiklik özeti yazılır:
+   ```bash
+   npm run db:import -- indirilen-dosya.json
+   ```
+3. `npm run build` ile tarayıcı klasörlerini güncelleyip yeni eklenti sürümünü yayınlayın. Eklenti güncellendiğinde yeni veritabanı otomatik yüklenir.
 
 > **Not:** Derleme betiği sıfır harici bağımlılık (`zero dependency`) ile saf Node.js kullanır. Herhangi bir ağır `node_modules` paketine ihtiyaç duymaz, milisaniyeler içinde tamamlanır.
 
@@ -77,14 +98,16 @@ npm run watch
 
 ## ✨ Temel Özellikler
 
-- 🔒 **PIN Güvenlik Koruması:** Ayarlar ekranı varsayılan olarak `1234` PIN kodu ile korunur. PIN kodu değiştirilebilir veya istenirse koruma devre dışı bırakılabilir.
-- 🏷️ **Dinamik Etiket ve Eylem Kuralları:**
-  - `Küfür/Argo`, `Şiddet`, `Eğitici`, `Güvenli`, `Etiketlenmemiş` temel etiketleri.
-  - İstenildiği kadar **Yeni Özel Etiket** tanımlayabilme (örn. "Oyun", "Haber", "Dizi").
-  - Her etiket için bağımsız eylem: **İzin Ver**, **Bulanıklaştır (Blur)**, **Tamamen Kaldır**.
-  - Her etiket için rozet görünürlüğü: **Rozet Göster** veya **Rozet Gizle**.
-- 🎯 **Kanal ve Video Eşleştirme:**
-  - Kanal handle'ı (`@kanaladi`), Video ID'si (`dQw4w9WgXcQ`) veya doğrudan YouTube video linkini yapıştırarak istediğiniz kategoriye kolayca atayabilme.
+- 🎚️ **Üç Filtreleme Modu:** Serbest, Orta ve Katı. Kurallar için [docs/SPESIFIKASYON.md](docs/SPESIFIKASYON.md).
+- 🏷️ **Konu ve Etiket Filtresi:**
+  - 15 varsayılan konu (Ders/Okul, Bilim, Oyun, Spor…) ve 8 etiket (Küfür, Şiddet, Kumar, AI ile üretilmiş…).
+  - Her konu ve etiket için filtre düğmesi ve engelleme biçimi: **Gizle**, **Bulanıklaştır** veya **Uyarı sayfası**.
+  - Engellenen bir etiket, mod ne olursa olsun içeriği engeller.
+- ❔ **Bilinmeyen ve Kararsız İçerikler:** Orta modda bilinmeyen/kararsız konu ve etiketler için ayrı ayrı izin ver/engelle seçimi.
+- 📺 **Kanal Kontrolü:** Video hakkında veri yoksa kanalın konu ve etiketlerine bakılır (kapatılabilir).
+- ✅ **Beyaz ve Kara Liste:** Kanal handle'ı (`@kanaladi`), Video ID'si veya YouTube linki ile eklenir; filtre kurallarından önce uygulanır.
+- 👋 **Karşılama Ekranı:** İlk kurulumda PIN seçimi ve bilinmeyen/kararsız içerik tercihleri.
+- 🔒 **PIN Güvenlik Koruması:** Ayarlar ekranı PIN ile korunur. PIN değiştirilebilir veya istenirse koruma devre dışı bırakılabilir.
 - 👁️ **Arayüz Temizleme Ayarları:**
   - YouTube Shorts videolarını ve sol menü butonunu gizleme.
   - Yorumlar bölümünü gizleme.
