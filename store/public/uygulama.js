@@ -29,9 +29,10 @@ function el(etiket, ozellikler = {}, ...cocuklar) {
 }
 
 class ApiHatasi extends Error {
-    constructor(durum, mesaj) {
+    constructor(durum, mesaj, veri) {
         super(mesaj);
         this.durum = durum;
+        this.veri = veri;
     }
 }
 
@@ -49,7 +50,7 @@ async function api(yol, { yontem = 'GET', govde, sessiz401 = false } = {}) {
         ustBilgiyiCiz();
         location.hash = '#/giris';
     }
-    if (!yanit.ok) throw new ApiHatasi(yanit.status, (veri && veri.hata) || 'İstek başarısız oldu');
+    if (!yanit.ok) throw new ApiHatasi(yanit.status, (veri && veri.hata) || 'İstek başarısız oldu', veri);
     return veri;
 }
 

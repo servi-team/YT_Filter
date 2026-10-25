@@ -33,6 +33,7 @@ function uygulamaOlustur() {
     app.use('/api/oturum', require('./rotalar/oturum'));
     app.use('/api/editorler', require('./rotalar/editorler'));
     app.use('/api/basliklar', require('./rotalar/basliklar'));
+    app.use('/api/icerikler', require('./rotalar/icerikler').router);
 
     app.use('/api', (req, res) => {
         res.status(404).json({ hata: 'Bulunamadı' });
