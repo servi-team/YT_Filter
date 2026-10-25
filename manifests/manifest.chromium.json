@@ -21,7 +21,7 @@
         "*://*.google.com/*", 
         "*://*.google.com.tr/*"
       ],
-      "js": ["content.js"],
+      "js": ["filtre_motoru.js", "content.js"],
       "css": ["inject.css"],
       "run_at": "document_idle",
       "all_frames": true

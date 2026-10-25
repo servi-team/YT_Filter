@@ -59,10 +59,16 @@ function arayuzAyarlariniUygula() {
         .yt-filter-badge { display: inline-block; padding: 2px 6px; border-radius: 4px; font-size: 11px; font-weight: bold; color: white; box-shadow: 0 2px 4px rgba(0,0,0,0.3); }
         
         .yt-filter-badge-safe { background-color: #2ecc71; border: 1px solid #27ae60; }
-        .yt-filter-badge-educational { background-color: #3498db; border: 1px solid #2980b9; }
+        .yt-filter-badge-konu { background-color: #3498db; border: 1px solid #2980b9; }
         .yt-filter-badge-warning { background-color: #e74c3c; border: 1px solid #c0392b; }
-        .yt-filter-badge-profanity { background-color: #e67e22; border: 1px solid #d35400; }
         .yt-filter-badge-untagged { background-color: #7f8c8d; border: 1px solid #95a5a6; }
+
+        /* Uyarı sayfası: içeriğin üstünü kapatan katman */
+        .yt-filter-uyari { position: absolute !important; inset: 0 !important; z-index: 300 !important; display: flex !important; flex-direction: column; align-items: center; justify-content: center; gap: 4px; padding: 8px; text-align: center; background: rgba(15, 15, 15, 0.94); color: #fff; font-family: Roboto, Arial, sans-serif; border-radius: 12px; cursor: not-allowed; }
+        .yt-filter-uyari strong { font-size: 14px; }
+        .yt-filter-uyari span { font-size: 12px; opacity: 0.75; }
+        .yt-filter-uyari-oynatici { border-radius: 0; }
+        .yt-filter-uyari-oynatici strong { font-size: 20px; }
         
         /* Thumbnail Blur etkileri */
         [data-yt-filter-blur="true"] img,
@@ -136,36 +142,37 @@ function checkWatchPage() {
             }
         }
 
-        let etiketTuru = "untagged";
-        let safeVideoId = videoId.toLowerCase();
-        let safeChannelHandle = channelHandle ? channelHandle.toLowerCase() : "";
-        
-        if (hafiza.customMapping) {
-            if (safeVideoId && hafiza.customMapping[safeVideoId]) {
-                etiketTuru = hafiza.customMapping[safeVideoId];
-            } else if (safeChannelHandle && hafiza.customMapping[safeChannelHandle]) {
-                etiketTuru = hafiza.customMapping[safeChannelHandle];
-            }
-        }
-
-        const pref = (hafiza.preferences && hafiza.preferences[etiketTuru]) 
-            ? hafiza.preferences[etiketTuru] 
-            : { visibility: "Show Badge", enforcement: "Remove Video Entirely" };
+        const karar = motorKarari(videoId, channelHandle);
 
         const ytdPlayer = document.querySelector('#ytd-player');
         const embedPlayer = document.querySelector('#player');
         const html5Player = document.querySelector('.html5-video-player');
         const videoElements = document.querySelectorAll('video');
-        
-        let isBlocked = (pref.enforcement === "Remove Video Entirely");
-        let isBlurred = (pref.enforcement === "Blur Thumbnail");
+
+        let isBlocked = (karar.bicim === "gizle");
+        let isBlurred = (karar.bicim === "bulaniklastir");
+        let isWarned = (karar.bicim === "uyari");
 
         // Shorts Videolar Gizliyse, URL'den Direkt Girmeyi De Kesin Engelle
         if (url.pathname.startsWith('/shorts/') && hafiza.ayarlar?.shortsGizle) {
             isBlocked = true;
+            isWarned = false;
         }
 
-        if (isBlocked) {
+        const mevcutUyari = document.querySelector('.yt-filter-uyari-oynatici');
+        if (mevcutUyari && !isWarned) mevcutUyari.remove();
+
+        if (isWarned) {
+            // Oynatıcının üstü uyarı katmanıyla kapatılır, video durdurulur ve susturulur
+            const kapsayici = html5Player || embedPlayer || ytdPlayer;
+            if (kapsayici && !kapsayici.querySelector('.yt-filter-uyari-oynatici')) {
+                kapsayici.appendChild(uyariKatmaniOlustur('yt-filter-uyari yt-filter-uyari-oynatici', karar));
+            }
+            videoElements.forEach(v => {
+                v.muted = true;
+                if (!v.paused) v.pause();
+            });
+        } else if (isBlocked) {
             if (ytdPlayer) ytdPlayer.style.setProperty('display', 'none', 'important');
             if (embedPlayer) embedPlayer.style.setProperty('display', 'none', 'important');
             if (html5Player) html5Player.style.setProperty('display', 'none', 'important');
@@ -216,18 +223,6 @@ function checkWatchPage() {
             });
         }
     }
-}
-
-function etiketRengiUret(metin) {
-    let hash = 0;
-    for (let i = 0; i < metin.length; i++) {
-        hash = metin.charCodeAt(i) + ((hash << 5) - hash);
-    }
-    const hue = Math.abs(hash) % 360;
-    return {
-        bg: `hsl(${hue}, 65%, 45%)`,
-        border: `hsl(${hue}, 70%, 35%)`
-    };
 }
 
 function findAllLinks(root) {
@@ -286,72 +281,91 @@ function extractChannelHandle(element) {
     return null;
 }
 
+// Filtre motorundan karar alır; ayarlar henüz yüklenmediyse içeriğe dokunulmaz
+function motorKarari(videoId, channelHandle) {
+    if (!hafiza.filtre || typeof YTFiltreMotoru === 'undefined') {
+        return { sonuc: 'izin', bicim: null, sebep: null, kaynak: null, kayit: null };
+    }
+    return YTFiltreMotoru.kararVer(
+        { videoId, kanal: channelHandle },
+        hafiza.veritabani,
+        hafiza.filtre,
+        { beyaz: hafiza.beyazListe, kara: hafiza.karaListe }
+    );
+}
+
+function baslikAdi(tur, id) {
+    const liste = (hafiza.veritabani && hafiza.veritabani[tur]) || [];
+    const baslik = liste.find(b => b.id === id);
+    return baslik ? baslik.ad : id;
+}
+
+const SEBEP_ACIKLAMALARI = {
+    'kara-liste': 'Kara listede',
+    'etiket': 'Engellenen etiket',
+    'konu': 'Engellenen konu',
+    'ana-konu': 'Engellenen ana konu',
+    'bilinmeyen-konu': 'Konusu bilinmiyor',
+    'bilinmeyen-etiket': 'Etiketleri bilinmiyor',
+    'kararsiz-konu': 'Kararsız konu',
+    'kararsiz-etiket': 'Kararsız etiket'
+};
+
+function uyariKatmaniOlustur(sinif, karar) {
+    const katman = document.createElement('div');
+    katman.className = sinif;
+    const baslik = document.createElement('strong');
+    baslik.textContent = 'Bu içerik filtrelendi';
+    const aciklama = document.createElement('span');
+    aciklama.textContent = SEBEP_ACIKLAMALARI[karar.sebep] || '';
+    katman.append(baslik, aciklama);
+    // Tıklamalar alttaki videoya ulaşmasın
+    katman.addEventListener('click', e => { e.preventDefault(); e.stopPropagation(); }, true);
+    return katman;
+}
+
 function applyFilter(element, videoId, channelHandle) {
-    let etiketTuru = "untagged";
+    const karar = motorKarari(videoId, channelHandle);
 
-    if (hafiza.customMapping) {
-        let safeVideoId = videoId ? videoId.toLowerCase() : "";
-        let safeChannelHandle = channelHandle ? channelHandle.toLowerCase() : "";
-        
-        if (safeVideoId && hafiza.customMapping[safeVideoId]) {
-            etiketTuru = hafiza.customMapping[safeVideoId];
-        } else if (safeChannelHandle && hafiza.customMapping[safeChannelHandle]) {
-            etiketTuru = hafiza.customMapping[safeChannelHandle];
-        }
-    }
-
-    const pref = (hafiza.preferences && hafiza.preferences[etiketTuru]) 
-        ? hafiza.preferences[etiketTuru] 
-        : { visibility: "Show Badge", enforcement: "Remove Video Entirely" };
-
-    if (pref.enforcement === "Remove Video Entirely") {
+    if (karar.bicim === "gizle") {
         element.classList.add('yt-filter-hidden');
-    } else if (pref.enforcement === "Blur Thumbnail") {
+    } else if (karar.bicim === "bulaniklastir") {
         element.dataset.ytFilterBlur = "true";
+    } else if (karar.bicim === "uyari") {
+        element.style.setProperty('position', 'relative', 'important');
+        element.appendChild(uyariKatmaniOlustur('yt-filter-uyari', karar));
     }
 
-    if (pref.visibility === "Show Badge") {
-        addBadge(element, etiketTuru);
+    if (hafiza.filtre && hafiza.filtre.rozetGoster !== false) {
+        addBadges(element, karar);
     }
 }
 
-function addBadge(element, tag) {
+function addBadges(element, karar) {
     if (element.querySelector('.yt-filter-badge-container')) return;
     const container = document.createElement('div');
     container.className = 'yt-filter-badge-container';
-    
-    const badge = document.createElement('span');
-    const isCore = ["profanity", "violence", "educational", "safe", "untagged"].includes(tag);
-    const tagLabels = { "profanity": "Küfür/Argo", "violence": "Şiddet", "educational": "Eğitici", "safe": "Güvenli", "untagged": "Etiketlenmemiş" };
-    
-    let etiketAdi = tag;
-    if (isCore) {
-        etiketAdi = tagLabels[tag];
-    } else {
-        etiketAdi = (hafiza.preferences && hafiza.preferences[tag] && hafiza.preferences[tag].adi) 
-            ? hafiza.preferences[tag].adi 
-            : tag;
-    }
 
-    badge.textContent = etiketAdi.toLocaleUpperCase('tr-TR');
-    
-    if (isCore) {
-        let typeClass = 'yt-filter-badge-untagged';
-        if (tag === 'safe') typeClass = 'yt-filter-badge-safe';
-        else if (tag === 'educational') typeClass = 'yt-filter-badge-educational';
-        else if (tag === 'violence') typeClass = 'yt-filter-badge-warning';
-        else if (tag === 'profanity') typeClass = 'yt-filter-badge-profanity';
-        
-        badge.className = `yt-filter-badge ${typeClass}`;
-    } else {
-        const renkler = etiketRengiUret(tag);
-        badge.className = 'yt-filter-badge';
-        badge.style.backgroundColor = renkler.bg;
-        badge.style.border = `1px solid ${renkler.border}`;
-    }
+    const rozetEkle = (metin, sinif) => {
+        const badge = document.createElement('span');
+        badge.className = `yt-filter-badge ${sinif}`;
+        badge.textContent = metin.toLocaleUpperCase('tr-TR');
+        container.appendChild(badge);
+    };
 
-    container.appendChild(badge);
-    
+    const kayit = karar.kayit;
+    if (kayit && kayit.anaKonu) {
+        rozetEkle(baslikAdi('konular', kayit.anaKonu), 'yt-filter-badge-konu');
+    } else if (karar.sebep !== 'beyaz-liste' && karar.sebep !== 'kara-liste') {
+        rozetEkle('Bilinmeyen', 'yt-filter-badge-untagged');
+    }
+    if (kayit) {
+        kayit.etiketler.forEach(id => rozetEkle(baslikAdi('etiketler', id), 'yt-filter-badge-warning'));
+    }
+    if (karar.sebep === 'beyaz-liste') rozetEkle('Beyaz liste', 'yt-filter-badge-safe');
+    if (karar.sebep === 'kara-liste') rozetEkle('Kara liste', 'yt-filter-badge-warning');
+
+    if (!container.childElementCount) return;
     element.style.setProperty('position', 'relative', 'important');
     element.appendChild(container);
 }
@@ -398,6 +412,7 @@ function resetElement(element) {
     element.classList.remove('yt-filter-hidden');
     const badge = element.querySelector('.yt-filter-badge-container');
     if (badge) badge.remove();
+    element.querySelectorAll(':scope > .yt-filter-uyari').forEach(katman => katman.remove());
 }
 
 function finishProcessing(element, videoId, channelHandle) {
