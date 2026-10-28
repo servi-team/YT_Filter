@@ -1,0 +1,923 @@
+{
+  "id": "a2995537-86c9-440c-80f2-58a40d58f4dc",
+  "prevId": "00000000-0000-0000-0000-000000000000",
+  "version": "7",
+  "dialect": "postgresql",
+  "tables": {
+    "public.ekleme_talepleri": {
+      "name": "ekleme_talepleri",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hedef_turu": {
+          "name": "hedef_turu",
+          "type": "hedef_turu",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "anahtar": {
+          "name": "anahtar",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "link": {
+          "name": "link",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "durum": {
+          "name": "durum",
+          "type": "talep_durumu",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "'bekliyor'"
+        },
+        "talep_sayisi": {
+          "name": "talep_sayisi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true,
+          "default": 1
+        },
+        "ilk_talep": {
+          "name": "ilk_talep",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "son_talep": {
+          "name": "son_talep",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "isleyen": {
+          "name": "isleyen",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "talepler_tekil": {
+          "name": "talepler_tekil",
+          "columns": [
+            {
+              "expression": "hedef_turu",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "anahtar",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "ekleme_talepleri_isleyen_hesaplar_id_fk": {
+          "name": "ekleme_talepleri_isleyen_hesaplar_id_fk",
+          "tableFrom": "ekleme_talepleri",
+          "tableTo": "hesaplar",
+          "columnsFrom": [
+            "isleyen"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.engeller": {
+      "name": "engeller",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "tur": {
+          "name": "tur",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deger": {
+          "name": "deger",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sebep": {
+          "name": "sebep",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "yapan": {
+          "name": "yapan",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "olusturma": {
+          "name": "olusturma",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "bitis": {
+          "name": "bitis",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "engeller_tekil": {
+          "name": "engeller_tekil",
+          "columns": [
+            {
+              "expression": "tur",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "deger",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "engeller_yapan_hesaplar_id_fk": {
+          "name": "engeller_yapan_hesaplar_id_fk",
+          "tableFrom": "engeller",
+          "tableTo": "hesaplar",
+          "columnsFrom": [
+            "yapan"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.hesaplar": {
+      "name": "hesaplar",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "eposta": {
+          "name": "eposta",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "parola_ozeti": {
+          "name": "parola_ozeti",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "rol": {
+          "name": "rol",
+          "type": "rol",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "aktif": {
+          "name": "aktif",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": true
+        },
+        "olusturma": {
+          "name": "olusturma",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "hesaplar_eposta_tekil": {
+          "name": "hesaplar_eposta_tekil",
+          "columns": [
+            {
+              "expression": "lower(\"eposta\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {},
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.kanallar": {
+      "name": "kanallar",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "handle": {
+          "name": "handle",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ad": {
+          "name": "ad",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ekleyen": {
+          "name": "ekleyen",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "olusturma": {
+          "name": "olusturma",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "kanallar_handle_tekil": {
+          "name": "kanallar_handle_tekil",
+          "columns": [
+            {
+              "expression": "lower(\"handle\")",
+              "asc": true,
+              "isExpression": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"kanallar\".\"handle\" is not null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "kanallar_ekleyen_hesaplar_id_fk": {
+          "name": "kanallar_ekleyen_hesaplar_id_fk",
+          "tableFrom": "kanallar",
+          "tableTo": "hesaplar",
+          "columnsFrom": [
+            "ekleyen"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.kilitler": {
+      "name": "kilitler",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hedef_turu": {
+          "name": "hedef_turu",
+          "type": "hedef_turu",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hedef_id": {
+          "name": "hedef_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "yapan": {
+          "name": "yapan",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gerekce": {
+          "name": "gerekce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "sonuc": {
+          "name": "sonuc",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "kilit_zamani": {
+          "name": "kilit_zamani",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "acilis_zamani": {
+          "name": "acilis_zamani",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        }
+      },
+      "indexes": {
+        "kilitler_aktif_tekil": {
+          "name": "kilitler_aktif_tekil",
+          "columns": [
+            {
+              "expression": "hedef_turu",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hedef_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "where": "\"kilitler\".\"acilis_zamani\" is null",
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "kilitler_yapan_hesaplar_id_fk": {
+          "name": "kilitler_yapan_hesaplar_id_fk",
+          "tableFrom": "kilitler",
+          "tableTo": "hesaplar",
+          "columnsFrom": [
+            "yapan"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.moderasyon_kayitlari": {
+      "name": "moderasyon_kayitlari",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "islem": {
+          "name": "islem",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "yapan": {
+          "name": "yapan",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hedef_turu": {
+          "name": "hedef_turu",
+          "type": "hedef_turu",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "hedef_id": {
+          "name": "hedef_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "gerekce": {
+          "name": "gerekce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ayrinti": {
+          "name": "ayrinti",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "zaman": {
+          "name": "zaman",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "moderasyon_kayitlari_yapan_hesaplar_id_fk": {
+          "name": "moderasyon_kayitlari_yapan_hesaplar_id_fk",
+          "tableFrom": "moderasyon_kayitlari",
+          "tableTo": "hesaplar",
+          "columnsFrom": [
+            "yapan"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.oylar": {
+      "name": "oylar",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "uuid",
+          "primaryKey": true,
+          "notNull": true,
+          "default": "gen_random_uuid()"
+        },
+        "hedef_turu": {
+          "name": "hedef_turu",
+          "type": "hedef_turu",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "hedef_id": {
+          "name": "hedef_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oge_turu": {
+          "name": "oge_turu",
+          "type": "oge_turu",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "oge_id": {
+          "name": "oge_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "deger": {
+          "name": "deger",
+          "type": "oy_degeri",
+          "typeSchema": "public",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "tarayici_id": {
+          "name": "tarayici_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "ip_ozeti": {
+          "name": "ip_ozeti",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geri_alindi": {
+          "name": "geri_alindi",
+          "type": "boolean",
+          "primaryKey": false,
+          "notNull": true,
+          "default": false
+        },
+        "geri_alan": {
+          "name": "geri_alan",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geri_alma_gerekce": {
+          "name": "geri_alma_gerekce",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "geri_alma_zamani": {
+          "name": "geri_alma_zamani",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "olusturma": {
+          "name": "olusturma",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "guncelleme": {
+          "name": "guncelleme",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {
+        "oylar_tekil": {
+          "name": "oylar_tekil",
+          "columns": [
+            {
+              "expression": "hedef_turu",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hedef_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "oge_turu",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "oge_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "tarayici_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": true,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "oylar_hedef": {
+          "name": "oylar_hedef",
+          "columns": [
+            {
+              "expression": "hedef_turu",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "hedef_id",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        },
+        "oylar_ip_zaman": {
+          "name": "oylar_ip_zaman",
+          "columns": [
+            {
+              "expression": "ip_ozeti",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            },
+            {
+              "expression": "guncelleme",
+              "isExpression": false,
+              "asc": true,
+              "nulls": "last"
+            }
+          ],
+          "isUnique": false,
+          "concurrently": false,
+          "method": "btree",
+          "with": {}
+        }
+      },
+      "foreignKeys": {
+        "oylar_geri_alan_hesaplar_id_fk": {
+          "name": "oylar_geri_alan_hesaplar_id_fk",
+          "tableFrom": "oylar",
+          "tableTo": "hesaplar",
+          "columnsFrom": [
+            "geri_alan"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.videolar": {
+      "name": "videolar",
+      "schema": "",
+      "columns": {
+        "id": {
+          "name": "id",
+          "type": "text",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "baslik": {
+          "name": "baslik",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "kanal_id": {
+          "name": "kanal_id",
+          "type": "text",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "ekleyen": {
+          "name": "ekleyen",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "olusturma": {
+          "name": "olusturma",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "videolar_kanal_id_kanallar_id_fk": {
+          "name": "videolar_kanal_id_kanallar_id_fk",
+          "tableFrom": "videolar",
+          "tableTo": "kanallar",
+          "columnsFrom": [
+            "kanal_id"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        },
+        "videolar_ekleyen_hesaplar_id_fk": {
+          "name": "videolar_ekleyen_hesaplar_id_fk",
+          "tableFrom": "videolar",
+          "tableTo": "hesaplar",
+          "columnsFrom": [
+            "ekleyen"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    },
+    "public.yayin_surumleri": {
+      "name": "yayin_surumleri",
+      "schema": "",
+      "columns": {
+        "veri_surumu": {
+          "name": "veri_surumu",
+          "type": "integer",
+          "primaryKey": true,
+          "notNull": true
+        },
+        "olusturma": {
+          "name": "olusturma",
+          "type": "timestamp with time zone",
+          "primaryKey": false,
+          "notNull": true,
+          "default": "now()"
+        },
+        "kanal_sayisi": {
+          "name": "kanal_sayisi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "video_sayisi": {
+          "name": "video_sayisi",
+          "type": "integer",
+          "primaryKey": false,
+          "notNull": true
+        },
+        "onaylayan": {
+          "name": "onaylayan",
+          "type": "uuid",
+          "primaryKey": false,
+          "notNull": false
+        },
+        "icerik": {
+          "name": "icerik",
+          "type": "jsonb",
+          "primaryKey": false,
+          "notNull": true
+        }
+      },
+      "indexes": {},
+      "foreignKeys": {
+        "yayin_surumleri_onaylayan_hesaplar_id_fk": {
+          "name": "yayin_surumleri_onaylayan_hesaplar_id_fk",
+          "tableFrom": "yayin_surumleri",
+          "tableTo": "hesaplar",
+          "columnsFrom": [
+            "onaylayan"
+          ],
+          "columnsTo": [
+            "id"
+          ],
+          "onDelete": "set null",
+          "onUpdate": "no action"
+        }
+      },
+      "compositePrimaryKeys": {},
+      "uniqueConstraints": {},
+      "policies": {},
+      "checkConstraints": {},
+      "isRLSEnabled": false
+    }
+  },
+  "enums": {
+    "public.hedef_turu": {
+      "name": "hedef_turu",
+      "schema": "public",
+      "values": [
+        "kanal",
+        "video"
+      ]
+    },
+    "public.oge_turu": {
+      "name": "oge_turu",
+      "schema": "public",
+      "values": [
+        "konu",
+        "etiket"
+      ]
+    },
+    "public.oy_degeri": {
+      "name": "oy_degeri",
+      "schema": "public",
+      "values": [
+        "up",
+        "kararsiz",
+        "down"
+      ]
+    },
+    "public.rol": {
+      "name": "rol",
+      "schema": "public",
+      "values": [
+        "editor",
+        "admin"
+      ]
+    },
+    "public.talep_durumu": {
+      "name": "talep_durumu",
+      "schema": "public",
+      "values": [
+        "bekliyor",
+        "kabul",
+        "red"
+      ]
+    }
+  },
+  "schemas": {},
+  "sequences": {},
+  "roles": {},
+  "policies": {},
+  "views": {},
+  "_meta": {
+    "columns": {},
+    "schemas": {},
+    "tables": {}
+  }
+}
