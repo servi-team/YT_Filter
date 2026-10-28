@@ -1,0 +1,33 @@
+.yigin {
+  display: grid;
+  gap: 0.55rem;
+}
+
+.cizgi {
+  display: block;
+  border-radius: 6px;
+  background: linear-gradient(
+    90deg,
+    var(--cizgi) 25%,
+    color-mix(in srgb, var(--cizgi) 45%, var(--yuzey)) 50%,
+    var(--cizgi) 75%
+  );
+  background-size: 200% 100%;
+  animation: parla 1.4s ease-in-out infinite;
+}
+
+@keyframes parla {
+  0% {
+    background-position: 200% 0;
+  }
+
+  100% {
+    background-position: -200% 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cizgi {
+    animation: none;
+  }
+}

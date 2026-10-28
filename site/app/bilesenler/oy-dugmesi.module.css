@@ -1,0 +1,88 @@
+.dugme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.38rem;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0.42rem 0.65rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 10px;
+  background: var(--yuzey);
+  color: var(--ikincil);
+  font-family: var(--font-govde);
+  font-size: 0.85rem;
+  font-weight: 700;
+  line-height: 1;
+  transition:
+    background-color var(--gecis),
+    border-color var(--gecis),
+    color var(--gecis),
+    transform var(--gecis);
+}
+
+.dugme:hover:not(:disabled) {
+  border-color: currentColor;
+  color: var(--murekkep);
+}
+
+.dugme:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.dugme:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.sayi {
+  min-width: 1.1em;
+  font-family: var(--font-kimlik);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+
+.soru {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  border: 1.5px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-kimlik);
+  font-size: 0.68rem;
+  line-height: 1;
+}
+
+.up:hover:not(:disabled),
+.up.secili {
+  border-color: color-mix(in srgb, var(--yesil) 55%, var(--cizgi));
+  background: color-mix(in srgb, var(--yesil) 11%, var(--yuzey));
+  color: var(--yesil);
+}
+
+.kararsiz:hover:not(:disabled),
+.kararsiz.secili {
+  border-color: color-mix(in srgb, var(--amber) 55%, var(--cizgi));
+  background: color-mix(in srgb, var(--amber) 11%, var(--yuzey));
+  color: var(--amber);
+}
+
+.down:hover:not(:disabled),
+.down.secili {
+  border-color: color-mix(in srgb, var(--kirmizi) 55%, var(--cizgi));
+  background: color-mix(in srgb, var(--kirmizi) 11%, var(--yuzey));
+  color: var(--kirmizi);
+}
+
+.secili {
+  font-weight: 800;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dugme:active:not(:disabled) {
+    transform: none;
+  }
+}

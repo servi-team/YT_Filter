@@ -1,0 +1,100 @@
+.dugme {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 44px;
+  padding: 0.7rem 1.15rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  font-family: var(--font-govde);
+  font-size: 0.95rem;
+  font-weight: 700;
+  line-height: 1.1;
+  text-align: center;
+  text-decoration: none;
+  transition:
+    background-color var(--gecis),
+    border-color var(--gecis),
+    color var(--gecis),
+    transform var(--gecis);
+}
+
+.dugme:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
+.dugme:active:not(:disabled) {
+  transform: translateY(1px);
+}
+
+.birincil {
+  background: var(--sinyal);
+  color: var(--yuzey);
+}
+
+.birincil:hover:not(:disabled) {
+  background: var(--sinyal-koyu);
+}
+
+.ikincil {
+  border-color: var(--cizgi);
+  background: transparent;
+  color: var(--murekkep);
+}
+
+.ikincil:hover:not(:disabled) {
+  border-color: var(--sinyal);
+  color: var(--sinyal-koyu);
+}
+
+.tehlike {
+  background: var(--kirmizi);
+  color: var(--yuzey);
+}
+
+.tehlike:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.hayalet {
+  background: transparent;
+  color: var(--ikincil);
+}
+
+.hayalet:hover:not(:disabled) {
+  background: color-mix(in srgb, var(--cizgi) 35%, transparent);
+  color: var(--murekkep);
+}
+
+.kucuk {
+  min-height: 44px;
+  padding: 0.45rem 0.8rem;
+  font-size: 0.85rem;
+}
+
+.tam {
+  width: 100%;
+}
+
+.donuyor {
+  width: 1em;
+  height: 1em;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: don 700ms linear infinite;
+}
+
+@keyframes don {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .donuyor {
+    animation: none;
+  }
+}

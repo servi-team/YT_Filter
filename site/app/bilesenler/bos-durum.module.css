@@ -1,0 +1,30 @@
+.bos {
+  display: grid;
+  justify-items: center;
+  gap: 0.6rem;
+  padding: clamp(2rem, 5vw, 3.25rem) 1.5rem;
+  border: 1px dashed var(--cizgi);
+  border-radius: 14px;
+  background: color-mix(in srgb, var(--yuzey) 65%, transparent);
+  text-align: center;
+}
+
+.baslik {
+  margin: 0;
+  font-family: var(--font-baslik);
+  font-size: 1.2rem;
+  font-weight: 600;
+  line-height: 1.25;
+}
+
+.aciklama {
+  max-width: 44ch;
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.92rem;
+  line-height: 1.5;
+}
+
+.eylem {
+  margin-top: 0.5rem;
+}

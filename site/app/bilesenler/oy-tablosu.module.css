@@ -1,0 +1,129 @@
+.tablo {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.tablo th,
+.tablo td {
+  padding: 0.75rem 0.5rem;
+  border-bottom: 1px solid var(--cizgi);
+  text-align: left;
+  vertical-align: middle;
+}
+
+.tablo thead th {
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tablo thead th:not(:first-child) {
+  text-align: center;
+}
+
+.tablo td {
+  text-align: center;
+}
+
+.tablo tbody th {
+  font-weight: 600;
+}
+
+.tablo tbody tr {
+  transition: background-color var(--gecis);
+}
+
+.tablo tbody tr:hover {
+  background: color-mix(in srgb, var(--cizgi) 22%, transparent);
+}
+
+.ogeAd {
+  display: block;
+  line-height: 1.35;
+}
+
+.ogeAciklama {
+  display: block;
+  margin-top: 0.15rem;
+  color: var(--ikincil);
+  font-size: 0.78rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.uyari,
+.not {
+  display: block;
+  margin-top: 0.25rem;
+  font-size: 0.76rem;
+  font-weight: 400;
+  line-height: 1.4;
+}
+
+.uyari {
+  color: var(--kirmizi);
+}
+
+.not {
+  color: var(--ikincil);
+}
+
+.bos {
+  margin: 0;
+  padding: 1.5rem 1rem;
+  border: 1px dashed var(--cizgi);
+  border-radius: 14px;
+  color: var(--ikincil);
+  text-align: center;
+}
+
+.kartlar {
+  display: none;
+  gap: 0.75rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.kart {
+  display: grid;
+  gap: 0.7rem;
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.oyGrubu {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.4rem;
+}
+
+.oyGrubu > * {
+  width: 100%;
+}
+
+.gizli {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 760px) {
+  .tablo {
+    display: none;
+  }
+
+  .kartlar {
+    display: grid;
+  }
+}

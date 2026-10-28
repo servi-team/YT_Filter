@@ -1,0 +1,135 @@
+.panel {
+  padding: 1.15rem 1.2rem 1.25rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.ust {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.baslik {
+  margin: 0;
+  font-size: 1.2rem;
+}
+
+.ana {
+  display: grid;
+  gap: 0.25rem;
+  margin-top: 0.9rem;
+  padding: 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--sinyal) 28%, var(--cizgi));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--sinyal) 6%, var(--yuzey));
+}
+
+.anaEtiket {
+  color: var(--sinyal);
+  font-family: var(--font-kimlik);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.anaAd {
+  font-family: var(--font-baslik);
+  font-size: 1.45rem;
+  font-weight: 600;
+  line-height: 1.12;
+  letter-spacing: -0.01em;
+}
+
+.bos {
+  margin: 0.9rem 0 0;
+  padding: 0.9rem;
+  border: 1px dashed var(--cizgi);
+  border-radius: 10px;
+  color: var(--ikincil);
+  font-size: 0.88rem;
+  line-height: 1.5;
+}
+
+.bolum {
+  margin-top: 0.9rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--cizgi);
+}
+
+.bolumBaslik {
+  margin: 0 0 0.5rem;
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+.liste {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.esik {
+  margin-top: 1rem;
+  padding-top: 0.9rem;
+  border-top: 1px solid var(--cizgi);
+}
+
+.esikUst {
+  display: flex;
+  justify-content: space-between;
+  gap: 0.5rem;
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.68rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cubuk {
+  height: 6px;
+  margin-top: 0.45rem;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--cizgi);
+}
+
+.dolgu {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--amber);
+  transition: width var(--gecis);
+}
+
+.tamam {
+  background: var(--yesil);
+}
+
+.esikNot {
+  margin: 0.45rem 0 0;
+  color: var(--ikincil);
+  font-size: 0.78rem;
+  line-height: 1.4;
+}
+
+.yayin {
+  margin: 0.8rem 0 0;
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.68rem;
+  line-height: 1.4;
+}

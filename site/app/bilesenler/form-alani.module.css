@@ -1,0 +1,46 @@
+.alan {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.etiket {
+  font-size: 0.9rem;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.zorunlu {
+  color: var(--ikincil);
+  font-weight: 500;
+}
+
+.ipucu {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.83rem;
+  line-height: 1.45;
+}
+
+.alan :is(input:not([type='checkbox']):not([type='radio']), select, textarea) {
+  width: 100%;
+  min-height: 44px;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 10px;
+  background: var(--yuzey);
+  color: inherit;
+}
+
+.alan textarea {
+  min-height: 7rem;
+  resize: vertical;
+}
+
+.alan :is(input, select, textarea):focus-visible {
+  border-color: var(--odak);
+}
+
+.alan :is(input, select, textarea):disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+}

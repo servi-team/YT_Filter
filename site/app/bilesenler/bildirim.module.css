@@ -1,0 +1,93 @@
+.bildirim {
+  position: fixed;
+  right: clamp(1rem, 3vw, 2rem);
+  bottom: clamp(1rem, 3vw, 2rem);
+  z-index: 50;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.7rem;
+  width: min(28rem, calc(100vw - 2rem));
+  padding: 0.9rem 1rem;
+  border: 1px solid var(--cizgi);
+  border-left: 4px solid var(--ikincil);
+  border-radius: 12px;
+  background: var(--yuzey);
+  box-shadow: 0 14px 40px -24px rgb(23 26 28 / 45%);
+}
+
+.hata {
+  border-left-color: var(--kirmizi);
+}
+
+.basari {
+  border-left-color: var(--yesil);
+}
+
+.bilgi {
+  border-left-color: var(--odak);
+}
+
+.ikon {
+  display: inline-flex;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  width: 1.35rem;
+  height: 1.35rem;
+  margin-top: 0.05rem;
+  border: 1px solid currentColor;
+  border-radius: 50%;
+  font-family: var(--font-kimlik);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.hata .ikon {
+  color: var(--kirmizi);
+}
+
+.basari .ikon {
+  color: var(--yesil);
+}
+
+.bilgi .ikon {
+  color: var(--odak);
+}
+
+.metin {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+
+.kapat {
+  flex: 0 0 auto;
+  width: 2.75rem;
+  height: 2.75rem;
+  margin: -0.45rem -0.45rem 0 0;
+  border: 0;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--ikincil);
+  font-size: 1.2rem;
+  line-height: 1;
+  transition:
+    background-color var(--gecis),
+    color var(--gecis);
+}
+
+.kapat:hover {
+  background: var(--zemin);
+  color: var(--murekkep);
+}
+
+@media (max-width: 520px) {
+  .bildirim {
+    right: 0.75rem;
+    bottom: 0.75rem;
+    left: 0.75rem;
+    width: auto;
+  }
+}
