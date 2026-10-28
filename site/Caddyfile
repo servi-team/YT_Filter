@@ -1,0 +1,14 @@
+# SITE_DOMAIN gerçek alan adıysa Caddy HTTPS sertifikasını kendisi alır ve yeniler.
+# "localhost" ise yerel, kendinden imzalı sertifika kullanır (tarayıcı uyarı verebilir; yerel deneme için normal).
+{$SITE_DOMAIN:localhost} {
+	encode zstd gzip
+	reverse_proxy site:3000
+
+	header {
+		Strict-Transport-Security "max-age=31536000"
+		X-Content-Type-Options "nosniff"
+		Referrer-Policy "strict-origin-when-cross-origin"
+		X-Frame-Options "DENY"
+		-Server
+	}
+}
