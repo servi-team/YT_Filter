@@ -1,0 +1,14 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="YouTube Filter Store kalkanı" shape-rendering="geometricPrecision">
+  <title>YouTube Filter Store</title>
+  <defs>
+    <clipPath id="kalkan-govde">
+      <path d="M64 6C84 14 104 19 120 22V58C120 91 99 112 64 124C29 112 8 91 8 58V22C24 19 44 14 64 6Z" />
+    </clipPath>
+  </defs>
+  <path d="M64 6C84 14 104 19 120 22V58C120 91 99 112 64 124C29 112 8 91 8 58V22C24 19 44 14 64 6Z" fill="#C9342B" />
+  <g clip-path="url(#kalkan-govde)">
+    <path d="M8 22C24 19 44 14 64 6V64H8V22Z" fill="#FFFDF8" />
+    <path d="M64 64H120V58C120 91 99 112 64 124V64Z" fill="#FFFDF8" />
+  </g>
+  <path d="M64 6C84 14 104 19 120 22V58C120 91 99 112 64 124C29 112 8 91 8 58V22C24 19 44 14 64 6Z" fill="none" stroke="#98251F" stroke-width="5" stroke-linejoin="round" />
+</svg>
