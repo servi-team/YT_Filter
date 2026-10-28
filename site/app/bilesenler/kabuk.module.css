@@ -1,0 +1,241 @@
+.ust {
+  background: var(--zemin);
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.ustIc {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.25rem;
+  min-height: 76px;
+  padding-block: 1rem;
+}
+
+.marka {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: var(--murekkep);
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.markaAd {
+  font-family: var(--font-baslik);
+  font-size: 1.22rem;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+  line-height: 1;
+}
+
+.markaEk {
+  border-left: 1px solid var(--cizgi);
+  padding-left: 0.55rem;
+  color: var(--ikincil);
+  font-size: 0.68rem;
+  letter-spacing: 0.06em;
+  line-height: 1.2;
+}
+
+.gezinme {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: clamp(0.7rem, 2vw, 1.4rem);
+}
+
+.bag {
+  border-bottom: 1px solid transparent;
+  color: var(--ikincil);
+  font-size: 0.9rem;
+  padding-block: 0.35rem;
+  text-decoration: none;
+  transition: color var(--gecis), border-color var(--gecis);
+}
+
+.bag:hover {
+  border-color: var(--sinyal);
+  color: var(--murekkep);
+}
+
+.giris,
+.panel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.5rem 0.95rem;
+  border-radius: 10px;
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color var(--gecis), border-color var(--gecis), color var(--gecis);
+}
+
+.giris {
+  border: 1px solid var(--cizgi);
+  background: var(--yuzey);
+  color: var(--murekkep);
+}
+
+.giris:hover {
+  border-color: var(--sinyal);
+}
+
+.panel {
+  background: var(--murekkep);
+  color: var(--zemin);
+}
+
+.panel:hover {
+  background: var(--sinyal);
+}
+
+.cikisFormu {
+  display: inline;
+  margin: 0;
+}
+
+.cikis {
+  min-height: 44px;
+  padding: 0.5rem 0.25rem;
+  border: 0;
+  background: none;
+  color: var(--ikincil);
+  font-size: 0.88rem;
+  text-decoration: underline;
+  text-decoration-color: var(--cizgi);
+  text-underline-offset: 0.18em;
+  transition: color var(--gecis), text-decoration-color var(--gecis);
+}
+
+.cikis:hover {
+  color: var(--kirmizi);
+  text-decoration-color: var(--kirmizi);
+}
+
+.alt {
+  margin-top: clamp(3.5rem, 9vw, 7rem);
+  border-top: 1px solid var(--cizgi);
+  color: var(--ikincil);
+  font-size: 0.85rem;
+}
+
+.altIc {
+  display: grid;
+  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
+  align-items: start;
+  gap: 2rem;
+  padding-top: 2.2rem;
+}
+
+.altMarka {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.85rem;
+}
+
+.altBaslik {
+  margin: 0 0 0.3rem;
+  color: var(--murekkep);
+  font-family: var(--font-baslik);
+  font-size: 1.05rem;
+  font-weight: 600;
+  line-height: 1.2;
+}
+
+.altAciklama {
+  margin: 0;
+  max-width: 38ch;
+  line-height: 1.55;
+}
+
+.altBaglar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.65rem 1.25rem;
+  font-size: 0.85rem;
+}
+
+.altBaglar a {
+  border-bottom: 1px solid transparent;
+  color: var(--ikincil);
+  text-decoration: none;
+  transition: color var(--gecis), border-color var(--gecis);
+}
+
+.altBaglar a:hover {
+  border-color: var(--sinyal);
+  color: var(--murekkep);
+}
+
+.altSon {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-top: 2rem;
+  border-top: 1px solid var(--cizgi);
+  padding-block: 1.2rem 2rem;
+  font-size: 0.78rem;
+}
+
+.surum {
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.76rem;
+}
+
+.atla {
+  position: fixed;
+  top: -100px;
+  left: 1rem;
+  z-index: 100;
+  border-radius: 0 0 10px 10px;
+  background: var(--murekkep);
+  color: var(--zemin);
+  padding: 0.8rem 1rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: top var(--gecis);
+}
+
+.atla:focus {
+  top: 0;
+}
+
+@media (max-width: 760px) {
+  .ustIc {
+    align-items: flex-start;
+  }
+
+  .gezinme {
+    justify-content: flex-end;
+    gap: 0.65rem 1rem;
+  }
+
+  .altIc {
+    grid-template-columns: 1fr;
+  }
+
+  .altBaglar {
+    justify-content: flex-start;
+  }
+
+  .altSon {
+    flex-direction: column;
+  }
+}
+
+@media (max-width: 520px) {
+  .ustIc {
+    flex-direction: column;
+    gap: 0.8rem;
+  }
+
+  .gezinme {
+    justify-content: flex-start;
+    width: 100%;
+  }
+}
