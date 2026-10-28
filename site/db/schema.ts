@@ -5,7 +5,7 @@
  *  - Bir (hedef, konu/etiket, tarayıcı kimliği) için tek oy satırı  -> oylar_tekil
  *  - Bir hedefte aynı anda tek aktif kilit                           -> kilitler_aktif_tekil
  *  - Hedef kimliği her zaman YouTube kimliğidir (ad/avatar değişse de kimlik değişmez)
- * Ham oylar silinmez: geri alınan oy `geri_alindi` ile işaretlenir.
+ * Ham oylar silinmez: geri alınan oy `moderasyon_geri_alindi` veya `ziyaretci_geri_alindi` ile işaretlenir.
  */
 import { sql } from 'drizzle-orm';
 import {
@@ -53,22 +53,39 @@ export const hizLimitleri = pgTable('hiz_limitleri', {
   index('hiz_limitleri_pencere').on(t.pencere),
 ]);
 
-/** Kanal kaydı. Avatar yok (karar: avatarsız çalışıyoruz). */
+/** Kanal kaydı. Avatar YouTube'dan gelir; yoksa arayüz baş harf rozeti gösterir. */
 export const kanallar = pgTable('kanallar', {
   id: text('id').primaryKey(),                // UC… (24 karakter)
   handle: text('handle'),                     // @handle (isteğe bağlı)
   ad: text('ad'),
+  avatar: text('avatar'),
   ekleyen: uuid('ekleyen').references(() => hesaplar.id, { onDelete: 'set null' }),
+  metaGuncelleme: timestamp('meta_guncelleme', { withTimezone: true }),
+  arsivlendi: boolean('arsivlendi').notNull().default(false),
+  arsivleyen: uuid('arsivleyen').references(() => hesaplar.id, { onDelete: 'set null' }),
   olusturma: simdi(),
-}, (t) => [uniqueIndex('kanallar_handle_tekil').on(sql`lower(${t.handle})`).where(sql`${t.handle} is not null`)]);
+}, (t) => [
+  uniqueIndex('kanallar_handle_tekil').on(sql`lower(${t.handle})`).where(sql`${t.handle} is not null`),
+  index('kanallar_arsiv').on(t.arsivlendi),
+]);
 
+/** Video kaydı. Kanal satırı oluşturmaz; kanal bilgisi video satırında denormalizedir. */
 export const videolar = pgTable('videolar', {
   id: text('id').primaryKey(),                // 11 karakter
   baslik: text('baslik'),
-  kanalId: text('kanal_id').references(() => kanallar.id, { onDelete: 'set null' }),
+  kanalId: text('kanal_id'),                  // FK değil; video eklemek kanal satırı açmaz
+  kanalAdi: text('kanal_adi'),
+  kanalHandle: text('kanal_handle'),
+  kanalAvatar: text('kanal_avatar'),
   ekleyen: uuid('ekleyen').references(() => hesaplar.id, { onDelete: 'set null' }),
+  metaGuncelleme: timestamp('meta_guncelleme', { withTimezone: true }),
+  arsivlendi: boolean('arsivlendi').notNull().default(false),
+  arsivleyen: uuid('arsivleyen').references(() => hesaplar.id, { onDelete: 'set null' }),
   olusturma: simdi(),
-});
+}, (t) => [
+  index('videolar_arsiv').on(t.arsivlendi),
+  index('videolar_kanal').on(t.kanalId),
+]);
 
 /** Ham oy. Kanal oyları videolara yansımaz: hedef (tür, kimlik) çiftiyle bağlanır. */
 export const oylar = pgTable('oylar', {
@@ -80,7 +97,8 @@ export const oylar = pgTable('oylar', {
   deger: oyDegeriEnum('deger').notNull(),
   tarayiciId: text('tarayici_id').notNull(),  // anonim çerez kimliği
   ipOzeti: text('ip_ozeti'),                  // düz IP saklanmaz, özet (hash)
-  geriAlindi: boolean('geri_alindi').notNull().default(false),
+  moderasyonGeriAlindi: boolean('moderasyon_geri_alindi').notNull().default(false),
+  ziyaretciGeriAlindi: boolean('ziyaretci_geri_alindi').notNull().default(false),
   geriAlan: uuid('geri_alan').references(() => hesaplar.id, { onDelete: 'set null' }),
   geriAlmaGerekce: text('geri_alma_gerekce'),
   geriAlmaZamani: timestamp('geri_alma_zamani', { withTimezone: true }),
@@ -103,6 +121,7 @@ export const eklemeTalepleri = pgTable('ekleme_talepleri', {
   ilkTalep: timestamp('ilk_talep', { withTimezone: true }).notNull().defaultNow(),
   sonTalep: timestamp('son_talep', { withTimezone: true }).notNull().defaultNow(),
   isleyen: uuid('isleyen').references(() => hesaplar.id, { onDelete: 'set null' }),
+  redGerekce: text('red_gerekce'),
 }, (t) => [uniqueIndex('talepler_tekil').on(t.hedefTuru, t.anahtar)]);
 
 /** Kayıt kilidi: kilitliyken oy gelir ama sonuç donar; db.json'a kilit anındaki sonuç yazılır. */
@@ -136,7 +155,10 @@ export const engeller = pgTable('engeller', {
   yapan: uuid('yapan').references(() => hesaplar.id, { onDelete: 'set null' }),
   olusturma: simdi(),
   bitis: timestamp('bitis', { withTimezone: true }),
-}, (t) => [uniqueIndex('engeller_tekil').on(t.tur, t.deger)]);
+}, (t) => [
+  uniqueIndex('engeller_tekil').on(t.tur, t.deger),
+  index('engeller_bitis').on(t.bitis),
+]);
 
 /** Yayınlanan db.json sürümleri. veri_surumu her yayında bir öncekinden büyüktür. */
 export const yayinSurumleri = pgTable('yayin_surumleri', {
@@ -145,5 +167,6 @@ export const yayinSurumleri = pgTable('yayin_surumleri', {
   kanalSayisi: integer('kanal_sayisi').notNull(),
   videoSayisi: integer('video_sayisi').notNull(),
   onaylayan: uuid('onaylayan').references(() => hesaplar.id, { onDelete: 'set null' }),
+  notlar: text('notlar'),
   icerik: jsonb('icerik').notNull(),
 });

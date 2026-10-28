@@ -38,7 +38,7 @@ test('aynı tarayıcı ikinci kez oy verince yeni satır açılmaz, eski oy gün
   const satirlar = await db.select().from(oylar).where(eq(oylar.tarayiciId, tarayici(1)));
   assert.equal(satirlar.length, 1);
   assert.equal(satirlar[0].deger, 'down');
-  assert.deepEqual(await benimOylarim(db, 'kanal', KANAL, tarayici(1)), [{ ogeTuru: 'konu', ogeId: 'spor', deger: 'down' }]);
+  assert.deepEqual(await benimOylarim(db, 'kanal', KANAL, tarayici(1)), [{ ogeTuru: 'konu', ogeId: 'spor', deger: 'down', ziyaretciGeriAlindi: false, moderasyonGeriAlindi: false }]);
 });
 
 test('veritabanı da tekilliği zorlar (uygulamayı atlayan çift yazma reddedilir)', async () => {
@@ -80,11 +80,11 @@ test('uçtan uca: veritabanı sayımı + oy hesabı = beklenen sonuç, geri alma
   r = sonucHesapla(s.konular, s.etiketler, KS, ES);
   assert.deepEqual(r.etiketler, []);
   // Geri alınan oy silinmedi, işaretlendi; moderasyon kaydı yazıldı.
-  assert.equal((await db.select().from(oylar).where(eq(oylar.geriAlindi, true))).length, 4);
+  assert.equal((await db.select().from(oylar).where(eq(oylar.moderasyonGeriAlindi, true))).length, 4);
   assert.equal((await db.select().from(moderasyonKayitlari)).filter(m => m.islem === 'oy-geri-al').length, 2);
   // Geri alınmış oyun sahibi tekrar oy verse de oy geri alınmış kalır.
   await ver(1, 'konu', 'spor', 'up');
-  assert.equal((await db.select().from(oylar).where(eq(oylar.tarayiciId, 'u1'))).every(o => o.geriAlindi), true);
+  assert.equal((await db.select().from(oylar).where(eq(oylar.tarayiciId, 'u1'))).every(o => o.moderasyonGeriAlindi), true);
   s = await sayimlariGetir(db, hedef.hedefTuru, hedef.hedefId);
   assert.deepEqual(s.konular.spor, { up: 2, kararsiz: 1, down: 1 });
 });
