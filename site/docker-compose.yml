@@ -1,0 +1,80 @@
+# YouTube Filter Store: site + PostgreSQL + Caddy (HTTPS). Çalıştırma:
+#   cp site/.env.example site/.env   (değerleri doldur)
+#   docker compose -f site/docker-compose.yml --env-file site/.env up -d --build
+name: yt-filter-store
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?POSTGRES_DB .env içinde tanımlı olmalı}
+      POSTGRES_USER: ${POSTGRES_USER:?POSTGRES_USER .env içinde tanımlı olmalı}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?POSTGRES_PASSWORD .env içinde tanımlı olmalı}
+    volumes:
+      - veritabani:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    # Dışarıya port AÇILMAZ: veritabanına yalnızca iç ağdaki servisler ulaşır.
+
+  migrate:
+    build:
+      context: ..
+      dockerfile: site/Dockerfile
+      target: gecis
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+    depends_on:
+      postgres:
+        condition: service_healthy
+    restart: "no"
+
+  site:
+    build:
+      context: ..
+      dockerfile: site/Dockerfile
+      target: calisma
+    restart: unless-stopped
+    environment:
+      DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      SITE_ORIGIN: ${SITE_ORIGIN:?SITE_ORIGIN .env içinde tanımlı olmalı}
+      IP_HASH_SECRET: ${IP_HASH_SECRET:?IP_HASH_SECRET .env içinde tanımlı olmalı}
+      YOUTUBE_API_KEY: ${YOUTUBE_API_KEY:-}
+    depends_on:
+      postgres:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q -O /dev/null http://127.0.0.1:3000/api/saglik || exit 1"]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    expose:
+      - "3000"
+
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    environment:
+      SITE_DOMAIN: ${SITE_DOMAIN:-localhost}
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_veri:/data
+      - caddy_ayar:/config
+    depends_on:
+      site:
+        condition: service_healthy
+
+volumes:
+  veritabani:
+  caddy_veri:
+  caddy_ayar:

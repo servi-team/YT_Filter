@@ -1,0 +1,35 @@
+{
+  "name": "yt-filter-store",
+  "private": true,
+  "version": "0.1.0",
+  "description": "YouTube Filter Store: oylama sitesi (db.json üretir)",
+  "type": "module",
+  "engines": {
+    "node": ">=22.18"
+  },
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "node .next/standalone/site/server.js",
+    "test": "node --test \"tests/*.test.ts\"",
+    "migrate": "node scripts/migrate.mjs",
+    "db:uret": "drizzle-kit generate",
+    "tip": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.45.4",
+    "next": "^16.4.3",
+    "pg": "^8.23.1",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.11",
+    "@types/node": "^26.6.5",
+    "@types/pg": "^8.23.1",
+    "@types/react": "^19.3.0",
+    "@types/react-dom": "^19.3.0",
+    "drizzle-kit": "^0.31.11",
+    "typescript": "^7.0.2"
+  }
+}
