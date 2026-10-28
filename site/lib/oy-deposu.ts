@@ -2,9 +2,9 @@
  * Oy deposu: veritabanı işlemleri. Hesap kuralları burada DEĞİL, saf `oy-hesabi.ts` içindedir;
  * burası yalnızca oyu yazar ve sayımı okur. Hem node-postgres hem pglite sürücüsüyle çalışır.
  */
-import { and, eq, sql } from 'drizzle-orm';
+import { and, eq, gt, isNull, notExists, or, sql } from 'drizzle-orm';
 import type { PgDatabase } from 'drizzle-orm/pg-core';
-import { oylar, kilitler, moderasyonKayitlari } from '../db/schema.ts';
+import { engeller, oylar, kilitler, moderasyonKayitlari } from '../db/schema.ts';
 import { taksonomi, type KayitSonucu } from './ortak.ts';
 import { bosSayim, type Sayim, type OyDegeri } from './oy-hesabi.ts';
 import type { HedefTuru, OgeTuru, Sayimlar } from './tipler.ts';
@@ -52,8 +52,19 @@ export async function oyVer(db: Db, g: OyGirdisi): Promise<void> {
   });
 }
 
-/** Bir hedefin konu ve etiket sayımları. Geri alınan oylar hesaba girmez. */
+/** Bir hedefin konu ve etiket sayımları. Geri alınan ve aktif engelli oylar hesaba girmez. */
 export async function sayimlariGetir(db: Db, hedefTuru: HedefTuru, hedefId: string): Promise<Sayimlar> {
+  // Correlated alt sorgu: bu oyun sahibi (çerez) veya IP'si için aktif engel var mı?
+  const aktifEngelYok = notExists(
+    db.select({ bir: sql`1` }).from(engeller).where(and(
+      or(
+        and(eq(engeller.tur, 'tarayici'), eq(engeller.deger, oylar.tarayiciId)),
+        and(eq(engeller.tur, 'ip'), eq(engeller.deger, oylar.ipOzeti)),
+      ),
+      or(isNull(engeller.bitis), gt(engeller.bitis, sql`now()`)),
+    )),
+  );
+
   const satirlar = await db.select({
     ogeTuru: oylar.ogeTuru, ogeId: oylar.ogeId, deger: oylar.deger,
     adet: sql<number>`count(*)::int`,
@@ -63,6 +74,7 @@ export async function sayimlariGetir(db: Db, hedefTuru: HedefTuru, hedefId: stri
       eq(oylar.hedefId, hedefId),
       eq(oylar.moderasyonGeriAlindi, false),
       eq(oylar.ziyaretciGeriAlindi, false),
+      aktifEngelYok,
     ))
     .groupBy(oylar.ogeTuru, oylar.ogeId, oylar.deger);
 
