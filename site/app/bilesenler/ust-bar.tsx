@@ -1,5 +1,6 @@
 import Link from 'next/link';
 import { Kalkan } from './kalkan.tsx';
+import { CikisDugmesi } from './cikis-dugmesi.tsx';
 import s from './kabuk.module.css';
 
 export interface Kullanici {
@@ -27,9 +28,7 @@ export function UstBar({ kullanici }: { kullanici: Kullanici | null }) {
           {kullanici ? (
             <>
               <Link className={s.panel} href={panelYolu}>Panel</Link>
-              <form action="/api/oturum/cikis" method="post" className={s.cikisFormu}>
-                <button type="submit" className={s.cikis}>Çıkış</button>
-              </form>
+              <CikisDugmesi />
             </>
           ) : (
             <Link className={s.giris} href="/giris">Giriş</Link>

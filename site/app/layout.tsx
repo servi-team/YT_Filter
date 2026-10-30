@@ -4,6 +4,7 @@ import { fraunces, manrope } from './fontlar.ts';
 import { Atla } from './bilesenler/atla.tsx';
 import { UstBar } from './bilesenler/ust-bar.tsx';
 import { AltBilgi } from './bilesenler/alt-bilgi.tsx';
+import { siteKullanici } from '../lib/sunucu-oturum.ts';
 
 export const metadata: Metadata = {
   title: {
@@ -24,12 +25,17 @@ export const viewport: Viewport = {
   ],
 };
 
-export default function KokDuzen({ children }: { children: React.ReactNode }) {
+export default async function KokDuzen({ children }: { children: React.ReactNode }) {
+  const kullanici = await siteKullanici();
+  const ustKullanici = kullanici
+    ? { ad: kullanici.eposta.split('@')[0] ?? kullanici.eposta, rol: kullanici.rol }
+    : null;
+
   return (
     <html lang="tr" className={`${fraunces.variable} ${manrope.variable}`}>
       <body>
         <Atla />
-        <UstBar kullanici={null} />
+        <UstBar kullanici={ustKullanici} />
         <main id="icerik" className="kap sayfa" tabIndex={-1}>
           {children}
         </main>
