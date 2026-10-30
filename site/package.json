@@ -12,6 +12,7 @@
     "build": "next build",
     "start": "node .next/standalone/site/server.js",
     "test": "node scripts/test.mjs",
+    "bakim": "node scripts/bakim.mjs",
     "migrate": "node scripts/migrate.mjs",
     "demo:veri": "node scripts/demo-veri.mjs",
     "ilk-admin": "node scripts/ilk-admin.mjs",
