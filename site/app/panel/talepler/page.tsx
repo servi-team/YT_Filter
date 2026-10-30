@@ -21,18 +21,18 @@ const tarihBicimi = new Intl.DateTimeFormat('tr-TR', {
 });
 
 type SayfaProps = {
-  searchParams: Promise<{ sekme?: string | string[] }>;
+  searchParams: Promise<{ durum?: string | string[] }>;
 };
 
 export default async function PanelTaleplerSayfasi({ searchParams }: SayfaProps) {
   await sunucuRolGerekli(['editor', 'admin']);
   const parametreler = await searchParams;
-  const sekme = parametreler.sekme === 'islenmis' ? 'islenmis' : 'bekleyen';
+  const islenmis = parametreler.durum === 'islenmis';
 
   const veritabani = await db();
-  const talepler = sekme === 'bekleyen'
-    ? await talepleriListele(veritabani, { durum: 'bekliyor' })
-    : await talepleriListele(veritabani, { durum: ['kabul', 'red'] });
+  const talepler = islenmis
+    ? await talepleriListele(veritabani, { durum: ['kabul', 'red'] })
+    : await talepleriListele(veritabani, { durum: 'bekliyor' });
 
   return (
     <>
@@ -43,16 +43,16 @@ export default async function PanelTaleplerSayfasi({ searchParams }: SayfaProps)
 
       <nav className={s.sekmeler} aria-label="Talep durumu">
         <Link
-          className={`${s.sekme} ${sekme === 'bekleyen' ? s.sekmeAktif : ''}`}
+          className={`${s.sekme} ${!islenmis ? s.sekmeAktif : ''}`}
           href="/panel/talepler"
-          aria-current={sekme === 'bekleyen' ? 'page' : undefined}
+          aria-current={!islenmis ? 'page' : undefined}
         >
           Bekleyenler
         </Link>
         <Link
-          className={`${s.sekme} ${sekme === 'islenmis' ? s.sekmeAktif : ''}`}
-          href="/panel/talepler?sekme=islenmis"
-          aria-current={sekme === 'islenmis' ? 'page' : undefined}
+          className={`${s.sekme} ${islenmis ? s.sekmeAktif : ''}`}
+          href="/panel/talepler?durum=islenmis"
+          aria-current={islenmis ? 'page' : undefined}
         >
           İşlenmişler
         </Link>
@@ -103,10 +103,10 @@ export default async function PanelTaleplerSayfasi({ searchParams }: SayfaProps)
         </ul>
       ) : (
         <BosDurum
-          baslik={sekme === 'bekleyen' ? 'Bekleyen talep yok.' : 'Henüz işlenmiş talep yok.'}
-          aciklama={sekme === 'bekleyen'
-            ? 'Yeni bir link gönderildiğinde burada görünecek.'
-            : 'Kabul veya red edilen talepler burada arşivlenir.'}
+          baslik={islenmis ? 'Henüz işlenmiş talep yok.' : 'Bekleyen talep yok.'}
+          aciklama={islenmis
+            ? 'Kabul veya red edilen talepler burada arşivlenir.'
+            : 'Yeni bir link gönderildiğinde burada görünecek.'}
         />
       )}
     </>

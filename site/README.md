@@ -23,7 +23,11 @@ Karar: avatar yok (kanal kaydında yalnızca kimlik, handle ve ad).
 - `docker-compose.yml`, `Dockerfile`, `Caddyfile`, `.env.example`, `deploy/yedekle.sh`
 
 ## Testler
-`npm test` (Node >= 22.18). Veritabanı testleri gerçek PostgreSQL motoruyla (pglite) çalışır, Docker gerekmez.
+`npm test` (Node 22 LTS veya 24 LTS; en az 22.18). Veritabanı testleri gerçek PostgreSQL motoruyla (pglite) çalışır, Docker gerekmez.
+
+Node 23/25 gibi destek dışı tek sürümlerde PGlite (WASM) Windows'ta başlatma sırasında kilitlenebiliyor. Bu yüzden test betiği LTS olmayan sürümlerde hemen uyarı verip durur. Önerilen sürüm `.nvmrc` dosyasında (`22.23.4`).
+
+Test dosyaları her biri kendi sürecinde olacak şekilde 4 eşzamanlı çalışır (~20 sn). Seri çalıştırmak için `TEST_ESZAMANLILIK=1 npm test`.
 
 ## Yerelde çalıştırma (Docker ile)
 Depo kökünden:

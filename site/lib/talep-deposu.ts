@@ -11,7 +11,7 @@ import { icerikEkle, metaKimlikleTamamla } from './icerik-yaz.ts';
 import { HttpHatasi } from './hata.ts';
 import type { Db } from './oy-deposu.ts';
 import type { HedefTuru } from './tipler.ts';
-import type { KanalMeta, Meta, MetaCozucu, MetaSonucu } from './youtube-meta.ts';
+import type { MetaCozucu } from './youtube-meta.ts';
 import { linkCoz, type LinkSonucu } from './youtube-link.ts';
 
 export type CozulenLink = Exclude<LinkSonucu, { tur: 'hata' }>;
@@ -123,16 +123,16 @@ export interface TalepleriListeleSecenekleri {
   durum?: TalepDurumu | TalepDurumu[];
 }
 
-/** Panel kuyruğu; isteğe bağlı durum filtresiyle en yeni talepler önce. */
+/** Panel kuyruğu; durum verilmezse bekleyenler, her durumda en yeni talepler önce. */
 export async function talepleriListele(
   db: Db,
   secenek: TalepleriListeleSecenekleri = {},
 ): Promise<TalepSatiri[]> {
-  const durumlar = secenek.durum === undefined
-    ? null
+  const durumlar: TalepDurumu[] = secenek.durum === undefined
+    ? ['bekliyor']
     : Array.isArray(secenek.durum) ? secenek.durum : [secenek.durum];
 
-  const temel = db.select({
+  return db.select({
     id: eklemeTalepleri.id,
     hedefTuru: eklemeTalepleri.hedefTuru,
     anahtar: eklemeTalepleri.anahtar,
@@ -145,13 +145,9 @@ export async function talepleriListele(
     isleyenEposta: hesaplar.eposta,
     redGerekce: eklemeTalepleri.redGerekce,
   }).from(eklemeTalepleri)
-    .leftJoin(hesaplar, eq(eklemeTalepleri.isleyen, hesaplar.id));
-
-  const satirlar = durumlar
-    ? await temel.where(inArray(eklemeTalepleri.durum, durumlar)).orderBy(desc(eklemeTalepleri.sonTalep))
-    : await temel.orderBy(desc(eklemeTalepleri.sonTalep));
-
-  return satirlar;
+    .leftJoin(hesaplar, eq(eklemeTalepleri.isleyen, hesaplar.id))
+    .where(inArray(eklemeTalepleri.durum, durumlar))
+    .orderBy(desc(eklemeTalepleri.sonTalep));
 }
 
 export interface TalepIsleGirdisi {
@@ -168,55 +164,39 @@ export interface TalepIsleSonucu {
 }
 
 /**
- * Handle talebinde kimlik zaten `anahtar` alanında UC… olarak durur; metadata
- * yalnızca görünen ad/handle/avatar için kullanılır. Metadata çözülemezse
- * kimlikle devam edilir, böylece kabul akışı ağ hatasına takılmaz.
- */
-function kabulMeta(cozulen: CozulenLink, metaSonucu: MetaSonucu | null, anahtar: string): Meta {
-  if (cozulen.tur === 'kanal' && 'handle' in cozulen) {
-    const kanalMeta = metaSonucu && metaSonucu.tur === 'kanal' ? metaSonucu : null;
-    const meta: KanalMeta = {
-      tur: 'kanal',
-      id: anahtar,
-      ad: kanalMeta?.ad ?? null,
-      handle: kanalMeta?.handle ?? cozulen.handle,
-      avatar: kanalMeta?.avatar ?? null,
-    };
-    return meta;
-  }
-
-  return metaKimlikleTamamla(cozulen, metaSonucu);
-}
-
-/**
  * Bekleyen talebi kabul veya red eder. Aynı talep ikinci kez işlenemez.
- * Kabulde içerik `icerikEkle` ile yazılır; video kanal satırı açmaz.
+ * Kabulde içerik `icerikEkle` ile aynı transaction'da yazılır; video kanal
+ * satırı açmaz. Koşullu `durum='bekliyor'` güncellemesi yarışı kapatır.
  */
 export async function talepIsle(db: Db, girdi: TalepIsleGirdisi): Promise<TalepIsleSonucu> {
-  const [talep] = await db.select({
-    id: eklemeTalepleri.id,
-    hedefTuru: eklemeTalepleri.hedefTuru,
-    anahtar: eklemeTalepleri.anahtar,
-    link: eklemeTalepleri.link,
-    durum: eklemeTalepleri.durum,
-  }).from(eklemeTalepleri)
-    .where(eq(eklemeTalepleri.id, girdi.talepId))
-    .limit(1);
-
-  if (!talep) {
-    throw new HttpHatasi(404, 'talep-yok', 'Talep bulunamadı.');
-  }
-  if (talep.durum !== 'bekliyor') {
-    throw new HttpHatasi(409, 'islenmis', 'Bu talep zaten işlenmiş.');
+  if (girdi.karar !== 'kabul' && girdi.karar !== 'red') {
+    throw new HttpHatasi(400, 'gecersiz-karar', 'Geçersiz karar.');
   }
 
-  if (girdi.karar === 'red') {
-    const gerekce = typeof girdi.gerekce === 'string' ? girdi.gerekce.trim() : '';
-    if (!gerekce) {
-      throw new HttpHatasi(422, 'gerekce', 'Red için gerekçe gerekli.');
+  const gerekce = typeof girdi.gerekce === 'string' ? girdi.gerekce.trim() : '';
+
+  return db.transaction(async (tx) => {
+    const [talep] = await tx.select({
+      id: eklemeTalepleri.id,
+      hedefTuru: eklemeTalepleri.hedefTuru,
+      anahtar: eklemeTalepleri.anahtar,
+      link: eklemeTalepleri.link,
+      durum: eklemeTalepleri.durum,
+    }).from(eklemeTalepleri)
+      .where(eq(eklemeTalepleri.id, girdi.talepId))
+      .limit(1);
+
+    if (!talep) {
+      throw new HttpHatasi(404, 'talep-yok', 'Talep bulunamadı.');
+    }
+    if (talep.durum !== 'bekliyor') {
+      throw new HttpHatasi(409, 'islenmis', 'Bu talep zaten işlenmiş.');
+    }
+    if (girdi.karar === 'red' && !gerekce) {
+      throw new HttpHatasi(400, 'gerekce-zorunlu', 'Red için gerekçe gerekli.');
     }
 
-    await db.transaction(async (tx) => {
+    if (girdi.karar === 'red') {
       const [guncel] = await tx.update(eklemeTalepleri)
         .set({ durum: 'red', isleyen: girdi.yapan, redGerekce: gerekce })
         .where(and(eq(eklemeTalepleri.id, talep.id), eq(eklemeTalepleri.durum, 'bekliyor')))
@@ -234,25 +214,19 @@ export async function talepIsle(db: Db, girdi: TalepIsleGirdisi): Promise<TalepI
         gerekce,
         ayrinti: { talepId: talep.id },
       });
-    });
 
-    return { durum: 'red' };
-  }
+      return { durum: 'red' as const };
+    }
 
-  if (girdi.karar !== 'kabul') {
-    throw new HttpHatasi(400, 'gecersiz-karar', 'Geçersiz karar.');
-  }
+    const cozulen = linkCoz(talep.link);
+    if (cozulen.tur === 'hata') {
+      throw new HttpHatasi(422, 'link-gecersiz', cozulen.neden);
+    }
 
-  const cozulen = linkCoz(talep.link);
-  if (cozulen.tur === 'hata') {
-    throw new HttpHatasi(422, 'gecersiz-link', cozulen.neden);
-  }
+    const metaSonucu = girdi.metaCozucu ? await girdi.metaCozucu(cozulen) : null;
+    const meta = metaKimlikleTamamla(cozulen, metaSonucu);
+    const sonuc = await icerikEkle(tx, { cozulen, meta, ekleyen: girdi.yapan });
 
-  const metaSonucu = girdi.metaCozucu ? await girdi.metaCozucu(cozulen) : null;
-  const meta = kabulMeta(cozulen, metaSonucu, talep.anahtar);
-  const sonuc = await icerikEkle(db, { cozulen, meta, ekleyen: girdi.yapan });
-
-  await db.transaction(async (tx) => {
     const [guncel] = await tx.update(eklemeTalepleri)
       .set({ durum: 'kabul', isleyen: girdi.yapan, redGerekce: null })
       .where(and(eq(eklemeTalepleri.id, talep.id), eq(eklemeTalepleri.durum, 'bekliyor')))
@@ -267,13 +241,13 @@ export async function talepIsle(db: Db, girdi: TalepIsleGirdisi): Promise<TalepI
       yapan: girdi.yapan,
       hedefTuru: sonuc.tur,
       hedefId: sonuc.id,
-      ayrinti: {
-        talepId: talep.id,
-        hedef: { tur: sonuc.tur, id: sonuc.id },
-        durum: sonuc.durum,
-      },
+      gerekce: girdi.gerekce ?? null,
+      ayrinti: { talepId: talep.id, icerikDurumu: sonuc.durum },
     });
-  });
 
-  return { durum: 'kabul', hedef: { tur: sonuc.tur, id: sonuc.id } };
+    return {
+      durum: 'kabul' as const,
+      hedef: { tur: sonuc.tur, id: sonuc.id },
+    };
+  });
 }
