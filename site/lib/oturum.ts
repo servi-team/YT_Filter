@@ -37,9 +37,13 @@ export interface GirisSonucu {
   kullanici: OturumKullanicisi;
 }
 
-/** E-posta normalizasyonu: tüm kayıt/giriş yolları bu biçimi kullanır. */
+/**
+ * E-posta normalizasyonu: tüm kayıt/giriş yolları bu biçimi kullanır.
+ * Yerel ayardan bağımsız küçük harfe çevirir; Türkçe I/İ tuzağına düşmemek
+ * için `I`, `İ` ve `ı` aynı `i` biçimine katlanır.
+ */
 export function epostaNormalize(eposta: string): string {
-  return eposta.trim().toLocaleLowerCase('tr-TR');
+  return eposta.trim().toLowerCase().replace(/ı/g, 'i').replace(/\u0307/g, '');
 }
 
 function tokenOzeti(token: string): string {

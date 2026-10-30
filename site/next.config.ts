@@ -11,5 +11,8 @@ const config: NextConfig = {
   poweredByHeader: false,
   reactStrictMode: true,
   serverExternalPackages: ['@electric-sql/pglite'],
+  experimental: {
+    authInterrupts: true,
+  },
 };
 export default config;

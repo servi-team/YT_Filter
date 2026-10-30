@@ -1,0 +1,446 @@
+.admin {
+  display: grid;
+  grid-template-columns: minmax(190px, 220px) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(1.5rem, 4vw, 3rem);
+}
+
+.yan {
+  position: sticky;
+  top: 1.25rem;
+  display: grid;
+  gap: 1rem;
+  padding: 1rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.menuUst {
+  display: grid;
+  gap: 0.15rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.menuEtiket {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.menuKullanici {
+  margin: 0;
+  overflow: hidden;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.menuListe {
+  display: grid;
+  gap: 0.2rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.menuBag {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0.55rem 0.7rem;
+  border-radius: 9px;
+  color: var(--ikincil);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: background-color var(--gecis), color var(--gecis);
+}
+
+.menuBag:hover {
+  background: color-mix(in srgb, var(--cizgi) 35%, transparent);
+  color: var(--murekkep);
+}
+
+.menuAktif {
+  background: var(--murekkep);
+  color: var(--zemin);
+}
+
+.menuAktif:hover {
+  background: var(--murekkep);
+  color: var(--zemin);
+}
+
+.icerik {
+  min-width: 0;
+}
+
+.kartlar {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1.5rem;
+}
+
+.kart {
+  display: grid;
+  gap: 0.25rem;
+  padding: 1rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.kartEtiket {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.kartDeger {
+  margin: 0;
+  font-family: var(--font-baslik);
+  font-size: clamp(1.8rem, 3vw, 2.4rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.kartNot {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.78rem;
+  line-height: 1.35;
+}
+
+.kartBag {
+  color: inherit;
+  font-weight: 700;
+}
+
+.bolum {
+  margin: 2rem 0 0;
+}
+
+.bolumBaslik {
+  margin: 0 0 0.9rem;
+  font-family: var(--font-baslik);
+  font-size: clamp(1.25rem, 2.5vw, 1.6rem);
+}
+
+.formKutu {
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.formBaslik {
+  margin: 0 0 0.25rem;
+  font-family: var(--font-baslik);
+  font-size: 1.2rem;
+}
+
+.formAciklama {
+  margin: 0 0 1rem;
+  color: var(--ikincil);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.form {
+  display: grid;
+  gap: 1rem;
+  max-width: 44rem;
+}
+
+.formGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1rem;
+}
+
+.formAlt {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.tabloSar {
+  overflow-x: auto;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.tablo {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.tablo th,
+.tablo td {
+  padding: 0.7rem 0.8rem;
+  border-bottom: 1px solid var(--cizgi);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tablo th {
+  color: var(--ikincil);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tablo tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.eposta {
+  display: block;
+  max-width: 28ch;
+  font-family: var(--font-kimlik);
+  font-size: 0.82rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.rolSecim {
+  min-height: 44px;
+  padding: 0.45rem 0.6rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 9px;
+  background: var(--yuzey);
+  color: inherit;
+}
+
+.eylemler {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.durum {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.durumAktif {
+  background: color-mix(in srgb, var(--yesil) 16%, transparent);
+  color: var(--yesil);
+}
+
+.durumPasif {
+  background: color-mix(in srgb, var(--kirmizi) 16%, transparent);
+  color: var(--kirmizi);
+}
+
+.neden {
+  margin: 0.35rem 0 0;
+  color: var(--ikincil);
+  font-size: 0.76rem;
+  line-height: 1.4;
+}
+
+.meta {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.sifreKutu {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem 1rem;
+  border: 1px solid color-mix(in srgb, var(--yesil) 45%, var(--cizgi));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--yesil) 8%, var(--yuzey));
+}
+
+.sifreBaslik {
+  margin: 0;
+  font-weight: 700;
+}
+
+.sifreKod {
+  display: inline-block;
+  width: fit-content;
+  max-width: 100%;
+  padding: 0.35rem 0.55rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 8px;
+  background: var(--zemin);
+  font-family: var(--font-kimlik);
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+  user-select: all;
+}
+
+.sifreNot {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.8rem;
+  line-height: 1.45;
+}
+
+.saltListe {
+  display: grid;
+  gap: 0.6rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.saltOge {
+  display: grid;
+  grid-template-columns: 2.4rem minmax(0, 1fr);
+  gap: 0.2rem 0.8rem;
+  padding: 0.8rem 0.95rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 11px;
+  background: var(--yuzey);
+}
+
+.saltNo {
+  grid-row: span 2;
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.82rem;
+  font-weight: 700;
+}
+
+.saltAd {
+  margin: 0;
+  font-weight: 700;
+}
+
+.saltAciklama {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.saltKimlik {
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.76rem;
+}
+
+.dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  max-width: none;
+  margin: auto;
+  padding: 1.25rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+  color: inherit;
+}
+
+.dialog::backdrop {
+  background: rgb(17 19 21 / 55%);
+  backdrop-filter: blur(2px);
+}
+
+.gizli {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 860px) {
+  .admin {
+    grid-template-columns: 1fr;
+  }
+
+  .yan {
+    position: static;
+    overflow-x: auto;
+  }
+
+  .menuListe {
+    display: flex;
+    gap: 0.3rem;
+    overflow-x: auto;
+  }
+
+  .menuBag {
+    white-space: nowrap;
+  }
+
+  .kartlar {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 520px) {
+  .kartlar,
+  .formGrid {
+    grid-template-columns: 1fr;
+  }
+
+  .tabloSar {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .tablo,
+  .tablo tbody,
+  .tablo tr,
+  .tablo td {
+    display: block;
+    width: 100%;
+  }
+
+  .tablo thead {
+    display: none;
+  }
+
+  .tablo tr {
+    margin-bottom: 0.7rem;
+    padding: 0.35rem 0;
+    border: 1px solid var(--cizgi);
+    border-radius: 12px;
+    background: var(--yuzey);
+  }
+
+  .tablo td {
+    padding: 0.4rem 0.9rem;
+    border: 0;
+  }
+
+  .tablo td[data-etiket]::before {
+    content: attr(data-etiket) ': ';
+    color: var(--ikincil);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
