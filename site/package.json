@@ -13,6 +13,7 @@
     "start": "node .next/standalone/site/server.js",
     "test": "node --test \"tests/*.test.ts\"",
     "migrate": "node scripts/migrate.mjs",
+    "demo:veri": "node scripts/demo-veri.mjs",
     "db:uret": "drizzle-kit generate",
     "tip": "tsc --noEmit"
   },
