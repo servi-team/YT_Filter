@@ -12,6 +12,7 @@ import type { Veritabani } from './db.ts';
 import { taksonomi, type KayitSonucu } from './ortak.ts';
 import { bosSayim, sonucHesapla, toplamOy, type Sayim } from './oy-hesabi.ts';
 import type { HedefTuru, IcerikDurumu, Sayimlar } from './tipler.ts';
+import type { LinkSonucu } from './youtube-link.ts';
 
 type KanalSatiri = typeof kanallar.$inferSelect;
 type VideoSatiri = typeof videolar.$inferSelect;
@@ -398,6 +399,31 @@ export async function siteIstatistikleri(db: Veritabani): Promise<{
     yayinSurumu: sonYayin?.veriSurumu ?? null,
     sonYayin: sonYayin?.olusturma ?? null,
   };
+}
+
+/**
+ * Çözülmüş bir YouTube linkinin kayıtlı karşılığını bulur. Video kimliği
+ * `videolar`, UC kimliği `kanallar`, @handle ise büyük/küçük harf duyarsız
+ * `kanallar.handle` üzerinden aranır. Arşivli kayıt da döner; çağıran taraf
+ * `arsivli` alanına bakarak karar verir.
+ */
+export async function linkIleKayitBul(
+  db: Veritabani,
+  link: Exclude<LinkSonucu, { tur: 'hata' }>,
+): Promise<{ kayit: IcerikBasligi; arsivli: boolean } | null> {
+  if (link.tur === 'video') {
+    const [satir] = await db.select().from(videolar).where(eq(videolar.id, link.id));
+    return satir ? { kayit: videoBasligi(satir), arsivli: satir.arsivlendi } : null;
+  }
+
+  if ('handle' in link) {
+    const [satir] = await db.select().from(kanallar)
+      .where(sql`lower(${kanallar.handle}) = ${link.handle.toLowerCase()}`);
+    return satir ? { kayit: kanalBasligi(satir), arsivli: satir.arsivlendi } : null;
+  }
+
+  const [satir] = await db.select().from(kanallar).where(eq(kanallar.id, link.id));
+  return satir ? { kayit: kanalBasligi(satir), arsivli: satir.arsivlendi } : null;
 }
 
 /** Video kapağı adresi (YouTube'un hqdefault görseli). */

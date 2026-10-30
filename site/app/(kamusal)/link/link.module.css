@@ -1,0 +1,77 @@
+/* Link talebi: ince künye, yapıştırılan adres ve talep formu. */
+
+.govde {
+  max-width: 48rem;
+}
+
+.mevcutBaslik {
+  margin: 0 0 1rem;
+  color: var(--murekkep);
+  font-family: var(--font-baslik);
+  font-size: clamp(1.25rem, 2.4vw, 1.7rem);
+  line-height: 1.2;
+}
+
+.kunye {
+  display: grid;
+  gap: 0.7rem;
+  margin: 0 0 1.5rem;
+  padding: 1rem 1.15rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.kunye > div {
+  display: grid;
+  grid-template-columns: 11rem minmax(0, 1fr);
+  gap: 0.35rem 1rem;
+  align-items: baseline;
+}
+
+.kunye dt {
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.kunye dd {
+  min-width: 0;
+  margin: 0;
+}
+
+.adres {
+  overflow-wrap: anywhere;
+}
+
+.not {
+  margin-top: 1rem;
+  color: var(--ikincil);
+  font-size: 0.88rem;
+}
+
+.geri {
+  margin-top: 1.5rem;
+}
+
+.bag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--murekkep);
+  font-weight: 700;
+}
+
+.bag:hover {
+  color: var(--sinyal-koyu);
+}
+
+@media (max-width: 520px) {
+  .kunye > div {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 0.1rem;
+  }
+}
