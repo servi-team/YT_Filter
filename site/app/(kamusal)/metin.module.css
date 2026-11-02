@@ -1,0 +1,146 @@
+/* Kamusal metin sayfaları: ölçülü satır uzunluğu, ince çizgiler, tek sütun. */
+.metin {
+  max-width: 68ch;
+}
+
+.metin h1 {
+  max-width: 24ch;
+  margin-bottom: 0.7rem;
+}
+
+.ust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.35rem 0.5rem;
+  margin: 0 0 1.25rem;
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.giris {
+  margin: 0 0 2rem;
+  color: var(--ikincil);
+  font-size: 1.05rem;
+  line-height: 1.65;
+}
+
+.bolum {
+  margin-top: 2rem;
+  padding-top: 1.35rem;
+  border-top: 1px solid var(--cizgi);
+}
+
+.bolum:first-of-type {
+  margin-top: 0;
+  padding-top: 0;
+  border-top: 0;
+}
+
+.bolum h2 {
+  margin-bottom: 0.55rem;
+  font-size: clamp(1.22rem, 2.2vw, 1.5rem);
+}
+
+.metin ul {
+  display: grid;
+  gap: 0.55rem;
+  margin: 0 0 1rem;
+  padding-left: 1.2rem;
+}
+
+.metin li {
+  padding-left: 0.15rem;
+  line-height: 1.6;
+}
+
+.metin code {
+  padding: 0.08rem 0.3rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 4px;
+  background: var(--yuzey);
+  font-family: var(--font-kimlik);
+  font-size: 0.88em;
+}
+
+.not {
+  margin-top: 2rem;
+  padding: 1rem 1.1rem;
+  border-left: 3px solid var(--sinyal);
+  background: var(--yuzey);
+}
+
+.not p:last-child {
+  margin-bottom: 0;
+}
+
+.durum {
+  max-width: 68ch;
+}
+
+.kod {
+  margin: 0 0 0.6rem;
+  color: var(--sinyal);
+  font-family: var(--font-kimlik);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.1em;
+}
+
+.eylem {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+  margin-top: 1.6rem;
+}
+
+.bag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.65rem 1rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 10px;
+  background: var(--yuzey);
+  color: var(--murekkep);
+  font-weight: 700;
+  text-decoration: none;
+}
+
+.bagBirincil {
+  border-color: var(--sinyal);
+  background: var(--sinyal);
+  color: var(--yuzey);
+}
+
+.dugme {
+  min-height: 44px;
+  padding: 0.65rem 1.15rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sinyal);
+  color: var(--yuzey);
+  font-weight: 700;
+}
+
+.dugme:hover {
+  background: var(--sinyal-koyu);
+}
+
+@media (max-width: 640px) {
+  .eylem {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .bag,
+  .dugme {
+    width: 100%;
+  }
+}

@@ -136,9 +136,15 @@ export default async function AnaSayfa() {
           </p>
         </div>
         <div className={s.veriEylem}>
-          <a className={dugmeSinifi('birincil')} href="/db.json" download>
-            db.json indir <span aria-hidden="true">↓</span>
-          </a>
+          {istatistik.yayinSurumu === null ? (
+            <p className={s.veriMetin}>
+              Henüz yayınlanmış veri yok. İlk yayın admin onayından sonra burada görünecek.
+            </p>
+          ) : (
+            <a className={dugmeSinifi('birincil')} href="/db.json" download>
+              db.json indir <span aria-hidden="true">↓</span>
+            </a>
+          )}
         </div>
       </section>
     </>
