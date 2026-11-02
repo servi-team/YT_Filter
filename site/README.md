@@ -1,45 +1,86 @@
 # YouTube Filter Store (site)
 
-Oylama sitesi: ziyaretçi oyları -> sonuç -> `db.json` (eklentiye aylık mağaza güncellemesiyle gider).
-Kural kaynağı: `docs/PLAN_SITE.md` (bölüm 4-5) ve `docs/db-sema.md`.
-Teknoloji: Next.js + PostgreSQL (Drizzle) + Caddy, Docker Compose ile.
+Oylama sitesi: anonim ziyaretçi oyları -> sonuç -> `db.json` (eklentiye aylık mağaza güncellemesiyle gider).
+
+**Kural kaynakları:**
+- Ürün kuralları: [`docs/SISTEM_TASARIMI.md`](../docs/SISTEM_TASARIMI.md)
+- Site tasarımı: [`docs/superpowers/specs/2026-10-27-site-tasarimi.md`](../docs/superpowers/specs/2026-10-27-site-tasarimi.md)
+- Uygulama planları: [`docs/superpowers/plans/2026-10-27-site-uygulama.md`](../docs/superpowers/plans/2026-10-27-site-uygulama.md), [`docs/superpowers/plans/2026-10-28-site-kalan-dilimler.md`](../docs/superpowers/plans/2026-10-28-site-kalan-dilimler.md)
+- QA: [`docs/SITE_QA.md`](../docs/SITE_QA.md)
+
+Teknoloji: Next.js (App Router) + React + TypeScript, PostgreSQL/Drizzle, Docker Compose ve Caddy. PGlite yalnızca geliştirme ve test sürücüsüdür; üretimde kullanılmaz.
 
 ## Durum
-| Faz | İş | Durum |
+
+| Dilim | Kapsam | Durum |
 |---|---|---|
-| 1 | Next.js iskeleti, Docker Compose, Caddy, PostgreSQL | ✅ yazıldı (Docker henüz denenmedi) |
-| 2 | Ortak çekirdek: taksonomi/doğrulayıcı `src/core` tek kaynaktan (`lib/ortak.ts`) | ✅ |
-| 3 | Link ayrıştırma ✅ · kayıt ekleme, ad çekme, talepler | ⏳ |
-| 4 | Oy hesabı ✅ · oy deposu ✅ (`lib/oy-deposu.ts`) · oy arayüzü/API, çerez kimliği, IP sınırı | ⏳ |
-| 5 | `db.json` üretimi + çift doğrulama ✅ · indirme sayfası, yayın akışı | ⏳ |
-| 6-7 | Hesaplar, editör/admin panelleri, moderasyon arayüzü, yayın | ⏳ |
+| S1 | Kamusal kabuk, ana sayfa, keşfet, tasarım sistemi ve kalkan ikonu | ✅ kodlandı |
+| S2 | Anonim ziyaretçi kimliği, hız sınırı, oy servisi/API'leri ve içerik sayfası | ✅ kodlandı |
+| S3 | YouTube metadata çözümleme, kayıtsız link ve ekleme talebi | ✅ kodlandı |
+| S4 | Oturum, editör paneli, kayıt ekleme ve talep kuyruğu | ✅ kodlandı |
+| S5 | Moderasyon, geri alma, kilit, çerez/ağ engeli ve bakım | ✅ kodlandı |
+| S6 | Çok admin, arşiv/geri getirme, metadata düzeltme, `db.json` önizleme/yayın/indirme | ✅ kodlandı |
+| S7 | Gizlilik/koşullar/iletişim, hata sayfaları, erişilebilirlik ve QA | ✅ kodlandı |
 
-Karar: avatar yok (kanal kaydında yalnızca kimlik, handle ve ad).
+- `npm test`, `npm run tip` ve `npm run build` yerelde yeşil.
+- Docker Compose + PostgreSQL + Caddy üretim yığını bu makinede **denenmedi**.
+- Gerçek tarayıcı QA'sı, ekran görüntüleri, gerçek eklentiye `db.json` yükleme ve mağaza yüklemesi **kullanıcıda**.
+- Bu makinede Docker bulunmadığı için doğrulama Node 22.23.4 + npm + PGlite ile yapıldı.
 
-## Klasörler
-- `lib/` saf kural kodu (oy hesabı, link çözme, `db.json` üretimi) ve oy deposu
-- `db/schema.ts` şema, `db/gecisler/` üretilmiş SQL geçişleri (şemayı değiştirince `npm run db:uret`)
-- `app/` Next.js sayfaları ve API (`/api/saglik`)
-- `docker-compose.yml`, `Dockerfile`, `Caddyfile`, `.env.example`, `deploy/yedekle.sh`
+## Avatar
 
-## Testler
-`npm test` (Node 22 LTS veya 24 LTS; en az 22.18). Veritabanı testleri gerçek PostgreSQL motoruyla (pglite) çalışır, Docker gerekmez.
+Kanal avatarı `kanallar.avatar` alanında, video kaydındaki kanal avatarı `videolar.kanal_avatar` alanında tutulur. Kayıt eklenirken YouTube metadata çözücüsünden alınır; yoksa arayüz kanal adının baş harflerinden rozet üretir. Video eklemek ayrı bir kanal satırı oluşturmaz.
 
-Node 23/25 gibi destek dışı tek sürümlerde PGlite (WASM) Windows'ta başlatma sırasında kilitlenebiliyor. Bu yüzden test betiği LTS olmayan sürümlerde hemen uyarı verip durur. Önerilen sürüm `.nvmrc` dosyasında (`22.23.4`).
+## Yerelde hızlı başlangıç (PowerShell)
 
-Test dosyaları her biri kendi sürecinde olacak şekilde 4 eşzamanlı çalışır (~20 sn). Seri çalıştırmak için `TEST_ESZAMANLILIK=1 npm test`.
-
-## Yerelde çalıştırma (Docker ile)
-Depo kökünden:
+```powershell
+cd site
+npm install
+Copy-Item .env.example .env
+# .env içinde: SITE_DB=pglite, PGLITE_DIR=.pglite,
+# SITE_ORIGIN=http://localhost:3000, IP_HASH_SECRET=<uzun rastgele değer>
+npm run dev
 ```
-cp site/.env.example site/.env        # POSTGRES_PASSWORD'ü doldur
+
+- PGlite verisi `site/.pglite/` altında tutulur (git'e girmez).
+- `npm run demo:veri` örnek kanal, video ve oy ekler; tablolarda kayıt varsa değişiklik yapmaz.
+- İlk admin: `.env` içindeki `ILK_ADMIN_EPOSTA` ve `ILK_ADMIN_PAROLA` ile `npm run ilk-admin`.
+- Node sürümü `.nvmrc` dosyasında: **22.23.4**. Test betiği destek dışı tek Node sürümlerinde (ör. 23/25) PGlite kilidi nedeniyle durur.
+
+## Komutlar
+
+| Komut | İş |
+|---|---|
+| `npm test` | Tüm site testleri (PGlite, Node test koşucusu) |
+| `npm run tip` | TypeScript tip denetimi (`tsc --noEmit`) |
+| `npm run build` | Üretim derlemesi (`standalone`) |
+| `npm run qa:duman` | Çalışan siteye HTTP dumanı; `BASE_URL` varsayılan `http://localhost:3000` |
+| `npm run bakim` | 30 günden eski IP özetlerini ve süresi dolmuş engelleri temizler |
+| `npm run db:uret` | Şema değişikliğinden sonra Drizzle geçişi üretir |
+| `npm run migrate` | `DATABASE_URL` üzerindeki PostgreSQL'e geçişleri uygular |
+| `npm run demo:veri` | Geliştirme/test verisi ekler |
+| `npm run ilk-admin` | İlk admin hesabını oluşturur |
+
+## Üretim
+
+Docker Compose + PostgreSQL + Caddy kullanılır. Üretimde `DATABASE_URL` zorunludur; PGlite üretim imajında bulunmaz. Geçişler `npm run migrate` (Compose'daki tek seferlik `migrate` servisi) ile uygulanır, yedek `site/deploy/yedekle.sh` ile alınır.
+
+```powershell
+Copy-Item site\.env.example site\.env
+# SITE_DOMAIN, POSTGRES_PASSWORD, SITE_ORIGIN ve IP_HASH_SECRET değerlerini doldur.
 docker compose -f site/docker-compose.yml --env-file site/.env up -d --build
 ```
-Sonra `https://localhost` (tarayıcı kendinden imzalı sertifika uyarısı verir, yerel deneme için normal).
-Kontrol: `https://localhost/api/saglik` -> `{"site":"ok","veritabani":"ok"}`.
-Durdurma: `docker compose -f site/docker-compose.yml --env-file site/.env down` (veriler silinmez; `down -v` SİLER).
 
-## Sunucuya alırken
-1. Alan adının DNS A kaydı sunucunun IP'sine baksın, `.env` içinde `SITE_DOMAIN` o alan adı olsun.
-2. Sunucuda yalnızca 80 ve 443 dışarıya açık olsun (güvenlik duvarı).
-3. Yedek: `./site/deploy/yedekle.sh`. Yedeği sunucu dışına kopyala ve geri yüklemeyi BİR KEZ dene.
+Sağlık kontrolü: `https://<alan-adı>/api/saglik` -> `{"site":"ok","veritabani":"ok"}`. Yedek `site/deploy/yedekle.sh` ile alınır; devir ve geri yükleme notları `DEVIR_NOTU.md` bölüm 9'dadır.
+
+## Gizlilik
+
+Site gizlilik metni `/gizlilik` sayfasındadır ve yalnızca siteyi kapsar. Tarayıcı eklentisinin gizlilik metni ayrıdır: [`docs/GIZLILIK.md`](../docs/GIZLILIK.md). İki metin birbirine karıştırılmamalıdır.
+
+## Bilinen sınırlar
+
+- Docker/PostgreSQL/Caddy üretim denemesi ve gerçek tarayıcı/ekran okuyucu testi yapılmadı.
+- Otomatik testler tarayıcı QA'sının, ekran görüntülerinin ve mağaza yüklemesinin yerini tutmaz.
+- Site içi “Bildir” formu/uç noktası yoktur; iletişim GitHub Issues üzerindendir.
+- E-posta gönderimi, analitik, reklam ve üçüncü taraf izleme yoktur.
+- Push, kullanıcı incelemesinden sonra yapılacaktır.

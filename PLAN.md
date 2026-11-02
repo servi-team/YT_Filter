@@ -1,7 +1,7 @@
 # YouTube Filtreleyici — Plan
 
 > Canlı belge. Her PR bittiğinde "Durum" tablosu güncellenir; kararlar netleşince "Karar bekleyen konular"dan `DEVIR_NOTU.md` bölüm 5'e taşınır.
-> Son güncelleme: 2026-10-21 (D4: yeni ikon + GitHub Pages + video erteleme; öncesi D3 site kararları, D2 mağaza engelleri, 8F mağaza hazırlığı)
+> Son güncelleme: 2026-10-27 (Site S1–S7 kodlandı ve devir belgeleri uzlaştırıldı; öncesi D4 yayın kararları, D3 site kararları, D2 mağaza engelleri, 8F mağaza hazırlığı)
 > **Kural kaynağı:** `docs/SISTEM_TASARIMI.md`. Plan ile çelişirse o belge geçerlidir.
 
 ## 1. Hedef
@@ -9,7 +9,7 @@
 Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket tabanlı** bir YouTube filtresi:
 
 1. **Eklenti:** içeriği veritabanındaki konu/etiket kayıtlarına ve kullanıcının politikasına göre filtreler (tamamen yerelde).
-2. **Düzenleme sitesi ("YouTube Filter Store"):** editörler ve topluluk kanal/video başına konu ve etiketi **oylar**; site sonucu hesaplar; ziyaretçi güncel JSON'u indirir ve rapor gönderir.
+2. **Düzenleme sitesi ("YouTube Filter Store"):** ziyaretçiler hesap açmadan kanal/video başına konu ve etiketi **oylar**; site sonucu hesaplar; ziyaretçi güncel JSON'u indirir ve kayıtsız link için ekleme talebi gönderir.
 3. **Dağıtım:** veritabanı aylık güncellemelerle eklenti paketiyle gelir (Chrome Web Mağazası); Firefox desteği korunur.
 
 ## 2. Durum
@@ -32,7 +32,7 @@ Teknik bilgisi olmayan kullanıcıların kullanabileceği, **konu + etiket taban
 | **8E** | **Listelerde kanal adı/avatarı:** `kanalBilgileri` deposu, sayfadan toplama, listede avatar + ad | ✅ kodlandı, `node --test` yeşil (112 test); tarayıcıda kanal ekleme denenmeli |
 | **8F** | **Mağaza hazırlığı:** listeleme metinleri, gizlilik politikası, sürüm akışı, kontrol listesi, ikonlar/mağaza görselleri | ✅ kodlandı (`docs/MAGAZA_HAZIRLIK.md`, `docs/MAGAZA_ELLE.md`, `docs/GIZLILIK.md`, `README.md`), 116 test; **elle:** tarayıcı testleri, ekran görüntüleri, mağaza yüklemesi; video ertelendi, gizlilik URL'i GitHub Pages'te (build doğrulanacak) |
 | 8 | Sağlamlaştırma ve mağaza hazırlığı (8A ✅, 8B ✅, 8C ✅, 8D ✅, 8E ✅, 8F ✅ kod tarafı) | ✅ tamam: kalan işler tarayıcı/mağaza hesabı gerektirir (aşağıdaki doğrulama listesi) |
-| S | Düzenleme sitesi + oylama | ⏳ (şema donduğu için paralel başlayabilir; rol matrisi ve SISTEM #1/#2/#3/#18/#19 onaylandı; #8/#10/#11 ve S1 açık — `docs/SITE_HAZIRLIK.md`) |
+| S | Düzenleme sitesi + oylama | ✅ **S1–S7 kodlandı (2026-10-27)**; site test/tip/build yeşil. Docker/PostgreSQL, gerçek tarayıcı QA'sı, ekran görüntüleri ve mağaza yüklemesi kullanıcıda. Ayrıntı: 4.4 ve `PLAN_SITE.md`; SISTEM #1/#2/#3/#18/#19 onaylı; #8/#10/#11 yalnızca eklenti davranışı için teyit bekliyor. |
 
 ### Önce yapılacak: mağaza öncesi gerçek tarayıcı doğrulaması
 Adım adım kontrol listesi: **`docs/MAGAZA_ELLE.md` bölüm 1**. Aşağıdaki maddeler o listenin ayrıntılı tanılama notlarıdır.
@@ -53,7 +53,7 @@ Adım adım kontrol listesi: **`docs/MAGAZA_ELLE.md` bölüm 1**. Aşağıdaki m
 
 ## 3. Mantık çerçevesi: üç katman
 
-**Sorun:** Hızlı ekleme düğmesi ve "Kanal/Video Ekle" alanı yalnızca beyaz/kara/özel liste sunuyor. Kullanıcı hep listeye ekleyerek ilerlerse konular ve etiketler hiç devreye girmiyor; sistemin asıl değeri (veritabanı) atlanıyor. Üstelik veritabanı boş ve site yok; kullanıcının konu/etiket atamasının hiçbir yolu yok.
+**Sorun:** Hızlı ekleme düğmesi ve "Kanal/Video Ekle" alanı yalnızca beyaz/kara/özel liste sunuyor. Kullanıcı hep listeye ekleyerek ilerlerse konular ve etiketler hiç devreye girmiyor; sistemin asıl değeri (veritabanı) atlanıyor. Üstelik o tarihte veritabanı boştu ve site yoktu; kullanıcının konu/etiket atamasının hiçbir yolu yoktu. (Site S1–S7 ile 2026-10-27'de kodlandı.)
 
 **Çözüm:** Listeler *asıl mekanizma değil, istisnadır*. Üç katman:
 
@@ -89,7 +89,7 @@ Alternatif: özel liste = kullanıcının **kendi konusu** (ör. "Ders kanallar�
 **2026-10-21'de onaylandı** (site uygulayacak; eklenti tarafında ek değişiklik gerekmiyor):
 
 - **SISTEM #1 — Ana konu:** net puan esas alınır.
-- **SISTEM #2 — Beraberlik:** `taxonomy.KONULAR` sırasındaki ilk konu.
+- **SISTEM #2 — Beraberlik:** önce net puan, eşitse **upvote sayısı fazla olan**, o da eşitse `taxonomy.KONULAR` sırasındaki ilk konu. *(2026-10-22: upvote adımı eklendi; 10-21'de yalnızca liste sırası onaylanmıştı.)*
 - **SISTEM #3 — Kararsız:** net 0 **ve** en az bir oy; 0/0/0 kayda girmez.
 - **SISTEM #18 — Asgari oy eşiği:** en az 3 oy. Eşik altındaki konu/etiket değerlendirilmez.
 - **SISTEM #19 — Beyaz liste:** mutlak; etiket koruması/ebeveyn kilidi 2.0.0 dışında ayrı ayar olarak değerlendirilecek.
@@ -106,6 +106,21 @@ Ayrıntı ve öneriler: `docs/SITE_HAZIRLIK.md` bölüm 2.
 
 - **Karar (2026-10-21): A — site beklenecek.** B yerel köprü uygulanmayacak. Site hazır olana kadar `docs/db.test-ornek*.json` ile elle test.
 - Seçeneklerin geçmişi: **A)** siteyi öne al; **B)** eklentiye aynı şemada yerel kayıt düzenleyicisi ekle. Ayrıntı: `docs/SITE_HAZIRLIK.md` bölüm 3.
+
+### 4.4 Site kararları (2026-10-22/27)
+
+Ayrıntı ve fazlar: `PLAN_SITE.md`; uygulama: `site/README.md`.
+
+- **Yığın:** TypeScript (Node 22) + Next.js + PostgreSQL + Caddy, Docker Compose, aynı depoda `site/`. Node 22 + npm; PGlite yalnızca geliştirme/test sürücüsü, üretimde PostgreSQL. (Önceki aday C#/ASP.NET Core + SQLite bırakıldı.)
+- **Roller:** Ziyaretçi (hesapsız; **oy verir**, `db.json` indirir, ekleme talebi gönderir), Editör (yeni kanal/video kaydı ekler + talep kuyruğu + moderasyon), Admin (editör + hesap/rol/aktiflik yönetimi + metadata düzeltme + arşiv/geri getirme + `db.json` yayını; taksonomi salt okunur). Hesap yalnızca Editör/Admin için.
+- **Anonim oy:** HttpOnly çerez kimliği ile hedef + konu/etiket başına tek oy, serbest değiştirme; IP hız sınırı; düz IP saklanmaz, HMAC-SHA256 IP özeti oy kayıtlarında 30 gün (aktif engelde engel süresince) tutulur; captcha yok. Zayıf koruma bilinçli seçildi; güvence moderasyon + 3 oy eşiği.
+- **Moderasyon:** oy geri alma (ziyaretçi geri alması geçici, moderasyon geri alması kalıcı), kayıt kilidi, çerez/ağ engeli; editör sonucu elle yazamaz, işlemler gerekçeli ve kayıtlıdır. Panelde yalnızca `çerez:xxxxxxxx` / `ağ:xxxxxxxx` takma etiketleri görünür. Kilitte `db.json`'a kilit anındaki sonuç yazılır.
+- **Arşiv ve yayın:** İçerik silinmez, arşivlenir; arşivli kayıt kamusal listeden ve yeni `db.json`'dan çıkar, oyları/kilit/moderasyon geçmişi korunur. `db.json`'ı yalnızca admin yayınlar; geçmiş sürümler `?surum=N` ile sabit kalır.
+- **Oy hedefi:** video linki yalnızca videoya, kanal linki yalnızca kanala. Video eklemek kanal satırı oluşturmaz; kanal bilgisi videoda taşınır.
+- **Eşik ve beraberlik:** en az 3 toplam oy; ana konuda net puan → upvote → `KONULAR` sırası. Oy almamış kayıt `db.json`'a yazılmaz.
+- **Gizlilik ve istemci:** Yerel fontlar; üçüncü taraf font/analitik/reklam yok. Site gizlilik metni `/gizlilik`, eklenti metni `docs/GIZLILIK.md`; iki metin ayrıdır. Site v1'de “Bildir” uç noktası/formu yoktur.
+- **2026-10-27'de çözülenler:** `docs/SITE_HAZIRLIK.md` ve `docs/puan-sistemi-onerisi.md` uygulanan kurallarla hizalandı; metadata için YouTube Data API anahtarı opsiyonel, yoksa oEmbed/HTML fallback kullanılıyor; kilit/geri alma için admin onayı gerekmiyor (editör tek başına, gerekçeli ve kayıtlı); yayını yalnızca admin onaylıyor; oy IP özeti 30 gün (aktif engelde engel süresince) saklanıyor; site gizlilik metni `/gizlilik` taslağında. Çok admin ve son admin koruması, arşiv/geri getirme ve site içi rapor uç noktasının olmaması da bu tarihte netleşti.
+- **Kullanıcıda kalanlar:** gerçek tarayıcı/ekran okuyucu QA'sı ve ekran görüntüleri, Docker/PostgreSQL/Caddy üretim denemesi, gerçek eklentiye `db.json` yükleme, mağaza yüklemesi ve hukuki inceleme.
 
 ## 5. Yol haritası
 
@@ -169,15 +184,16 @@ Ayrıntı ve öneriler: `docs/SITE_HAZIRLIK.md` bölüm 2.
 - ~~PIN: düz metin yerine karma saklama (hâlâ yalnızca arayüz kilidi olduğu belgelenir).~~ ✅ 8C'de yapıldı (PBKDF2-SHA256, eski kayıt yükseltme).
 - ~~Mağaza: gizlilik metni, ekran görüntüleri, sürüm akışı.~~ ✅ 8F'de doküman tarafı yapıldı (`docs/MAGAZA_HAZIRLIK.md`, `docs/MAGAZA_ELLE.md`, `docs/GIZLILIK.md`); **elle kalan:** ekran görüntüleri ve mağaza yüklemesi; gizlilik URL'i GitHub Pages'te.
 
-### Düzenleme sitesi ("YouTube Filter Store", S) — `db.json` şeması dondu, paralel başlayabilir
-- **S0 — Prototip (önce):** link yapıştırınca kanal adı/avatar/ID'nin API'siz alınması (video: `oembed`; kanal sayfası: HTML meta). Kırılganlık ölçülür.
-- **S1 — Teknoloji ve barındırma kararı** (C#/ASP.NET Core MVC aday; SQLite; Docker). Karar: Talha.
-- **S2 — İskelet:** admin/editör/ziyaretçi rolleri, giriş.
-- **S3 — Oylama ekranı:** adres çubuğuna link → ID/başlık otomatik → her konu ve etiket için **Upvote / Kararsız / Downvote** (lider dökümanı bölüm 5); mevcut oylar gösterilir.
-- **S3b — Sonuç hesabı (saf fonksiyon + test):** toplam = up − down (kararsız oylar hariç); >0 → ana/yan konu ya da etiket; =0 ve oy var → kararsız; <0 → yazılmaz; ana konu = en yüksek net puan, beraberlikte `KONULAR` sırası; hiç pozitif konu yoksa `anaKonu` yok. Kurallar ve ❓ maddeler `SISTEM_TASARIMI.md`'de; eşik kararı 4.2/#7.
+### Düzenleme sitesi ("YouTube Filter Store", S) — ✅ S1–S7 uygulandı (2026-10-27)
+- **Site S1–S7 — ✅ kodlandı (2026-10-27):** Kamusal kabuk, anonim oy, link/metadata ve talepler, oturum/editör paneli, moderasyon, çok admin/arşiv/yayın, kamusal metinler, erişilebilirlik ve QA. Yerel `npm test` + `npm run tip` + `npm run build` yeşil. **Açık:** Docker/PostgreSQL üretim denemesi, gerçek tarayıcı QA'sı, ekran görüntüleri, gerçek eklentiye `db.json` yükleme ve mağaza yüklemesi. Ayrıntı: `PLAN_SITE.md`, `docs/SITE_QA.md`, `site/README.md`.
+- **S0 — Prototip (✅ uygulandı):** link yapıştırınca kanal adı/avatar/ID'nin alınması. `site/lib/youtube-link.ts` + `site/lib/youtube-meta.ts`: YouTube Data API anahtarı varsa birincil yol, yoksa video için oEmbed ve kanal için HTML fallback. API anahtarı opsiyonel; gerçek 10+10 link kontrolü manuel QA'da.
+- **S1 — Teknoloji ve barındırma: ✅ karar (2026-10-22), uygulandı (2026-10-27):** TypeScript (Node 22) + Next.js + PostgreSQL + Caddy, Docker Compose; aynı depoda `site/`. (Önceki aday C#/ASP.NET Core MVC + SQLite bırakıldı.) Ayrıntı: `PLAN_SITE.md`, `site/README.md`.
+- **S2 — İskelet:** Editör/Admin giriş sistemi (ziyaretçi hesabı yok), Docker Compose, `site/` iskeleti.
+- **S3 — Oylama ekranı:** adres çubuğuna link → kayıt bulunursa ID/başlık/kanal gösterilir → her konu ve etiket için **Upvote / Kararsız / Downvote** (lider dökümanı bölüm 5); mevcut oylar gösterilir. **Oy anonim** (çerez kimliği, IP hız sınırı, serbest değiştirme). Kayıt yoksa "ekleme talebi" gönderilir; yeni kaydı yalnızca Editör/Admin ekler.
+- **S3b — Sonuç hesabı (saf fonksiyon + test):** geri alınan oylar hesaba girmez; toplam oy (up + kararsız + down) **< 3** ise konu/etiket değerlendirilmez (SISTEM #18); toplam = up − down (kararsız oylar hariç); >0 → ana/yan konu ya da etiket; =0 (ve eşik geçildi) → kararsız; <0 → yazılmaz; ana konu = en yüksek net puan, beraberlikte **upvote fazla olan, o da eşitse `KONULAR` sırası** (SISTEM #2); hiç pozitif konu yoksa `anaKonu` yok. Kilitli kayıtta kilit anındaki sonuç. Kurallar ve ❓ maddeler `SISTEM_TASARIMI.md`'de.
 - **S4 — Dışa aktarma:** `docs/db-sema.md` sema 1 çıktısı (**`kararsizKonular`/`kararsizEtiketler` dahil**); `veriSurumu` otomatik artar; eklentiye `db.json` olarak girer.
-- **S5 — Ziyaretçi:** girişsiz JSON indirme; konu/etiket öneri-rapor formu.
-- **S6 — Yayın:** Docker, yedekleme, rapor kuyruğu.
+- **S5 — Ziyaretçi ve moderasyon:** girişsiz `db.json` indirme; ekleme talebi kuyruğu; Editör paneli (kayıt ekleme, talep işleme); moderasyon (oyları geri alma, kayıt kilidi, çerez/IP engelleme).
+- **S6 — Yayın:** Docker, yedekleme (`pg_dump` + sunucu dışı kopya), site gizlilik/kullanım metni (KVKK aydınlatma dahil), aylık yayın prosedürü (`PLAN_SITE.md` bölüm 13).
 
 ## 6. Riskler
 
@@ -190,6 +206,8 @@ Ayrıntı ve öneriler: `docs/SITE_HAZIRLIK.md` bölüm 2.
 | **Belge–kod uyuşmazlığı** | "Tamam" denen iş dosyada yok (PR 5 örneği) | Yüklenen dosyalar esastır; her PR sonunda ilgili davranışı jsdom/Node ile gösteren test; DEVIR_NOTU'nda "doğrulandı / doğrulanmadı" ayrımı |
 | **Liderin belirsiz bıraktığı kurallar** | Yanlış yorumla kodlanan davranış | `SISTEM_TASARIMI.md` bölüm 6 (❓ maddeler) + her yorum için test; teyit gelince tek satır değişir |
 | **Tek oyla etiket oluşması** | Yanlış/kötü niyetli oyla video engellenir | Asgari **3 oy** eşiği (SISTEM #18) site tarafında uygulanacak; moderasyon |
+| **Anonim oy manipülasyonu** | Çerez silen/çok cihazlı biri aynı kaydı yönlendirebilir (hesap yok, captcha yok) | IP hız sınırı, 3 oy eşiği, Editör moderasyonu (oy geri alma, kilit); görülürse captcha |
+| **Site gizliliği / KVKK** | Çerez kimliği ve IP özeti saklanır; eklentinin "veri toplamaz" politikasıyla karışabilir | Ayrı site gizlilik ve aydınlatma metni (`/gizlilik`); IP yalnızca HMAC-SHA256 özeti; oy IP özeti 30 gün, aktif engelde engel süresince; hukuki inceleme kullanıcıda |
 | **Gerçek tarayıcı doğrulaması eksik** | jsdom'da geçen kod YouTube'da çalışmayabilir | Yukarıdaki test listesi; `YT Filter:` günlükleri |
 | Tek geliştirici | Süreklilik | Bu belge, `DEVIR_NOTU.md`, `SISTEM_TASARIMI.md`, testler |
 

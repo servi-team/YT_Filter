@@ -1,8 +1,10 @@
 # YouTube Filtreleyici — Devir Notu
 
 > Bu belge, projeye sıfırdan giren bir kişinin ya da yapay zekânın kaldığımız yerden devam edebilmesi için yazıldı.
-> Son güncelleme: 2026-10-21 (düzeltme turu + karar kayıtları + yayın kararları) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
+> Son güncelleme: 2026-10-27 (site S1–S7 uygulaması ve devri; öncesi: 2026-10-22 site kararları, düzeltme turu, yayın kararları) · Kod tabanı: `TalhaOzz/YouTubeFilter` (fork) · Geliştirici: Talha (tek geliştirici, yapay zekâ desteğiyle)
 > Yol haritası için `PLAN.md`, değişiklik özeti için `CHANGELOG.md`, **ürün kuralları için `docs/SISTEM_TASARIMI.md` (ekip liderinin dökümanı — kuralların tek kaynağı)**, `db.json` sözleşmesi için `docs/db-sema.md` dosyalarına bakın.
+
+> **2026-10-27 site uygulaması:** Site S1–S7 olarak `site/` altında kodlandı ve yerelde doğrulandı. Anonim oy, 3 oy eşiği, iki geri alma bayrağı, kilit, çerez/ağ engeli, arşiv, çok admin, `db.json` yayını, yerel fontlar ve ayrı site/eklenti gizlilik metinleri uygulandı. Ayrıntı ve devir adımları bu belgenin 2.7 ve 9. bölümlerindedir; ürün kuralları `docs/SISTEM_TASARIMI.md` bölüm 7'de, site özeti `docs/PLAN_SITE.md`'de, QA `docs/SITE_QA.md`'dedir. Docker/PostgreSQL üretim denemesi, gerçek tarayıcı QA'sı, ekran görüntüleri ve mağaza yüklemesi kullanıcıda; push yapılmadı.
 
 > **2026-10-21 düzeltme turu:** Mağaza engelleri kapatıldı: Firefox `data_collection_permissions.required = ["none"]` (AMO, 3 Kasım 2025'ten beri zorunlu), `strict_min_version` 140; 16/32/48/128 ikonları (`src/icons/`, `npm run ikon`) + manifest `icons` / `action.default_icon`; sürüm üç yerde **2.0.0** (`package.json` + iki manifest); `README.md`; mağaza görselleri (128×128 ikon, 440×280 karo, 1280×800 ekran görüntüsü planı) ve gizlilik metni güncellendi. Önceki düzeltme turu (`46b5afd`) CHANGELOG'a işlendi. Taksonomi ileri uyumluluğu: bilinmeyen konu/etiket kimlikleri artık kaydı düşürmez, yok sayılır ve sayılır. Toplam **116 test**. Kalan (elle): gerçek tarayıcı testleri, ekran görüntüleri, mağaza hesapları; tanıtım videosu ertelendi; gizlilik URL'i GitHub Pages için yapılandırıldı (push sonrası doğrulanacak); site kodu (S0/S1) henüz başlamadı.
 >
@@ -37,11 +39,11 @@ YouTube'u filtreleyen bir tarayıcı eklentisi (Chromium + Firefox, Manifest V3)
 Eski sürümde her kanal/video elle bir "kategoriye" atanıyordu. Yeni sürümde iki bileşen var:
 
 1. **Eklenti:** İçeriği, bir **veritabanındaki konu/etiket kayıtlarına** ve kullanıcının ayarlarına göre filtreler.
-2. **Düzenleme sitesi — "YouTube Filter Store" (henüz yazılmadı):** Editörlerin ve topluluğun kanal/video başına konu ve etiketi **oylayarak** girdiği, ziyaretçilerin JSON indirip rapor gönderebildiği web sitesi. Çıktısı eklentinin okuduğu `db.json`.
+2. **Düzenleme sitesi — "YouTube Filter Store" (S1–S7 kodlandı, 2026-10-27):** Ziyaretçilerin hesap açmadan kanal/video başına konu ve etiketi **oylayarak** girdiği, editörlerin kayıt ve moderasyon yaptığı, adminin `db.json` yayınladığı web sitesi. Çıktısı eklentinin okuduğu `db.json`.
 
 Veritabanı aylık güncellemelerle eklenti paketiyle (Chrome Web Mağazası) gelir; eklenti ağdan veri çekmez. İsteyen kullanıcı siteden JSON indirip elle içe aktarabilir (PR 7 ile eklentide `dbOverride` arayüzü var).
 
-> **Önemli (neden "konular işe yaramıyor?"):** Konu ve etiketleri **kullanıcı atamaz**; veriyi site üretir. `data/db.json` şu an neredeyse boş (yalnızca bir örnek kanal) ve site yok, bu yüzden çoğu içerik "bilinmeyen" kalır ve kullanıcıya yalnızca listeler görünür. Bu bir kod hatası değil, **sıralama sorunu**: önce tüketen taraf (eklenti) yapıldı, üreten taraf (site) yapılmadı. Bkz. `PLAN.md` "Veri köprüsü" kararı.
+> **Önemli (neden "konular işe yaramıyor?"):** Konu ve etiketleri **kullanıcı atamaz**; veriyi site üretir. `data/db.json` şu an neredeyse boş (yalnızca bir örnek kanal); site kodu S1–S7 olarak hazır ama henüz yayına alınmadı ve mağaza verisi güncellenmedi, bu yüzden çoğu içerik "bilinmeyen" kalır ve kullanıcıya yalnızca listeler görünür. Bu bir kod hatası değil, **sıralama sorunu**: önce tüketen taraf (eklenti) yapıldı, üreten taraf (site) yeni tamamlandı. Bkz. `PLAN.md` "Veri köprüsü" kararı.
 
 ---
 
@@ -62,7 +64,7 @@ Veritabanı aylık güncellemelerle eklenti paketiyle (Chrome Web Mağazası) ge
 - `film-dizi-sanat` Film / Dizi / Sanat · `yasam-vlog` Yaşam / Vlog · `finans` Finans / Girişim
 - `saglik-gelisim` Sağlık / Kişisel gelişim · `cocuk` Çocuk içerikleri
 
-> Konu **sırası** önemlidir: oylamada beraberlikte "listedeki ilki" ana konu olur (bkz. `SISTEM_TASARIMI.md` 6/#2). Sırayı değiştirmeyin; yeni konu sona eklenir.
+> Konu **sırası** önemlidir: oylamada beraberlikte önce upvote sayısı, o da eşitse "listedeki ilki" ana konu olur (bkz. `SISTEM_TASARIMI.md` 6/#2). Sırayı değiştirmeyin; yeni konu sona eklenir.
 
 ### 2.3 Varsayılan etiketler (8)
 - `kufur` Küfürlü içerik · `argo` Argolu içerik (hakaret) · `ai` AI ile üretilmiş içerik · `kumar` Kumar / bahis
@@ -99,8 +101,8 @@ Belirsiz kalan noktaların yorumları ve liderden teyit bekleyenler: `SISTEM_TAS
 - İzleme sayfasında *Gizle* ve *Uyarı sayfası* → banner; *Bulanıklaştır* → oynatıcı bulanık.
 - Banner'daki **doğrulanmamış** nokta: gerçek YouTube'da tetiklenmesi (bkz. 6/#14).
 
-### 2.7 Düzenleme sitesi (henüz yapılmadı)
-**Rol matrisi (2026-10-21'de onaylandı):** **Admin**, **Editör** (link yapıştırır → ID/başlık otomatik gelir → konu/etiket **oyları** girer), **Ziyaretçi** (girişsiz: güncel `db.json`'u indirir, rapor gönderir). Bu roller `SISTEM_TASARIMI.md`'de tanımlı değildir; yetki matrisi `docs/SITE_HAZIRLIK.md` bölüm 1'dedir. Uygulama ayrıntıları (admin kimliği, editör kabulü, oy görünürlüğü, KVKK) hâlâ açık. Oylama ve sonuç hesabı: `SISTEM_TASARIMI.md` bölüm 5. Site, `db.json`'a **yalnızca sonucu** yazar (ham oylar sitede kalır).
+### 2.7 Düzenleme sitesi (uygulandı, 2026-10-27)
+**Roller (2026-10-21'de onaylandı; 2026-10-22 ve 2026-10-27'de güncellendi):** **Ziyaretçi** (hesapsız): kayıtlı video/kanalı görür, **oy verir ve oyunu değiştirir**, güncel `db.json`'u indirir, kayıtsız link için "ekleme talebi" gönderir. **Editör** (admin açar): ziyaretçi yetkileri + **yeni kanal/video kaydı ekler** (link yapıştırır → ID/başlık/ad/avatar otomatik gelir), talepleri kayda çevirir, **moderasyon** yapar (oy geri alma, kayıt kilidi, çerez/ağ engeli; sonucu elle yazamaz). **Admin**: editör yetkileri + editör/admin hesabı oluşturma ve rol/aktiflik yönetimi, metadata düzeltme, arşivleme/geri getirme, `db.json` yayınlama; taksonomi salt okunur. Hesap türü yalnızca Editör ve Admin'dir; herkese açık kayıt yoktur. Oy anonimdir: HttpOnly çerez kimliğiyle hedef + konu/etiket başına tek oy, IP hız sınırı, captcha yok. IP özeti 30 gün (aktif engelde engel süresince) tutulur. Site, `db.json`'a **yalnızca sonucu** yazar (ham oylar sitede kalır). Ürün kuralları `SISTEM_TASARIMI.md` bölüm 7, site özeti `PLAN_SITE.md`, QA `docs/SITE_QA.md`, çalıştırma `site/README.md`.
 
 ---
 
@@ -234,6 +236,7 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 | D3 | **Karar kayıtları + mağaza elle rehberi** (2026-10-21, `checkpoint-kararlar-1`): rol matrisi ve SISTEM #1/#2/#3/#18/#19 onaylandı; A/B = A; puan notu 3 oy eşiğine uyarlandı; `docs/MAGAZA_ELLE.md` + `scripts/gorsel-1280x800.ps1` | ✅ `node --test` yeşil (116 test); ayrıntı `CHANGELOG.md` |
 | D4 | **Yeni ikon + yayın kararları** (2026-10-21, `checkpoint-yayin-1`): kırmızı-beyaz sivri/kavislı kalkan + çapraz dama; mağaza ikonu 96+16 px; GitHub Pages yapılandırıldı; video ertelendi; belgeler güncellendi | ✅ build/test yeşil; Pages push sonrası doğrulanacak; ayrıntı `CHANGELOG.md` |
 | D5 | **İkon revizyonu** (2026-10-21, `checkpoint-yayin-2`): arka plan şeffaf, logaritmik sivrilme, büyük kalkan, açık kırmızı çeyrekler; promo gölgesi kalkan siluetine uyarlandı | ✅ 116 test; ayrıntı `CHANGELOG.md` |
+| D6 | **Site kararları kaydı** (2026-10-22): yığın, anonim oy, roller, moderasyon, beraberlik upvote adımı, 3 oy eşiği teyidi; `SISTEM_TASARIMI.md` 6/#2, 6/#18 + bölüm 7, `db-sema.md` dışa aktarma kuralı, `PLAN_SITE.md` | ✅ yalnızca belge; kod ve testler değişmedi; `docs/SITE_HAZIRLIK.md` ve `puan-sistemi-onerisi.md` hizalaması bekliyor |
 
 ### PR 6B'de düzeltilen hatalar (`content.js`)
 - Engel banner'ı **her saniye silinip yeniden çiziliyordu** (titreme, tıklama kaybı) → aynı sebep için tek çizim.
@@ -268,14 +271,15 @@ Ayrıntı: `docs/db-sema.md`. Özet: `{sema:1, veriSurumu:int, kanallar:[{id:"UC
 16. **`kanalKontrol` olumlu kutuda:** arayüzde "Kanalın konu ve etiketlerine de bak" (açık = bak). Liderin ifadesi tersiydi ("devre dışı bırak"); saklanan değer aynı anlamda: `false` = devre dışı.
 17. **Şema numarası değişmedi.** Yeni alanlar isteğe bağlı ve geriye uyumlu. Eski eklenti ana konusuz kaydı atlar (kabul edilebilir).
 18. **PIN:** yeni kurulumda önceden atanmaz; ilk açılışta tam 4 rakam seçtirilir, atlanabilir. Eski kullanıcı `1234` + değiştirme uyarısıyla devam eder.
-19. **Veri köprüsü (açık):** konu/etiket atamasının tek kaynağı site; site yokken eklenti fiilen "iki listeli filtre". Seçenekler `PLAN.md` 4.2'de.
+19. **Veri köprüsü: A — siteyi öne al (karar 2026-10-21).** Konu/etiket atamasının tek kaynağı site; yerel köprü (B) uygulanmayacak. Site S1–S7 ile kodlandı (2026-10-27); yayın ve mağaza verisi güncellemesi kullanıcıda olduğu için o zamana kadar eklenti fiilen "iki listeli filtre"; test için `docs/db.test-ornek*.json`. Ayrıntı `PLAN.md` 4.3.
 20. **Liste içe aktarma varsayılanı "birleştir".** Gerekçe: veri kaybı riski yok; kullanıcı isterse modaldan üzerine yaz/yeniden adlandır seçer. Beyaz/kara listelerde ad çakışması kavramı yoktur, üyeler birleşir; çakışma yalnızca özel listelerde sorulur. Bir anahtar her zaman tek listede kalır (sonraki liste taşır). `db.json` içe aktarmada daha eski veya eşit `veriSurumu` saklanır ama etkisizdir (eşitlikte paketli kullanılır); kullanıcı uyarılır.
+21. **Site kararları (2026-10-22):** (a) Yığın TypeScript + Next.js + PostgreSQL + Caddy, Docker; PLAN.md'deki eski aday (C#/ASP.NET Core + SQLite) bırakıldı. Gerekçe: eklentiyle aynı dil, taksonomi ve doğrulayıcının paylaşılabilmesi. (b) Oy anonim ve herkese açık; hesap yalnızca Editör/Admin. Gerekçe: katılım kolaylığı; bedeli manipülasyon riski, bu yüzden moderasyon araçları (oy geri alma, kilit) ve 3 oy eşiği. (c) Editör sonucu elle yazamaz. Gerekçe: sonucu her zaman topluluk belirlesin, editör yalnızca manipülasyonu durdursun. (d) Beraberlikte net puan → upvote → `KONULAR` sırası. (e) Oy almamış kayıtlar `db.json`'a yazılmaz.
 
 ---
 
 ## 6. Bilinen sorunlar ve sınırlar
 
-1. **Veritabanı neredeyse boş ve site yok:** çoğu içerik "bilinmeyen". Konu/etiket mantığı `docs/db.test-ornek*.json` veya PR 7'deki `db.json` içe aktarma ile denenebilir.
+1. **Veritabanı neredeyse boş; site kodlandı ama yayında değil:** çoğu içerik "bilinmeyen". Konu/etiket mantığı `docs/db.test-ornek*.json`, PR 7'deki `db.json` içe aktarma veya yerel site (`site/README.md`) ile denenebilir.
 2. 5 sekmenin 430 px'e sığması **doğrulanmadı.** Yeni kontroller (kanal kontrol anahtarı, kararsız seçimi, konu başına menü) arayüzü uzattı; konu ızgarasında menü satır yüksekliğini artırır — gerçek pop-up'ta bakılmalı. Taşarsa: `options.css` sonuna `.tab-btn svg{display:none}`.
 3. İzleme sayfasında kanal ID'si yok; yalnızca handle ile eşleşir.
 4. Helper'ın kart işlendikten **sonra** yazdığı öznitelikler izlenmiyor.
@@ -333,3 +337,75 @@ Test yaklaşımı: saf modüller Node'da test edilir. Arayüz ve içerik betiği
 - **Belgeler ile kod çelişirse yüklenen güncel dosyalar esastır.** (Bu proje geçmişinde `PLAN.md` "PR 5 tamam" derken kodda parçalar eksikti.)
 - Her PR davranışı kontrol edilebilir küçüklükte olmalı; kırıcı değişikliği (veri şeması) mümkün olduğunca erken yapın.
 - Ürün kuralı tartışmasında kaynak `docs/SISTEM_TASARIMI.md`'dir; belirsiz yerler orada ❓ ile işaretlidir, kendi başınıza yorumlamak yerine liderden teyit isteyin.
+
+---
+
+## 9. Site devri (2026-10-27)
+
+### 9.1 Hızlı başlangıç
+
+PowerShell, depo kökünden:
+
+```powershell
+cd site
+npm install
+Copy-Item .env.example .env
+# .env: SITE_DB=pglite, PGLITE_DIR=.pglite,
+# SITE_ORIGIN=http://localhost:3000, IP_HASH_SECRET=<uzun rastgele değer>
+npm run dev
+```
+
+- Node sürümü `.nvmrc` dosyasında **22.23.4**; test betiği Node 23/25 gibi destek dışı sürümlerde durur.
+- PGlite verisi `site/.pglite/` altında; git'e girmez.
+- `npm run demo:veri` örnek kanal/video/oy ekler (idempotent).
+- İlk admin: `.env` içindeki `ILK_ADMIN_EPOSTA` / `ILK_ADMIN_PAROLA` ile `npm run ilk-admin`.
+
+### 9.2 Roller ve güvenlik
+
+- **Ziyaretçi:** hesapsız, anonim oy; `db.json` indirir; kayıtsız link için talep gönderir.
+- **Editör:** kayıt ekler, talep kuyruğunu işler, oy geri alır, kilitler, çerez/ağ engeli koyar. Oyu eşit ağırlıktadır; sonucu elle yazamaz.
+- **Admin:** editör yetkileri + hesap/rol/aktiflik yönetimi, metadata düzeltme, arşiv/geri getirme, `db.json` yayınlama. Son aktif admin korunur; admin kendi rolünü düşüremez veya kendini pasifleştiremez.
+- **Gizlilik:** çerez kimliği ve HMAC-SHA256 IP özeti; düz IP yok. Oy IP özeti 30 gün, aktif engelde engel süresince. Panelde yalnızca takma etiketler.
+- **Ayrı metinler:** site gizliliği `/gizlilik`; eklenti gizliliği `docs/GIZLILIK.md`. İkisi birbirine karıştırılmaz.
+- **Rapor uç noktası yok:** site içi “Bildir” formu veya API'si bulunmaz; iletişim GitHub Issues üzerindendir.
+- **Yerel fontlar:** `next/font/local`; üçüncü taraf font/analitik/reklam yok.
+
+### 9.3 Test ve doğrulama
+
+```powershell
+cd site
+npm test
+npm run tip
+npm run build
+npm run dev
+# Ayrı terminal:
+npm run qa:duman
+```
+
+Depo kökünde ayrıca:
+
+```powershell
+npm test
+npm run build:check
+```
+
+HTTP dumanı `BASE_URL` ile başka adrese yönlendirilebilir. Yayın yoksa `/db.json` 404 bilgisi hata sayılmaz.
+
+### 9.4 Belgeler
+
+- Ürün kuralları: `docs/SISTEM_TASARIMI.md`
+- Site tasarımı: `docs/superpowers/specs/2026-10-27-site-tasarimi.md`
+- Uygulama planları: `docs/superpowers/plans/2026-10-27-site-uygulama.md`, `docs/superpowers/plans/2026-10-28-site-kalan-dilimler.md`
+- Site özeti ve kararlar: `docs/PLAN_SITE.md`, `docs/SITE_HAZIRLIK.md`, `docs/puan-sistemi-onerisi.md`
+- QA: `docs/SITE_QA.md`
+- Çalıştırma/dağıtım: `site/README.md`
+
+### 9.5 Kullanıcıda kalan manuel işler
+
+- 1280×800 ve 390×844 gerçek tarayıcı QA'sı; ekran görüntüleri.
+- Klavye, ekran okuyucu, kontrast ve `prefers-reduced-motion` kontrolü.
+- En az 10 video + 10 kanal linkiyle gerçek metadata çözümleme kontrolü.
+- Docker Compose + PostgreSQL + Caddy üretim denemesi; yedek/geri yükleme (`site/deploy/yedekle.sh`).
+- Gerçek eklentiye indirilen `db.json` dosyasını yükleme ve mağaza yüklemesi.
+- Gizlilik/koşullar metninin hukuki incelemesi.
+- Push ve sürüm etiketi kullanıcı incelemesinden sonra.

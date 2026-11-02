@@ -4,6 +4,27 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 
 ## [Yayınlanmamış] — 2.0.0 geliştirme dalı
 
+### Site — YouTube Filter Store S1–S7 (2026-10-27)
+
+#### Eklendi
+- **Anonim ziyaretçi oyu:** hesap gerekmeden HttpOnly çerez kimliğiyle oy verme/değiştirme; hedef + konu/etiket başına tek oy, IP hız sınırı ve 30 günlük HMAC-SHA256 IP özeti.
+- **Oylama ve sonuç:** 3 toplam oy eşiği; iki geri alma bayrağı (ziyaretçi geçici, moderasyon kalıcı); kayıt kilidi; eşik altı ve negatif sonuçların `db.json`'a yazılmaması.
+- **Moderasyon:** oy geri alma, kilit/kilidi açma, çerez/ağ engeli, takma etiketli (`çerez:xxxxxxxx` / `ağ:xxxxxxxx`) panel görünümü, gerekçeli moderasyon kayıtları ve bakım betiği.
+- **Editör paneli:** kayıt ekleme, metadata çözümleme (YouTube Data API opsiyonel; oEmbed/HTML fallback), talep kuyruğu, içerik ve moderasyon sayfaları.
+- **Admin:** çok admin yönetimi, son aktif admin koruması, kendi hesabını düşürme/pasifleştirme reddi, metadata düzeltme, arşivleme/geri getirme, salt okunur taksonomi.
+- **`db.json`:** admin önizlemesi, doğrulama, sürüm artırma, yayınlama ve `/db.json` indirme; geçmiş sürümler `?surum=N` ile sabit.
+- **Kamusal site:** ana sayfa, keşfet, içerik sayfaları, gizlilik/koşullar/iletişim, Türkçe 404 ve hata sayfası; yerel fontlar; üçüncü taraf font/analitik/reklam yok.
+- **Erişilebilirlik ve QA:** `lang="tr"`, “İçeriğe geç” bağlantısı, `main#icerik`, görünür odak, `prefers-reduced-motion`, görsel `alt` metinleri, erişilebilirlik testi ve `npm run qa:duman` HTTP dumanı.
+
+#### Doğrulama
+- Site `npm test`, `npm run tip` ve `npm run build` yeşil; HTTP QA dumanı geçti.
+- Depo kökü eklenti testleri ve `npm run build:check` yeşil.
+
+#### Açık
+- Docker Compose + PostgreSQL + Caddy üretim denemesi, gerçek tarayıcı/ekran okuyucu QA'sı, ekran görüntüleri, gerçek eklentiye `db.json` yükleme ve mağaza yüklemesi kullanıcıda.
+- Site içi “Bildir” uç noktası yok; e-posta gönderimi, analitik ve reklam yok.
+- Push yapılmadı; kullanıcı incelemesi bekleniyor.
+
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
 PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)**, **PR 8B (jsdom smoke testleri repoda)**, **PR 8C (PIN karma saklama)**, **PR 8D (yoklama azaltma)**, **PR 8E (listelerde kanal adı/avatarı)** ve **PR 8F (mağaza hazırlığı, 2026-10-19)** kodlandı.
 PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**

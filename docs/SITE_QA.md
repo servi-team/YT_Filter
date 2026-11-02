@@ -64,16 +64,16 @@ Beklenen çıktılar:
 - `npm run qa:duman` → `QA dumanı geçti: 6 sayfa + /db.json (...)`.
 - Yayın yoksa `/db.json` için `Bilgi: /db.json henüz yayınlanmamış (404).` yazar; bu bir hata değildir.
 
-### 2.1 Otomatik sonuçlar (Task 30 dolduracak)
+### 2.1 Otomatik sonuçlar (2026-11-02)
 
 | Tarih | Komut | Sonuç |
 |---|---|---|
-| | `npm test` | |
-| | `npm run tip` | |
-| | `npm run build` | |
-| | `npm run qa:duman` | |
-| | Depo kökü `npm test` | |
-| | Depo kökü `npm run build:check` | |
+| 2026-11-02 | `cd site; npm test` | 31/31 test dosyası, 96 test geçti (41,0 sn) |
+| 2026-11-02 | `cd site; npm run tip` | Hata yok (çıkış 0) |
+| 2026-11-02 | `cd site; npm run build` | Başarılı; rotalar listelendi (çıkış 0) |
+| 2026-11-02 | `cd site; npm run qa:duman` | Geçti: 6 sayfa + `/db.json` (`http://localhost:3107`); `/db.json` 404 bilgi |
+| 2026-11-02 | Depo kökü `npm test` | 121/121 test geçti (eklenti testleri; `tests/**/*.test.js`) |
+| 2026-11-02 | Depo kökü `npm run build:check` | Chromium ve Firefox güncel; “Tüm çıktılar güncel” |
 
 ## 3. 1280×800 masaüstü kontrolü
 
@@ -217,7 +217,7 @@ Dosya adları `docs/qa/2026-10-27/` altında tutulur. Ekran görüntülerini rep
 
 ## 11. Kapanış
 
-Otomatik sonuç: ____________________________________________________________
+Otomatik sonuç: 2026-11-02 — Site 31/31 dosya / 96 test, tip, build ve QA dumanı geçti; depo kökü 121/121 test ve build:check geçti.
 
 Manuel sonuç: _____________________________________________________________
 

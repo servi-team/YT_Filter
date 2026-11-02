@@ -1,6 +1,8 @@
 # YouTube Filter Store - Puan ve Oylama Sistemi Dokümantasyonu
 
-> **Durum: uygulama notu (2026-10-21).** Bağlayıcı kaynak `docs/SISTEM_TASARIMI.md`'dir. Onaylanan kurallar: ana konu net puan (SISTEM #1), beraberlikte `KONULAR` sırası (#2), kararsız = net 0 + en az bir oy (#3), asgari 3 oy (#18), beyaz liste mutlak (#19). Uyum notları: `docs/SITE_HAZIRLIK.md` bölüm 8.
+> **Durum: uygulama notu (2026-10-27).** Bağlayıcı kaynak [`docs/SISTEM_TASARIMI.md`](SISTEM_TASARIMI.md)'dir. Uygulama kodu: `site/lib/oy-hesabi.ts`.
+>
+> Site v1'de oy **anonimdir**: hesap gerekmez; çerez kimliği başına hedef + konu/etiket için tek oy kullanılır ve oy değiştirilebilir. Değerlendirme eşiği **en az 3 toplam oy**dur. İki geri alma bayrağı vardır: ziyaretçi geri alması geçici, moderasyon geri alması kalıcıdır. Arşivlenen kayıtlar kamusal listeye ve yeni `db.json`'a girmez. Tasarım: [`docs/superpowers/specs/2026-10-27-site-tasarimi.md`](superpowers/specs/2026-10-27-site-tasarimi.md); QA: [`docs/SITE_QA.md`](SITE_QA.md).
 
 Bu doküman, **YouTube Filter Store** platformundaki içerik sınıflandırma (konu ve etiket seçimi) mekanizmasının puanlama, oy hesaplama ve sonuç belirleme mantığını açıklamaktadır.
 
@@ -10,12 +12,19 @@ Bu doküman, **YouTube Filter Store** platformundaki içerik sınıflandırma (k
 
 Platformda kullanıcılar, önerilen konu ve etiketler üzerinde üç farklı oy türü kullanarak katkıda bulunabilirler:
 
-*   **Upvote (Yeşil - Olumlu Oy):** İlgili konu veya etiket içeriğe uygun olduğunda verilir. Her upvote puanı **+1** olarak eklenir.
-*   **Kararsız (Sarı - Nötr Oy):** Emin olunmadığı durumlarda veya nötr kalmak için kullanılır. Her kararsız oy puanı **0** olarak değerlendirilir.
-*   **Downvote (Kırmızı - Olumsuz Oy):** İlgili konu veya etiket içeriğe uygun değilse verilir. Her downvote puanı **-1** olarak hesaba katılır.
+*   **Upvote (Yeşil - Olumlu Oy):** İlgili konu veya etiket içeriğe uygun olduğunda verilir. Her upvote net puana **+1** ekler.
+*   **Kararsız (Sarı - Nötr Oy):** Emin olunmadığı durumlarda veya nötr kalmak için kullanılır. Net puana **0** etki eder; ancak **toplam oy** sayısına dahildir.
+*   **Downvote (Kırmızı - Olumsuz Oy):** İlgili konu veya etiket içeriğe uygun değilse verilir. Her downvote net puandan **-1** düşer.
 
-### Toplam Oy Hesaplama Formülü
-$$\text{Toplam Puan} = (\text{Upvote Sayısı} \times +1) + (\text{Kararsız Sayısı} \times 0) + (\text{Downvote Sayısı} \times -1)$$
+### Toplam Oy ve Net Puan
+
+$$\text{Toplam Oy} = \text{Upvote} + \text{Kararsız} + \text{Downvote}$$
+
+$$\text{Net Puan (Toplam Puan)} = (\text{Upvote} \times +1) + (\text{Kararsız} \times 0) + (\text{Downvote} \times -1) = \text{Upvote} - \text{Downvote}$$
+
+- **Toplam oy** yalnızca 3 oy eşiği için kullanılır.
+- **Net puan** konu/etiketin olumlu, kararsız veya elenmiş sayılmasını belirler.
+- Aşağıdaki tablolarda “Net Puan” sütunu bu ikinci formülün sonucudur.
 
 ---
 
@@ -23,7 +32,7 @@ $$\text{Toplam Puan} = (\text{Upvote Sayısı} \times +1) + (\text{Kararsız Say
 
 İçerikler için belirlenen kategoriler ve örnek oylama dağılımları şu şekildedir:
 
-| Konu | Upvote ($+1$) | Kararsız ($0$) | Downvote ($-1$) | Toplam Puan | Açıklama / Durum |
+| Konu | Upvote ($+1$) | Kararsız ($0$) | Downvote ($-1$) | Net Puan | Açıklama / Durum |
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **Teknoloji** | $25$ | $3$ | $-2$ | **$+23$** | En yüksek net puan → ana konu |
 | **Haber** | $10$ | $7$ | $-5$ | **$+5$** | Yan konu adayı |
@@ -38,7 +47,7 @@ $$\text{Toplam Puan} = (\text{Upvote Sayısı} \times +1) + (\text{Kararsız Say
 *   **Yan Konular:** Ana konunun ardından pozitif net puanı olan diğer konular yan konu olarak eklenir (örnek: *Oyun, Haber*).
 *   **Kararsız:** Net puanı **0** olan ve **en az 3 oy** almış konu `kararsizKonular`'a yazılır (*Eğlence*, 6 oy). Hiç oy almamış (0/0/0) konu kayda girmez (SISTEM #3).
 *   **Elenecekler:** Net puanı **negatif** olanlar veya toplam oyu 3'ün altında olanlar yazılmaz (*Müzik, Spor*).
-*   **Beraberlik:** Aynı net puandaki konularda `taxonomy.KONULAR` sırasındaki ilk konu esas alınır (SISTEM #2 onaylandı). "İlk kullanılan oy" belirlenimci değildir; kullanılmamalı.
+*   **Beraberlik:** Aynı net puandaki konularda sırasıyla **upvote sayısı fazla olan**, o da eşitse `taxonomy.KONULAR` sırasındaki ilk konu esas alınır (SISTEM #2 onaylandı). "İlk kullanılan oy" belirlenimci değildir; kullanılmamalı.
 
 ---
 
@@ -46,7 +55,7 @@ $$\text{Toplam Puan} = (\text{Upvote Sayısı} \times +1) + (\text{Kararsız Say
 
 İçeriğin niteliğini belirten etiketler için uygulanan oylama sistemi:
 
-| Etiket | Upvote ($+1$) | Kararsız ($0$) | Downvote ($-1$) | Toplam Puan | Açıklama / Durum |
+| Etiket | Upvote ($+1$) | Kararsız ($0$) | Downvote ($-1$) | Net Puan | Açıklama / Durum |
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | **Zararlı** | $0$ | $0$ | $-30$ | **$-30$** | Kabul görmeyen etiket |
 | **Spam** | $0$ | $0$ | $-30$ | **$-30$** | Kabul görmeyen etiket |
@@ -60,3 +69,13 @@ $$\text{Toplam Puan} = (\text{Upvote Sayısı} \times +1) + (\text{Kararsız Say
 *   Pozitif net puana sahip ve eşiği geçen etiketler aktif etiketler arasına eklenir (örnek: *AI ile oluşturulmuş*, 22 oy).
 *   Net puanı **0** olan ve en az 3 oy almış etiket `kararsizEtiketler`'e yazılır (*Küfür*, 15 oy; SISTEM #3).
 *   Net puanı **negatif** olanlar (Zararlı, Spam, Olumsuz Örnek) yazılmaz.
+
+---
+
+## 4. Uygulama Notları
+
+- **Anonim oy:** Çerez başına hedef + konu/etiket için tek oy; oy değiştirilebilir. Hesap gerekmez.
+- **Geri alma:** `ziyaretciGeriAlindi` geçici, `moderasyonGeriAlindi` kalıcıdır. Geri alınan oy hesaba girmez; oy satırı silinmez.
+- **Kilit:** Kilitli kayıtta sonuç donar; `db.json`'a kilit anındaki sonuç yazılır. Kilit açılınca sonuç güncel oylardan yeniden hesaplanır.
+- **Arşiv:** Arşivli kayıtlar kamusal listeye ve yeni `db.json`'a girmez; oyları ve moderasyon geçmişi korunur.
+- **Yayın:** Eşik altı ve negatif sonuçlar `db.json`'a yazılmaz; yayını yalnızca admin onaylar.
