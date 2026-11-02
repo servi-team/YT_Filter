@@ -1,0 +1,247 @@
+.sekmeler {
+  display: flex;
+  gap: 0.3rem;
+  margin-bottom: 1.2rem;
+  border-bottom: 1px solid var(--cizgi);
+  overflow-x: auto;
+  scrollbar-width: thin;
+}
+
+.sekme {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  border-bottom: 2px solid transparent;
+  color: var(--ikincil);
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.sekme:hover {
+  color: var(--murekkep);
+}
+
+.sekmeAktif {
+  border-bottom-color: var(--sinyal);
+  color: var(--murekkep);
+}
+
+.aramaFormu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+
+.aramaGirdi {
+  flex: 1 1 18rem;
+  min-height: 44px;
+  padding: 0.65rem 0.8rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 10px;
+  background: var(--yuzey);
+  color: inherit;
+}
+
+.tabloSar {
+  overflow-x: auto;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.tablo {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.88rem;
+}
+
+.tablo th,
+.tablo td {
+  padding: 0.7rem 0.8rem;
+  border-bottom: 1px solid var(--cizgi);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tablo th {
+  color: var(--ikincil);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.tablo tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.tabloBaslik {
+  display: block;
+  max-width: 34ch;
+  font-weight: 700;
+  line-height: 1.35;
+}
+
+.tabloBag {
+  color: inherit;
+  text-decoration-color: var(--sinyal);
+}
+
+.turEtiket {
+  display: inline-block;
+  padding: 0.1rem 0.45rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 999px;
+  color: var(--ikincil);
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.kimlik {
+  display: block;
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.76rem;
+  overflow-wrap: anywhere;
+}
+
+.durum {
+  display: inline-block;
+  padding: 0.1rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.durumKilit {
+  background: color-mix(in srgb, var(--amber) 18%, transparent);
+  color: var(--amber);
+}
+
+.durumAcik {
+  background: color-mix(in srgb, var(--yesil) 15%, transparent);
+  color: var(--yesil);
+}
+
+.arsivBandi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.8rem;
+  margin: 0 0 1.5rem;
+  padding: 0.9rem 1.05rem;
+  border: 1px solid color-mix(in srgb, var(--amber) 45%, var(--cizgi));
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--amber) 9%, var(--yuzey));
+}
+
+.arsivMetin {
+  margin: 0;
+  font-weight: 700;
+}
+
+.arsivNot {
+  margin: 0.2rem 0 0;
+  color: var(--ikincil);
+  font-size: 0.84rem;
+}
+
+.bolum {
+  margin: 0 0 2rem;
+}
+
+.bolumBaslik {
+  margin: 0 0 0.75rem;
+  font-family: var(--font-baslik);
+  font-size: 1.15rem;
+}
+
+.ozet {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.7rem;
+  margin: 0;
+}
+
+.ozetOge {
+  padding: 0.75rem 0.9rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 11px;
+  background: var(--yuzey);
+}
+
+.ozetEtiket {
+  margin: 0 0 0.15rem;
+  color: var(--ikincil);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ozetDeger {
+  margin: 0;
+  font-size: 0.9rem;
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+
+.meta {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.85rem;
+  line-height: 1.5;
+}
+
+@media (max-width: 640px) {
+  .ozet {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 520px) {
+  .tabloSar {
+    overflow: visible;
+    border: 0;
+    background: transparent;
+  }
+
+  .tablo,
+  .tablo tbody,
+  .tablo tr,
+  .tablo td {
+    display: block;
+    width: 100%;
+  }
+
+  .tablo thead {
+    display: none;
+  }
+
+  .tablo tr {
+    margin-bottom: 0.7rem;
+    padding: 0.35rem 0;
+    border: 1px solid var(--cizgi);
+    border-radius: 12px;
+    background: var(--yuzey);
+  }
+
+  .tablo td {
+    padding: 0.4rem 0.9rem;
+    border: 0;
+  }
+
+  .tablo td[data-etiket]::before {
+    content: attr(data-etiket) ': ';
+    color: var(--ikincil);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+}
