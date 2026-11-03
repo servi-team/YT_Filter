@@ -22,19 +22,23 @@ test('scrypt özeti doğrular, yanlış parolayı reddeder', async () => {
   assert.equal(await parolaDogrula('yanlis', await parolaOzetle('DogruParola123')), false);
 });
 test('giriş tokenı yalnızca özet olarak saklanır, süre ve rol kontrol edilir', async () => {
-  const g = await girisYap(v.db, { eposta: 'admin@ornek.com', parola: 'DogruParola123', ipOzeti: null, simdi: new Date('2026-10-27T10:00:00Z') });
+  // Sabit tarih kullanmayın: rolGerekli/oturumOku gerçek "şimdi"yi kullanır.
+  const simdi = new Date();
+  const birDakikaSonra = new Date(simdi.getTime() + 60_000);
+  const otuzBirGunSonra = new Date(simdi.getTime() + 31 * 24 * 60 * 60 * 1000);
+  const g = await girisYap(v.db, { eposta: 'admin@ornek.com', parola: 'DogruParola123', ipOzeti: null, simdi });
   const satir = await v.db.execute(sql`select token_ozeti from oturumlar where hesap_id = ${hesapId}`);
   assert.notEqual(satir.rows[0].token_ozeti, g.token);
-  assert.equal((await oturumOku(v.db, g.token, new Date('2026-10-27T10:01:00Z')))?.rol, 'admin');
-  assert.equal(await oturumOku(v.db, g.token, new Date('2026-12-01T10:00:00Z')), null);
+  assert.equal((await oturumOku(v.db, g.token, birDakikaSonra))?.rol, 'admin');
+  assert.equal(await oturumOku(v.db, g.token, otuzBirGunSonra), null);
   const c = oturumCerezi(g.token, g.sonKullanma);
   assert.ok(c.includes('HttpOnly') && c.includes('SameSite=Lax'));
   const req = new Request('http://localhost:3000/panel', { headers: { cookie: `${OTURUM_CEREZI}=${g.token}` } });
   assert.equal((await rolGerekli(v.db, req, ['admin'])).id, hesapId);
   await assert.rejects(rolGerekli(v.db, req, ['editor']), (e: any) => e instanceof HttpHatasi && e.durum === 403);
-  const panelSimdi = new Date('2026-10-27T10:01:00Z');
+  const panelSimdi = birDakikaSonra;
   assert.equal((await panelKoruma(v.db, req, ['admin'], { adet: 1, simdi: panelSimdi })).id, hesapId);
   await assert.rejects(panelKoruma(v.db, req, ['admin'], { adet: 1, simdi: panelSimdi }), (e: any) => e instanceof HttpHatasi && e.durum === 429);
   await oturumKapat(v.db, g.token);
-  assert.equal(await oturumOku(v.db, g.token, new Date('2026-10-27T10:02:00Z')), null); // çıkış/iptal sonrası
+  assert.equal(await oturumOku(v.db, g.token, new Date(simdi.getTime() + 2 * 60_000)), null); // çıkış/iptal sonrası
 });
