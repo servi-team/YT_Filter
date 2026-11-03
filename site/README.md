@@ -4,8 +4,7 @@ Oylama sitesi: anonim ziyaretçi oyları -> sonuç -> `db.json` (eklentiye aylı
 
 **Kural kaynakları:**
 - Ürün kuralları: [`docs/SISTEM_TASARIMI.md`](../docs/SISTEM_TASARIMI.md)
-- Site tasarımı: [`docs/superpowers/specs/2026-10-27-site-tasarimi.md`](../docs/superpowers/specs/2026-10-27-site-tasarimi.md)
-- Uygulama planları: [`docs/superpowers/plans/2026-10-27-site-uygulama.md`](../docs/superpowers/plans/2026-10-27-site-uygulama.md), [`docs/superpowers/plans/2026-10-28-site-kalan-dilimler.md`](../docs/superpowers/plans/2026-10-28-site-kalan-dilimler.md)
+- Site kararları: [`docs/SITE_HAZIRLIK.md`](../docs/SITE_HAZIRLIK.md)
 - QA: [`docs/SITE_QA.md`](../docs/SITE_QA.md)
 
 Teknoloji: Next.js (App Router) + React + TypeScript, PostgreSQL/Drizzle, Docker Compose ve Caddy. PGlite yalnızca geliştirme ve test sürücüsüdür; üretimde kullanılmaz.
@@ -65,13 +64,15 @@ npm run dev
 
 Docker Compose + PostgreSQL + Caddy kullanılır. Üretimde `DATABASE_URL` zorunludur; PGlite üretim imajında bulunmaz. Geçişler `npm run migrate` (Compose'daki tek seferlik `migrate` servisi) ile uygulanır, yedek `site/deploy/yedekle.sh` ile alınır.
 
+Sunucu kurulumu ve ilk admin adımları için kısa rehber: [`docs/SUNUCU_KURULUM.md`](../docs/SUNUCU_KURULUM.md).
+
 ```powershell
 Copy-Item site\.env.example site\.env
 # SITE_DOMAIN, POSTGRES_PASSWORD, SITE_ORIGIN ve IP_HASH_SECRET değerlerini doldur.
 docker compose -f site/docker-compose.yml --env-file site/.env up -d --build
 ```
 
-Sağlık kontrolü: `https://<alan-adı>/api/saglik` -> `{"site":"ok","veritabani":"ok"}`. Yedek `site/deploy/yedekle.sh` ile alınır; devir ve geri yükleme notları `DEVIR_NOTU.md` bölüm 9'dadır.
+Sağlık kontrolü: `https://<alan-adı>/api/saglik` -> `{"site":"ok","veritabani":"ok"}`. Yedek `site/deploy/yedekle.sh` ile alınır; kurulum ve geri yükleme notları `docs/SUNUCU_KURULUM.md` içindedir.
 
 ## Gizlilik
 

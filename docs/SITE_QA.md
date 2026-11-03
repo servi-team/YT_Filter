@@ -19,7 +19,7 @@ Otomatik testlerin kapsamadığı, bu dosyada manuel kontrol edilecek alanlar:
 - Renk kontrastının DevTools ile ölçülmesi, koyu tema ve hareket azaltma.
 - Uçtan uca iş akışlarının gerçek oturumlarla denenmesi.
 - Docker/PostgreSQL üretim denemesi, gerçek eklentiye `db.json` yükleme ve mağaza yüklemesi.
-- Ekran görüntülerinin alınması ve repoya eklenip eklenmeyeceği kararı.
+- Tam manuel QA seti (17 sayfa × 2 çözünürlük) henüz alınmadı; README için beş görüntü `docs/gorseller/` altında.
 
 Bu sayılan manuel işler kullanıcıya aittir; otomatik testlerin yeşil olması bunların yerini tutmaz.
 
@@ -64,15 +64,15 @@ Beklenen çıktılar:
 - `npm run qa:duman` → `QA dumanı geçti: 6 sayfa + /db.json (...)`.
 - Yayın yoksa `/db.json` için `Bilgi: /db.json henüz yayınlanmamış (404).` yazar; bu bir hata değildir.
 
-### 2.1 Otomatik sonuçlar (2026-11-02)
+### 2.1 Otomatik sonuçlar (son çalıştırma 2026-11-03)
 
 | Tarih | Komut | Sonuç |
 |---|---|---|
-| 2026-11-02 | `cd site; npm test` | 31/31 test dosyası, 96 test geçti (41,0 sn) |
+| 2026-11-03 | `cd site; npm test` | 33/33 test dosyası, 104 test geçti (45,5 sn, 4 eşzamanlı) |
 | 2026-11-02 | `cd site; npm run tip` | Hata yok (çıkış 0) |
 | 2026-11-02 | `cd site; npm run build` | Başarılı; rotalar listelendi (çıkış 0) |
 | 2026-11-02 | `cd site; npm run qa:duman` | Geçti: 6 sayfa + `/db.json` (`http://localhost:3107`); `/db.json` 404 bilgi |
-| 2026-11-02 | Depo kökü `npm test` | 121/121 test geçti (eklenti testleri; `tests/**/*.test.js`) |
+| 2026-11-03 | Depo kökü `npm test` | 121/121 test geçti (eklenti testleri; `tests/**/*.test.js`) |
 | 2026-11-02 | Depo kökü `npm run build:check` | Chromium ve Firefox güncel; “Tüm çıktılar güncel” |
 
 ## 3. 1280×800 masaüstü kontrolü
@@ -193,7 +193,7 @@ Ek kontroller:
 
 ## 10. Ekran görüntüleri
 
-Dosya adları `docs/qa/2026-10-27/` altında tutulur. Ekran görüntülerini repoya eklemek kullanıcı kararıdır.
+README için beş ekran görüntüsü `docs/gorseller/` altında tutulur; bunlar bu bölümdeki manuel QA setinden ayrıdır. Tam QA seti için dosya adları `docs/qa/2026-10-27/` altında tutulur ve set henüz alınmadı.
 
 | Sayfa | 1280×800 dosyası | Alındı | 390×844 dosyası | Alındı |
 |---|---|---|---|---|
@@ -217,7 +217,7 @@ Dosya adları `docs/qa/2026-10-27/` altında tutulur. Ekran görüntülerini rep
 
 ## 11. Kapanış
 
-Otomatik sonuç: 2026-11-02 — Site 31/31 dosya / 96 test, tip, build ve QA dumanı geçti; depo kökü 121/121 test ve build:check geçti.
+Otomatik sonuç: 2026-11-03 — Site 33/33 dosya / 104 test ve depo kökü 121/121 test geçti. Site tip, build ve QA dumanı en son 2026-11-02'de geçmişti; depo kökü build:check de aynı tarihte geçti.
 
 Manuel sonuç: _____________________________________________________________
 

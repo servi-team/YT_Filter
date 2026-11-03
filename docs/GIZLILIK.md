@@ -1,6 +1,6 @@
 # Gizlilik Politikası — YouTube Filtreleyici
 
-> Bu metin Chrome Web Store ve Firefox Add-ons mağazalarına verilecek gizlilik politikası URL'i için hazırlanmıştır; olduğu gibi yayınlanabilir.
+> Bu metin, YouTube Filtreleyici tarayıcı uzantısının gizlilik politikasıdır.
 > Son güncelleme: 2026-10-21 · İletişim: https://github.com/TalhaOzz/YouTubeFilter/issues
 
 ## Özet

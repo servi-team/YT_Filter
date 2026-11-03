@@ -25,9 +25,64 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 - Site içi “Bildir” uç noktası yok; e-posta gönderimi, analitik ve reklam yok.
 - Push yapılmadı; kullanıcı incelemesi bekleniyor.
 
+### Bakım — belge temizliği ve oturum testi (2026-11-03)
+
+#### Değişti
+- İç plan, devir ve öneri belgeleri public depo ağacından çıkarıldı; yerel kopyalar korunuyor. README ve çapraz belge bağlantıları güncellendi.
+- README ekran görüntüsü yolu düzeltildi.
+
+#### Düzeltildi
+- `site/tests/oturum.test.ts`: sabit 2026-10-27 tarihi yerine çalışma zamanına göre üretilen oturum tarihleri kullanılıyor; test 7 gün sonra süre dolmasıyla kırılmıyor.
+
+#### Doğrulama
+- Depo kökü 121/121; site 33/33 dosya / 104 test geçti.
+
+### Eklenti — arayüz yenileme (2026-11-03)
+
+#### Değişti
+- **Ortak tasarım dili:** Seçenekler sayfası sitenin sıcak kağıt, mürekkep ve sinyal paletine; yerel yazı tiplerine ve ince çizgi düzenine uyarlandı. Açık ve koyu tema aynı dili izler.
+- **Açılır menüler:** Yerel `select` denetimleri ortak yükseklik, ince ayraç ve temaya duyarlı SVG okla yeniden çizildi. Klavye odağı, devre dışı durumu ve dar alanda taşma ele alındı; konu/etiket menüleri kompakt tutuldu.
+- **"Diğer Engeller" ayarı:** Menü, başlığın yanından alınıp başlık + menü satırına ve altındaki açıklamaya taşındı.
+- **Erişilebilirlik:** Görünür odak halkaları, `prefers-reduced-motion` desteği ve `color-scheme` ile açık/koyu yerel menü listeleri eklendi.
+
+#### Doğrulama
+- Kök testleri 121/121 ve `npm run build:check` yeşil; Chromium/Firefox çıktıları yeniden üretildi. Açık/koyu görünüm başsız Chrome önizlemeleriyle kontrol edildi.
+
 Eski "her kanal/video elle bir kategoriye atanır" modelinden, **konu + etiket + veritabanı** modeline geçiş.
 PR 1–5 tamamlandı (PR 5'in eksik parçaları PR 6C'de kapatıldı), **PR 6 (engel banner)**, **PR 6B (ekip liderinin tasarım dökümanına uyum)**, **PR 6C (hızlı ekleme bandı + istisna çerçevesi)**, **PR 7 (içe/dışa aktarma)**, **PR 8A (manifest sertleştirmesi)**, **PR 8B (jsdom smoke testleri repoda)**, **PR 8C (PIN karma saklama)**, **PR 8D (yoklama azaltma)**, **PR 8E (listelerde kanal adı/avatarı)** ve **PR 8F (mağaza hazırlığı, 2026-10-19)** kodlandı.
 PR 6, 6B, 6C, 7, 8A, 8B, 8C, 8D, 8E ve 8F **Node testleriyle doğrulandı** (arayüz ve içerik betiği artık repodaki jsdom harness'iyle); **gerçek tarayıcıda henüz denenmedi.**
+
+### Engelleme hatası düzeltmesi (2026-10-24): bir kanal/video engellenince başkaları etkileniyordu
+
+#### Düzeltildi
+- **Geri dönüştürülen kartlar (`src/inject_helper.js`):** YouTube aynı kart öğesini başka videoya yeniden kullanır. Yardımcı betik `data-yt-exposed-id/-channel/-channel-id` değerlerini yalnızca "yoksa" yazıyordu; bayat değer kalınca yeni video eski kanalın sanılıp engelleniyordu (ör. TRT Spor). Artık her taramada güncel veriden yeniden yazılır, veri yoksa öznitelik kaldırılır. Pahalı derin arama, kartın veri nesneleri değişmedikçe önbellekten gelir.
+- **Öznitelik değişimi (`src/content.js`):** Gözlemci yalnızca eklenen düğümleri izliyordu; öznitelik güncellense de kart yeniden değerlendirilmiyordu. Artık `data-yt-exposed-*` değişimi kartı yeniden değerlendirir.
+- **İzleme sayfası sahip bağlantısı (`src/content.js`):** Sayfa geçişinde bir önceki videonun kanal bağlantısı DOM'da kalır ve yeni videoya uygulanıyordu. Artık yalnızca `ytd-watch-flexy[video-id]` bu videoyla eşleşiyorsa kullanılır.
+- **Kanal bağlamı (`src/content.js`):** `currentChannelContext` saklanmıyor; her çağrıda adresten (yalnızca `/@handle` ile başlayan yol) hesaplanır. Sıra hatası (`checkWatchPage()` bağlam güncellemesinden önce çalışıyordu) bu sayede ortadan kalktı.
+
+#### Eklendi
+- `tests/smoke/kanal-baglami.test.js` (5 test). 2, 4 ve 5 numaralı testler eski kodda **başarısız**, yeni kodda geçer. 1 numaralı test koruma testidir (eski kodda da geçer, davranışı sabitler).
+- **Not:** Düzeltme jsdom testleriyle doğrulandı; gerçek YouTube'da ve gerçek tarayıcıda henüz denenmedi.
+
+### Site kararları kaydı (2026-10-22) — yalnızca belge, kod ve testler değişmedi
+
+#### Değişti
+- **Site rolleri ve oy kuralı:** Ziyaretçi artık hesapsız **oy verebilir** (anonim çerez kimliği, IP hız sınırı, captcha yok). Hesap yalnızca Editör ve Admin için. Editör: yeni kanal/video kaydı ekler + moderasyon (oyları geri alma, kayıt kilidi; sonucu elle yazamaz). Ziyaretçi kayıtsız link için "ekleme talebi" gönderir. Bu, 2026-10-21'de kaydedilen rol matrisini (Ziyaretçi: yalnızca indirme + rapor) günceller.
+- **SISTEM #2 — Beraberlik:** net puan → **upvote sayısı** → `KONULAR` sırası. (10-21'de yalnızca liste sırası onaylanmıştı.)
+- **SISTEM #18 — Asgari oy eşiği:** en az 3 oy teyit edildi; eşik toplam oy (up + kararsız + down) üzerinden uygulanır. Bu eşikle `SISTEM_TASARIMI.md` bölüm 5'teki Argo (1 oy) örneği artık değerlendirilmez; örneğe açıklayıcı not eklendi (liderin metni değiştirilmedi).
+- **`docs/db-sema.md`:** şema alanları ve `sema` numarası değişmedi; dışa aktarma kuralına geri alınan oylar, 3 oy eşiği, upvote'lu beraberlik, kayıt kapsamı ve kilitli kayıt eklendi.
+- **`docs/SISTEM_TASARIMI.md`:** 6/#2, 6/#3, 6/#6, 6/#18 güncellendi; yeni bölüm 7 (roller, anonim oy, oy hedefi, kayıt ekleme/talep, moderasyon, yayın).
+- **Site yığını:** PLAN.md'deki eski aday (C#/ASP.NET Core MVC + SQLite) yerine TypeScript (Node 22) + Next.js + PostgreSQL + Caddy, Docker Compose, aynı depoda `site/`. Bun yalnızca paket yöneticisi/site testlerinde.
+- **`docs/MAGAZA_ELLE.md`:** bölüm 0'daki bozuk satır (`\n` karakterleri) düzeltildi; AMO kaynak notu build adımını doğru anlatacak biçimde yazıldı. **`docs/MAGAZA_HAZIRLIK.md`:** aynı not.
+- **`DEVIR_NOTU.md`:** 2.2, 2.7 ve 5/#19 güncellendi (veri köprüsü "açık" olarak kalmıştı, karar A), 5/#21 ve D6 eklendi.
+- **`PLAN.md`:** 4.2/#2, S satırı, S0–S6, riskler ve yeni 4.4 güncellendi.
+
+#### Eklendi
+- **`PLAN_SITE.md`:** site planının tamamı (kararlar, roller, oy kuralları, kabul örneği, sayfalar/akışlar, veri modeli, mimari, güvenlik, fazlar, test, aylık yayın, riskler, açık noktalar).
+
+#### Açık
+- `docs/SITE_HAZIRLIK.md` ve `docs/puan-sistemi-onerisi.md` yeni kararlarla hizalanmadı.
+- S0'da ad/avatar için API'siz yöntem mi YouTube Data API mı; KVKK aydınlatma metni; çerez/IP özeti saklama süresi; kilit/geri alma için admin onayı; yayın sürümünü onaylayacak rol.
 
 ### Yeni ikon ve yayın kararları (2026-10-21, `checkpoint-yayin-1`)
 
@@ -277,7 +332,7 @@ Kural kaynağı: `docs/SISTEM_TASARIMI.md`. Karşılaştırma sonucunda kodun d�
 
 ### Geliştirici notları
 - **Derleme:** `node scripts/build.js` → `chromium/` ve `firefox/`. Tarayıcıya bu klasörler yüklenir; kaynak `src/`'dir. **Her değişiklikten sonra yeniden derleyin.**
-- **Test:** `node --test` — 116 test (104 saf + 12 smoke). **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20, `engines` alanında). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
-- **Yayın:** `docs/MAGAZA_HAZIRLIK.md` (listeleme metinleri, izin gerekçeleri, sürüm akışı, kontrol listesi) + `docs/GIZLILIK.md` (yayınlanabilir gizlilik metni).
+- **Test:** `npm test` — 121 test. **Smoke testleri için önce `npm install`** (jsdom devDependency; Node >= 20, `engines` alanında). Yeni: `tests/karar-v2.test.js`, `tests/pr6c.test.js`, `tests/pr7.test.js`, `tests/manifest.test.js`, `tests/pin.test.js`, `tests/smoke/ortak.js` + `options.test.js` + `content.test.js`.
+- **Yayın:** `docs/GIZLILIK.md` yayımlanabilir gizlilik metnidir; mağaza yükleme adımları depo dışında tutulur.
 - **Uyumluluk:** eski yedek dosyaları yeni sürümde içe aktarılabilir; yeni yedekler eski sürümde **çalışmaz.** Yeni `db.json` alanları isteğe bağlıdır; ancak ana konusuz kayıtları eski eklenti sürümleri atlar.
-- **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `DEVIR_NOTU.md`, plan: `PLAN.md`.
+- **Katkıda bulunanlar için:** `core/` içine DOM/`chrome.*` bağımlılığı eklemeyin; yeni davranış için önce test yazın. Kuralların kaynağı: `docs/SISTEM_TASARIMI.md`. Ayrıntılar: `docs/SITE_QA.md` ve `docs/SITE_HAZIRLIK.md`.

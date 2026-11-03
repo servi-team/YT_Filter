@@ -3,7 +3,7 @@
 > Durum: **karar/uygulama belgesi.** 2026-10-27 itibarıyla roller, anonim oy, saklama ve moderasyon kararları kapandı; site S1–S7 olarak kodlandı. Site tarafında açık kalanlar yalnızca gerçek tarayıcı QA'sı, alan adı, hukuki inceleme ve mağaza işleridir. (#8/#10/#11 yalnızca eklenti davranışı için teyit bekliyor; site v1'ini etkilemez.)
 > Son güncelleme: 2026-10-27. Ürün kurallarının tek kaynağı `docs/SISTEM_TASARIMI.md`'dir.
 
-Bu belge, site kararlarını ve site–eklenti arasındaki sözleşmeleri tek yerde toplar. Uygulama ayrıntıları `site/README.md`, tasarım `docs/superpowers/specs/2026-10-27-site-tasarimi.md`, QA `docs/SITE_QA.md` içindedir.
+Bu belge, site kararlarını ve site–eklenti arasındaki sözleşmeleri tek yerde toplar. Uygulama ayrıntıları `site/README.md`, QA `docs/SITE_QA.md` içindedir.
 
 ---
 
@@ -142,7 +142,7 @@ Amaç: link → kanonik kimlik + başlık + kanal + avatar.
 
 ### 8.1 Puan sistemi
 
-[`docs/puan-sistemi-onerisi.md`](puan-sistemi-onerisi.md) uygulama notudur; bağlayıcı kaynak `docs/SISTEM_TASARIMI.md`'dir. 2026-10-21'de onaylanan kurallar:
+Bağlayıcı kaynak `docs/SISTEM_TASARIMI.md`'dir. 2026-10-21'de onaylanan kurallar:
 
 - Ana konu **net puan**la belirlenir (SISTEM #1); beraberlikte sırasıyla upvote sayısı ve `taxonomy.KONULAR` sırası (#2).
 - Kararsız = net **0** **ve** en az bir oy (#3); 0/0/0 kayda girmez.
