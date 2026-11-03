@@ -68,6 +68,7 @@ export default async function PanelIceriklerSayfasi({ searchParams }: SayfaProps
                 <th scope="col">Sonuç</th>
                 <th scope="col">Oy</th>
                 <th scope="col">Kilit</th>
+                <th scope="col">İşlem</th>
               </tr>
             </thead>
             <tbody>
@@ -88,6 +89,15 @@ export default async function PanelIceriklerSayfasi({ searchParams }: SayfaProps
                   </td>
                   <td>{kayit.oySayisi}</td>
                   <td>{kayit.kilitli ? 'Kilitli' : '—'}</td>
+                  <td>
+                    <Link
+                      className={s.tabloBag}
+                      href={`/panel/icerikler/${kayit.tur}/${encodeURIComponent(kayit.id)}`}
+                      aria-label={`${kayit.baslik} kaydının oylarını ve kilidini yönet`}
+                    >
+                      Oyları yönet
+                    </Link>
+                  </td>
                 </tr>
               ))}
             </tbody>

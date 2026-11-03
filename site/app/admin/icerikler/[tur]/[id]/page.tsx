@@ -68,7 +68,14 @@ export default async function AdminIcerikDetaySayfasi({ params }: SayfaProps) {
       <SayfaBasligi
         baslik={icerik.baslik}
         aciklama={`${tur === 'kanal' ? 'Kanal' : 'Video'} · Kayıt kimliği ${id}`}
-        eylem={<Link href={geriBag}>İçeriklere dön</Link>}
+        eylem={(
+          <>
+            <Link href={`/panel/icerikler/${tur}/${encodeURIComponent(id)}`}>
+              Oyları ve kilidi yönet
+            </Link>
+            <Link href={geriBag}>İçeriklere dön</Link>
+          </>
+        )}
       />
 
       {icerik.arsivlendi ? (

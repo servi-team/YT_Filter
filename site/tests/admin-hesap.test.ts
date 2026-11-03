@@ -55,6 +55,26 @@ test('geçici parola döndürülür, zorunlu değişim işaretlenir ve günlüğ
   assert.equal(JSON.stringify(kayitlar).includes('YeniParola1234'), false);
 });
 
+test('editör hesabı açmak mevcut adminin rolünü ve oturumunu değiştirmez', async () => {
+  const t = await testDb();
+  try {
+    const x = await ilkAdminOlustur(t.db, { eposta: 'sahip@ornek.com', parola: 'Parola123456' });
+    const oturum = await girisYap(t.db, { eposta: 'sahip@ornek.com', parola: 'Parola123456', ipOzeti: null });
+
+    await hesapOlustur(t.db, {
+      eposta: 'editor@ornek.com',
+      parola: 'Parola123456',
+      rol: 'editor',
+      yapan: x.id,
+    });
+
+    const admin = (await hesaplariListele(t.db)).find((hesap) => hesap.id === x.id);
+    assert.equal(admin?.rol, 'admin');
+    assert.equal(admin?.aktif, true);
+    assert.equal((await oturumOku(t.db, oturum.token))?.rol, 'admin');
+  } finally { await t.kapat(); }
+});
+
 test('eşzamanlı iki rol düşürme son aktif admini sıfırlayamaz', async () => {
   const t = await testDb();
   try {

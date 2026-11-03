@@ -18,7 +18,6 @@
             </div>
             <div class="brand-title">
                 YT Filtreleyici
-                <span class="badge-version">v1.0</span>
             </div>
         </div>
         <div class="header-actions">
@@ -195,7 +194,7 @@
                     <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.59 13.41l-7.17 7.17a2 2 0 0 1-2.83 0L2 12V2h10l8.59 8.59a2 2 0 0 1 0 2.82z"></path><line x1="7" y1="7" x2="7.01" y2="7"></line></svg>
                     Konular
                 </div>
-                <div class="card-desc">Açık olan konulara izin verilir. Kapattığınız konu engellenir; nasıl engelleneceğini yanındaki menüden seçin.</div>
+                <div class="card-desc">Açık olan konulara izin verilir. Kapattığınız konu engellenir; nasıl engelleneceğini menüden seçin.</div>
                 <div class="mini-actions">
                     <button id="btnKonuHepsiIzin" class="btn-link">Tümüne izin ver</button>
                     <button id="btnKonuHepsiEngel" class="btn-link">Tümünü engelle</button>
@@ -231,7 +230,7 @@
                 <div class="card-desc">Kuralları geçersiz kılar. URL, video ID veya @kanal girin. Beyaz liste = her zaman izin ver, kara liste = her zaman engelle.</div>
                 <div class="input-row">
                     <input type="text" id="yeniEtiketId" placeholder="@kanal, link veya ID...">
-                    <select id="yeniEtiketTuru" style="width: 125px;" aria-label="Hedef liste"></select>
+                    <select id="yeniEtiketTuru" class="secim-hedef" aria-label="Hedef liste"></select>
                     <button id="btnEtiketEkle" class="btn btn-primary">Ekle</button>
                 </div>
             </div>
@@ -273,7 +272,7 @@
 
                 <div class="input-row" style="margin-bottom: 12px;">
                     <input type="text" id="yeniListeAdi" placeholder="Yeni liste adı (Örn: Ders kanalları)" maxlength="40">
-                    <select id="yeniListeEylemi" style="width: 100px;" aria-label="Liste eylemi">
+                    <select id="yeniListeEylemi" class="secim-liste-eylemi" aria-label="Liste eylemi">
                         <option value="engelle">Engelle</option>
                         <option value="izinver">İzin ver</option>
                     </select>
@@ -292,7 +291,7 @@
                 <div class="card-desc">Seçili listeyi veya tüm listeleri JSON olarak indirin. İçe aktarmada kayıtlar mevcut listelerle birleştirilir; aynı adlı özel listeler için birleştir / üzerine yaz / yeniden adlandır seçilir.</div>
 
                 <div class="input-row" style="margin-bottom: 10px;">
-                    <select id="selListeDisaAktar" aria-label="Dışa aktarılacak liste">
+                    <select id="selListeDisaAktar" class="secim-disa" aria-label="Dışa aktarılacak liste">
                         <option value="hepsi">Tüm listeler</option>
                         <option value="beyaz">Her zaman izin ver (Beyaz liste)</option>
                         <option value="kara">Her zaman engelle (Kara liste)</option>
@@ -368,16 +367,16 @@
                 </div>
                 <div class="card-desc">Filtrenin engellediği videolar nasıl görünsün?</div>
 
-                <div class="switch-item">
-                    <div class="switch-label-group">
+                <div class="secim-satiri">
+                    <div class="secim-satiri-ust">
                         <span class="switch-title">Diğer Engeller</span>
-                        <span class="switch-subtext">Listeler ve "bilinmeyen" içerik için engelleme biçimi. Konu ve etiketler kendi biçimini seçer.</span>
+                        <select id="selEngelEylemi" class="secim-engel" aria-label="Engellenen video eylemi">
+                            <option value="kaldir">Gizle</option>
+                            <option value="bulaniklastir">Bulanıklaştır</option>
+                            <option value="uyari">Uyarı sayfası</option>
+                        </select>
                     </div>
-                    <select id="selEngelEylemi" style="width: 130px;" aria-label="Engellenen video eylemi">
-                        <option value="kaldir">Gizle</option>
-                        <option value="bulaniklastir">Bulanıklaştır</option>
-                        <option value="uyari">Uyarı sayfası</option>
-                    </select>
+                    <span class="switch-subtext">Listeler ve "bilinmeyen" içerik için engelleme biçimi. Konu ve etiketler kendi biçimini seçer.</span>
                 </div>
 
                 <div class="switch-item">
@@ -417,7 +416,7 @@
                     <label style="display: block; font-size: 11.5px; font-weight: 600; margin-bottom: 6px;">Yeni PIN Belirle:</label>
                     <div class="input-row">
                         <input type="password" id="yeniPin" inputmode="numeric" maxlength="4" placeholder="Yeni 4 Haneli PIN">
-                        <button id="btnPinGuncelle" class="btn btn-indigo">Güncelle</button>
+                        <button id="btnPinGuncelle" class="btn btn-primary">Güncelle</button>
                     </div>
                 </div>
             </div>

@@ -27,6 +27,8 @@ services:
       target: gecis
     environment:
       DATABASE_URL: postgres://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:5432/${POSTGRES_DB}
+      ILK_ADMIN_EPOSTA: ${ILK_ADMIN_EPOSTA:-}
+      ILK_ADMIN_PAROLA: ${ILK_ADMIN_PAROLA:-}
     depends_on:
       postgres:
         condition: service_healthy

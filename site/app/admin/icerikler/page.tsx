@@ -119,12 +119,21 @@ export default async function AdminIceriklerSayfasi({ searchParams }: SayfaProps
                     </time>
                   </td>
                   <td data-etiket="İşlem">
-                    <ArsivEylemi
-                      tur={kayit.tur}
-                      id={kayit.id}
-                      baslik={kayit.baslik}
-                      arsivli={durum === 'arsiv'}
-                    />
+                    <div className={s.islemler}>
+                      <Link
+                        className={s.tabloBag}
+                        href={`/panel/icerikler/${kayit.tur}/${encodeURIComponent(kayit.id)}`}
+                        aria-label={`${kayit.baslik} kaydının oylarını ve kilidini yönet`}
+                      >
+                        Moderasyon
+                      </Link>
+                      <ArsivEylemi
+                        tur={kayit.tur}
+                        id={kayit.id}
+                        baslik={kayit.baslik}
+                        arsivli={durum === 'arsiv'}
+                      />
+                    </div>
                   </td>
                 </tr>
               ))}

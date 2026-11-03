@@ -9,7 +9,6 @@ let hafiza = {};
 let ayarMotor = null;      // çözümlenmiş ayar (core/engine.js)
 let veriTabani = null;     // indekslenmiş veritabanı (core/db.js)
 let paketliDbSozu = null;  // paketle gelen db.json, sayfa başına bir kez okunur
-let currentChannelContext = null;
 let motorHazir = false;     // loadData bitmeden karar verilmez (varsayılan ayarla geçici engel/banner çıkmasın)
 let sonKararAnahtari = '';  // tanılama günlüğü yalnızca karar değişince yazılsın
 let stilElemani = document.createElement('style');
@@ -30,14 +29,24 @@ function ensureHelperInjected() {
     }
 }
 
-function updateChannelContext() {
-    const url = window.location.href;
-    const handleMatch = url.match(/\/(@[a-zA-Z0-9._-]+)/);
-    if (handleMatch && handleMatch[1]) {
-        currentChannelContext = handleMatch[1];
-    } else {
-        currentChannelContext = null;
-    }
+// Kanal bağlamı SAKLANMAZ: her çağrıda güncel adresten hesaplanır. Yalnızca gerçek kanal sayfasında
+// (yol "/@handle" ile başlar) bir kanal vardır. Eskiden değişken saklanıyordu ve tek sayfa geçişinde bayat kalıp
+// (ör. TRT Spor kanalından çıkınca) başka kanalların video/kartları o kanal sanılıp engelleniyordu.
+function guncelKanalBaglami() {
+    const m = window.location.pathname.match(/^\/(@[a-zA-Z0-9._-]+)/);
+    return m ? m[1] : null;
+}
+
+// İzleme sayfasındaki sahip bağlantısı, yalnızca sayfadaki video bu videoysa güvenilir (geçişte bir önceki
+// videonun kanalı bir süre DOM'da kalır).
+function izlemeSayfasiKanali(videoId) {
+    const flexy = document.querySelector('ytd-watch-flexy');
+    const sayfadakiVideo = flexy && flexy.getAttribute('video-id');
+    if (sayfadakiVideo && videoId && sayfadakiVideo !== videoId) return null;
+    const channelLink = document.querySelector('ytd-watch-metadata #owner a[href^="/@"]');
+    if (!channelLink) return null;
+    const match = channelLink.href.match(/\/(@[a-zA-Z0-9._-]+)/);
+    return match ? match[1] : null;
 }
 
 async function getStorageData(keys = null) {
@@ -157,15 +166,11 @@ function sayfaKimligi() {
     const yol = url.pathname;
     const hm = yol.match(/^\/(@[a-zA-Z0-9._-]+)/);
     const im = yol.match(/^\/channel\/(UC[A-Za-z0-9_-]{22})/);
-    let handle = hm ? hm[1] : currentChannelContext;
+    let handle = hm ? hm[1] : guncelKanalBaglami();
     const kanalId = im ? im[1] : null;
 
     if (videoId && !url.pathname.startsWith('/embed/')) {
-        const channelLink = document.querySelector('ytd-watch-metadata #owner a[href^="/@"]');
-        if (channelLink) {
-            const match = channelLink.href.match(/\/(@[a-zA-Z0-9._-]+)/);
-            if (match) handle = match[1];
-        }
+        handle = izlemeSayfasiKanali(videoId);
     }
 
     let tur = null;
@@ -332,14 +337,8 @@ function checkWatchPage() {
         return;
     }
 
-    let channelHandle = currentChannelContext;
-    if (!isEmbed) {
-        const channelLink = document.querySelector('ytd-watch-metadata #owner a[href^="/@"]');
-        if (channelLink) {
-            const match = channelLink.href.match(/\/(@[a-zA-Z0-9._-]+)/);
-            if (match) channelHandle = match[1];
-        }
-    }
+    let channelHandle = null;
+    if (!isEmbed) channelHandle = izlemeSayfasiKanali(videoId);
 
     const sonuc = icerikKarari(videoId, channelHandle, null);
     kararGunlugu('video', { videoId, channelHandle }, sonuc);
@@ -451,8 +450,7 @@ function extractChannelHandle(element) {
         const handleMatch = href.match(/\/(@[a-zA-Z0-9._-]+)/);
         if (handleMatch && handleMatch[1]) return handleMatch[1];
     }
-    if (currentChannelContext) return currentChannelContext;
-    return null;
+    return guncelKanalBaglami();
 }
 
 function applyFilter(element, videoId, channelHandle) {
@@ -519,7 +517,11 @@ const videoSelectors = ['ytd-rich-item-renderer', 'ytd-video-renderer', 'ytd-com
 
 const observer = new MutationObserver((mutations) => {
     for (let mutation of mutations) {
-        if (mutation.type === 'childList') {
+        if (mutation.type === 'attributes') {
+            // Yardımcı betik geri dönüştürülen bir kartın video/kanal bilgisini güncelledi: kartı yeniden değerlendir.
+            const hedef = mutation.target;
+            if (hedef && hedef.matches && hedef.matches(videoSelectors)) processVideo(hedef);
+        } else if (mutation.type === 'childList') {
             mutation.addedNodes.forEach(node => {
                 if (node.nodeType === 1) {
                     const videos = node.querySelectorAll(videoSelectors);
@@ -571,11 +573,10 @@ function finishProcessing(element, videoId, channelHandle) {
 
 async function init() {
     ensureHelperInjected();
-    updateChannelContext();
     await loadData();
     document.querySelectorAll(videoSelectors).forEach(processVideo);
     checkWatchPage();
-    if (document.body) observer.observe(document.body, { childList: true, subtree: true });
+    if (document.body) observer.observe(document.body, { childList: true, subtree: true, attributes: true, attributeFilter: ['data-yt-exposed-id', 'data-yt-exposed-channel', 'data-yt-exposed-channel-id'] });
 }
 
 let lastUrl = location.href;
@@ -599,7 +600,6 @@ function sayfaGuncelle() {
     checkWatchPage();
     if (location.href !== lastUrl) {
         lastUrl = location.href;
-        updateChannelContext();
         document.querySelectorAll(videoSelectors).forEach(el => resetElement(el));
         setTimeout(() => document.querySelectorAll(videoSelectors).forEach(processVideo), 1000);
     }

@@ -23,6 +23,7 @@ FROM temel AS gecis
 COPY --from=bagimliliklar /uygulama/site/node_modules ./site/node_modules
 COPY site/package.json ./site/
 COPY site/db ./site/db
+COPY site/lib ./site/lib
 COPY site/scripts ./site/scripts
 WORKDIR /uygulama/site
 CMD ["node", "scripts/migrate.mjs"]

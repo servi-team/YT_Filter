@@ -118,6 +118,13 @@
   white-space: nowrap;
 }
 
+.islemler {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.9rem;
+}
+
 .durumKilit {
   background: color-mix(in srgb, var(--amber) 18%, transparent);
   color: var(--amber);

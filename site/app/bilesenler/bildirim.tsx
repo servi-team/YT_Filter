@@ -26,7 +26,7 @@ export function Bildirim({
       aria-atomic="true"
     >
       <span className={s.ikon} aria-hidden="true">{IKONLAR[tur]}</span>
-      <p className={s.metin}>{mesaj}</p>
+      <div className={s.metin}>{mesaj}</div>
       {kapat ? (
         <button type="button" className={s.kapat} onClick={kapat} aria-label="Bildirimi kapat">
           ×

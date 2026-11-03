@@ -26,7 +26,9 @@ export default async function PanelDuzeni({ children }: { children: React.ReactN
     <div className={s.panel}>
       <aside className={s.yan}>
         <div className={s.menuUst}>
-          <p className={s.menuEtiket}>Editör paneli</p>
+          <p className={s.menuEtiket}>
+            {kullanici.rol === 'admin' ? 'Yönetici paneli' : 'Editör paneli'}
+          </p>
           <p className={s.menuKullanici} title={kullanici.eposta}>{kullanici.eposta}</p>
         </div>
         <PanelMenu />

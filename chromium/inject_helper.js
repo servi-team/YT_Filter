@@ -127,6 +127,17 @@
         return sonuc;
     }
 
+    // Derin arama pahalı: kartın veri nesneleri aynı kaldıkça sonucu yeniden kullan, geri dönüştürülünce yeniden hesapla.
+    const derinOnbellek = new WeakMap();
+    function derinOnbellekli(el) {
+        const kokler = kartKokleri(el);
+        const o = derinOnbellek.get(el);
+        if (o && o.kokler.length === kokler.length && o.kokler.every((k, i) => k === kokler[i])) return o.sonuc;
+        const sonuc = derinBul(el);
+        derinOnbellek.set(el, { kokler, sonuc });
+        return sonuc;
+    }
+
     function scan() {
         const selectors = [
             'ytd-rich-item-renderer', 'ytd-video-renderer', 'ytd-reel-item-renderer',
@@ -136,21 +147,17 @@
         ];
 
         document.querySelectorAll(selectors.join(', ')).forEach(el => {
-            let derin = null;
-            const derinAl = () => derin || (derin = derinBul(el));
-
-            if (!el.dataset.ytExposedId) {
-                const videoId = findVideoIdInElement(el) || derinAl().videoId;
-                if (videoId) el.setAttribute('data-yt-exposed-id', videoId);
-            }
-            if (!el.dataset.ytExposedChannel) {
-                const channelHandle = findChannelHandleInElement(el) || derinAl().handle;
-                if (channelHandle) el.setAttribute('data-yt-exposed-channel', channelHandle);
-            }
-            if (!el.dataset.ytExposedChannelId) {
-                const channelId = findChannelIdInElement(el) || derinAl().channelId;
-                if (channelId) el.setAttribute('data-yt-exposed-channel-id', channelId);
-            }
+            // YouTube kart öğelerini geri dönüştürür (aynı öğe başka bir videoyu gösterir). Bu yüzden öznitelikler
+            // yalnızca "yoksa" değil her taramada güncel veriden yeniden yazılır, veri yoksa kaldırılır.
+            // Aksi halde yeni video, öğenin önceki videosunun kanalına ait sanılıp yanlışlıkla engellenir.
+            const derinAl = () => derinOnbellekli(el);
+            const yaz = (ad, deger) => {
+                if (deger) { if (el.getAttribute(ad) !== deger) el.setAttribute(ad, deger); }
+                else if (el.hasAttribute(ad)) el.removeAttribute(ad);
+            };
+            yaz('data-yt-exposed-id', findVideoIdInElement(el) || derinAl().videoId);
+            yaz('data-yt-exposed-channel', findChannelHandleInElement(el) || derinAl().handle);
+            yaz('data-yt-exposed-channel-id', findChannelIdInElement(el) || derinAl().channelId);
         });
     }
 

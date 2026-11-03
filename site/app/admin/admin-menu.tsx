@@ -10,6 +10,8 @@ const BAGLAR = [
   { yol: '/admin/icerikler', etiket: 'İçerikler' },
   { yol: '/admin/yayinlar', etiket: 'Yayınlar' },
   { yol: '/admin/taksonomi', etiket: 'Taksonomi' },
+  { yol: '/panel/moderasyon', etiket: 'Moderasyon' },
+  { yol: '/panel/engeller', etiket: 'Engeller' },
 ] as const;
 
 /** Admin yan menüsü; aktif bağlantıyı `aria-current="page"` ile işaretler. */
