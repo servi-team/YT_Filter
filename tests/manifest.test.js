@@ -7,7 +7,7 @@ const chromium = require('../manifests/manifest.chromium.json');
 const firefox = require('../manifests/manifest.firefox.json');
 const KOK = path.join(__dirname, '..');
 
-const icerikBetigiSirasi = ['core/taxonomy.js', 'core/decision.js', 'core/migrate.js', 'core/db.js', 'core/engine.js', 'content.js'];
+const icerikBetigiSirasi = ['core/taxonomy.js', 'core/pin.js', 'core/kilit.js', 'core/decision.js', 'core/migrate.js', 'core/db.js', 'core/engine.js', 'content.js'];
 
 function tumEslesmeler(manifest) {
     return (manifest.content_scripts || []).flatMap(c => c.matches || []);
