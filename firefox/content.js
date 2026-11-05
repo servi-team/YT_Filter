@@ -152,6 +152,265 @@ function sebepiMetne(sebep) {
     return YTF.sebepMetni(sebep);
 }
 
+// ---------- PIN kapısı ve ortak liste yazımı ----------
+const PIN_DEGISIM_ANAHTARLARI = ['pinKilitBitis', 'pinHataSayisi', 'pinHataBitis'];
+const TAZE_ANAHTARLAR = ['surum', 'ayar', 'pinKodu', 'ayarlar', 'pinKilitBitis', 'pinHataSayisi', 'pinHataBitis'];
+let pinPenceresi = null;
+let bildirimZamanlayici = null;
+
+// Kısa, ekran okuyucuların da duyduğu durum bildirimi.
+function bildirimGoster(metin) {
+    let el = document.getElementById('ytf-bildirim');
+    if (!el) {
+        el = document.createElement('div');
+        el.id = 'ytf-bildirim';
+        el.setAttribute('role', 'status');
+        el.setAttribute('aria-live', 'polite');
+        document.body.appendChild(el);
+    }
+    el.textContent = metin;
+    if (bildirimZamanlayici) clearTimeout(bildirimZamanlayici);
+    bildirimZamanlayici = setTimeout(() => {
+        bildirimZamanlayici = null;
+        if (el.parentNode) el.remove();
+    }, 3000);
+}
+
+// Açık PIN penceresini kapatır ve bekleyen yazmayı reddeder.
+function pinPenceresiIptalEt() {
+    if (pinPenceresi) pinPenceresi.bitir(false);
+}
+
+/**
+ * Kilitliyken istisna yazımı için PIN ister. Doğru PIN'de oturum açar ve true çözer.
+ * Aynı anda birden çok pencere açılmaz; ikinci çağrı aynı promise'i bekler.
+ */
+function pinPenceresiAc() {
+    if (pinPenceresi) return pinPenceresi.soz;
+
+    let cozumle;
+    const soz = new Promise((coz) => { cozumle = coz; });
+
+    const kok = document.createElement('div');
+    kok.className = 'ytf-pin-pencere';
+    kok.setAttribute('data-ytf-pin-pencere', 'true');
+    kok.setAttribute('role', 'dialog');
+    kok.setAttribute('aria-modal', 'true');
+    kok.setAttribute('aria-labelledby', 'ytf-pin-baslik');
+
+    const kutu = document.createElement('div');
+    kutu.className = 'ytf-pin-kutu';
+
+    const baslik = document.createElement('h2');
+    baslik.id = 'ytf-pin-baslik';
+    baslik.className = 'ytf-pin-baslik';
+    baslik.textContent = 'PIN gerekli';
+
+    const aciklama = document.createElement('p');
+    aciklama.className = 'ytf-pin-aciklama';
+    aciklama.textContent = 'İstisna listesini değiştirmek için PIN girin.';
+
+    const giris = document.createElement('input');
+    giris.id = 'ytf-pin-giris';
+    giris.className = 'ytf-pin-giris';
+    giris.type = 'password';
+    giris.inputMode = 'numeric';
+    giris.autocomplete = 'off';
+    giris.maxLength = 4;
+    giris.setAttribute('aria-label', 'PIN');
+    giris.addEventListener('input', () => {
+        giris.value = giris.value.replace(/\D/g, '').slice(0, 4);
+    });
+
+    const hata = document.createElement('div');
+    hata.id = 'ytf-pin-hata';
+    hata.className = 'ytf-pin-hata';
+    hata.setAttribute('aria-live', 'polite');
+    hata.setAttribute('aria-atomic', 'true');
+
+    const butonlar = document.createElement('div');
+    butonlar.className = 'ytf-pin-butonlar';
+
+    const vazgec = document.createElement('button');
+    vazgec.id = 'ytf-pin-vazgec';
+    vazgec.type = 'button';
+    vazgec.className = 'ytf-btn ytf-btn-geri';
+    vazgec.textContent = 'Vazgeç';
+
+    const onay = document.createElement('button');
+    onay.id = 'ytf-pin-onay';
+    onay.type = 'button';
+    onay.className = 'ytf-btn ytf-btn-beyaz';
+    onay.textContent = 'Giriş';
+
+    butonlar.append(vazgec, onay);
+    kutu.append(baslik, aciklama, giris, hata, butonlar);
+    kok.appendChild(kutu);
+
+    let kapaniyor = false;
+    let mesgul = false;
+    let sayacZamanlayici = null;
+
+    const bitir = (sonuc) => {
+        if (kapaniyor) return;
+        kapaniyor = true;
+        if (sayacZamanlayici) clearInterval(sayacZamanlayici);
+        sayacZamanlayici = null;
+        document.removeEventListener('keydown', tusDinleyici, true);
+        kok.remove();
+        if (pinPenceresi && pinPenceresi.soz === soz) pinPenceresi = null;
+        cozumle(sonuc);
+    };
+
+    function beklemeGuncelle() {
+        const kalan = YTF.hataBeklemesi(hafiza, Date.now());
+        if (kalan > 0) {
+            onay.disabled = true;
+            hata.textContent = `Çok fazla hatalı deneme. ${Math.ceil(kalan / 1000)} sn sonra tekrar deneyin.`;
+            if (!sayacZamanlayici) {
+                sayacZamanlayici = setInterval(() => {
+                    const k = YTF.hataBeklemesi(hafiza, Date.now());
+                    if (k <= 0) {
+                        clearInterval(sayacZamanlayici);
+                        sayacZamanlayici = null;
+                        onay.disabled = false;
+                        hata.textContent = '';
+                        return;
+                    }
+                    hata.textContent = `Çok fazla hatalı deneme. ${Math.ceil(k / 1000)} sn sonra tekrar deneyin.`;
+                }, 250);
+            }
+        } else {
+            if (sayacZamanlayici) {
+                clearInterval(sayacZamanlayici);
+                sayacZamanlayici = null;
+            }
+            onay.disabled = false;
+        }
+    }
+
+    async function onayla() {
+        if (mesgul || kapaniyor || onay.disabled) return;
+        const girilen = giris.value.trim();
+        if (!/^\d{4}$/.test(girilen)) {
+            hata.textContent = 'PIN 4 rakam olmalıdır.';
+            giris.focus();
+            return;
+        }
+
+        mesgul = true;
+        onay.disabled = true;
+        try {
+            const dogru = await YTF.pinDogrula(girilen, hafiza);
+            if (dogru) {
+                const yazilacak = {
+                    pinKilitBitis: YTF.kilitBitisZamani(),
+                    pinHataSayisi: 0,
+                    pinHataBitis: 0
+                };
+                await setStorageData(yazilacak);
+                Object.assign(hafiza, yazilacak);
+                bitir(true);
+                return;
+            }
+
+            const hataDurumu = YTF.hataKaydet(hafiza, Date.now());
+            await setStorageData(hataDurumu);
+            Object.assign(hafiza, hataDurumu);
+            giris.value = '';
+            giris.focus();
+            if (hataDurumu.pinHataBitis > 0) {
+                beklemeGuncelle();
+            } else {
+                const kalanDeneme = Math.max(0, YTF.HATA_SINIRI - (Number(hataDurumu.pinHataSayisi) || 0));
+                hata.textContent = `Hatalı PIN. ${kalanDeneme} deneme kaldı.`;
+            }
+        } catch (e) {
+            hata.textContent = 'PIN doğrulanamadı; tekrar deneyin.';
+        } finally {
+            mesgul = false;
+            if (!kapaniyor && YTF.hataBeklemesi(hafiza, Date.now()) <= 0) onay.disabled = false;
+        }
+    }
+
+    function tusDinleyici(olay) {
+        if (olay.key === 'Escape') {
+            olay.preventDefault();
+            bitir(false);
+        } else if (olay.key === 'Enter') {
+            const etkin = document.activeElement;
+            if (etkin === giris || etkin === onay) {
+                olay.preventDefault();
+                onayla();
+            }
+        }
+    }
+
+    vazgec.addEventListener('click', () => bitir(false));
+    onay.addEventListener('click', onayla);
+    document.addEventListener('keydown', tusDinleyici, true);
+
+    pinPenceresi = { soz, bitir };
+    document.body.appendChild(kok);
+    beklemeGuncelle();
+    giris.focus();
+    return soz;
+}
+
+// Hedef listeye yazar; aynı anahtarı önce tüm listelerden çıkarır.
+function listeyeYaz(ayar, anahtar, hedef) {
+    const L = ayar.listeler;
+    delete L.beyaz[anahtar];
+    delete L.kara[anahtar];
+    (L.ozel || []).forEach(l => { delete l.uyeler[anahtar]; });
+
+    if (hedef === 'kara') {
+        L.kara[anahtar] = true;
+        return true;
+    }
+    if (typeof hedef === 'string' && hedef.startsWith('ozel:')) {
+        const liste = (L.ozel || []).find(l => l.ad === hedef.slice(5));
+        if (!liste) return false;
+        liste.uyeler[anahtar] = true;
+        return true;
+    }
+    L.beyaz[anahtar] = true;
+    return true;
+}
+
+/**
+ * Tek liste yazma yolu: depoyu taze okur, kilitliyse PIN ister, hedefe yazar,
+ * motoru/rayı yeniler ve kısa bildirim gösterir.
+ */
+async function listeYaz(anahtar, hedef, sonra) {
+    const k = String(anahtar || '').toLowerCase();
+    if (!k) return false;
+
+    const taze = await getStorageData(TAZE_ANAHTARLAR);
+    Object.assign(hafiza, taze || {});
+
+    if (YTF.kilitGerekli(hafiza) && !YTF.kilitAcik(hafiza, Date.now())) {
+        const acildi = await pinPenceresiAc();
+        if (!acildi) return false;
+    }
+
+    const a = YTF.ayarCoz(hafiza);
+    if (!listeyeYaz(a, k, hedef)) return false;
+
+    await setStorageData({ surum: 2, ayar: a });
+    await loadData();
+    checkWatchPage();
+    if (typeof hizliRayCiz === 'function') hizliRayCiz();
+
+    const hedefEtiketi = hedef === 'kara'
+        ? 'Kara listeye'
+        : (typeof hedef === 'string' && hedef.startsWith('ozel:') ? `"${hedef.slice(5)}" listesine` : 'Beyaz listeye');
+    bildirimGoster(`${k} ${hedefEtiketi} eklendi.`);
+
+    if (typeof sonra === 'function') sonra();
+    return true;
+}
+
 function sayfaKimligi() {
     const url = new URL(window.location.href);
     let videoId = null;
@@ -272,14 +531,7 @@ function engelBanneriniGoster(sonuc, anahtar, tur, beyazGoster = true) {
         beyazBtn.addEventListener('click', async () => {
             const k = String(anahtar || '').toLowerCase();
             if (!k) return;
-            const a = YTF.ayarCoz((await getStorageData(null)) || {});
-            delete a.listeler.kara[k];
-            (a.listeler.ozel || []).forEach(l => { delete l.uyeler[k]; });
-            a.listeler.beyaz[k] = true;
-            await setStorageData({ surum: 2, ayar: a });
-            engelBanneriniKaldir();
-            await loadData();
-            checkWatchPage();
+            await listeYaz(k, 'beyaz', () => engelBanneriniKaldir());
         });
         butonlar.appendChild(beyazBtn);
     }
@@ -612,7 +864,20 @@ setInterval(sayfaGuncelle, 5000);
 
 const storageObj = (typeof browser !== 'undefined' && browser.storage) ? browser.storage : chrome.storage;
 if (storageObj && storageObj.onChanged) {
-    storageObj.onChanged.addListener(() => {
+    storageObj.onChanged.addListener((degisim) => {
+        const anahtarlar = Object.keys(degisim || {});
+        const sadecePin = anahtarlar.length > 0 && anahtarlar.every(k => PIN_DEGISIM_ANAHTARLARI.includes(k));
+        if (sadecePin) {
+            anahtarlar.forEach(k => {
+                const yeni = degisim[k] ? degisim[k].newValue : undefined;
+                if (yeni === undefined) delete hafiza[k];
+                else hafiza[k] = yeni;
+            });
+            // Oturum başka sekmede kapandıysa açık PIN penceresi boşa beklemesin.
+            if (degisim.pinKilitBitis && !YTF.kilitAcik(hafiza, Date.now())) pinPenceresiIptalEt();
+            return;
+        }
+
         document.querySelectorAll(videoSelectors).forEach(el => { if (el.dataset.ytFilterProcessed) resetElement(el); });
         loadData().then(() => {
             document.querySelectorAll(videoSelectors).forEach(processVideo);

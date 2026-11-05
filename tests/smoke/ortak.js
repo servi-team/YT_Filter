@@ -15,6 +15,8 @@ const DB_JSON = JSON.parse(fs.readFileSync(path.join(SRC, 'data', 'db.json'), 'u
 
 const CORE_BETIKLERI = [
     'core/taxonomy.js',
+    'core/pin.js',
+    'core/kilit.js',
     'core/decision.js',
     'core/migrate.js',
     'core/listeler.js',
@@ -150,6 +152,8 @@ function icerikArayuzuAc({
         virtualConsole: sanalKonsol(jsdomHatalari),
         beforeParse(window) {
             window.chrome = chrome;
+            Object.defineProperty(window, 'crypto', { value: webcrypto, configurable: true }); // jsdom'da subtle yok
+            Object.defineProperty(window, 'TextEncoder', { value: TextEncoder, configurable: true }); // jsdom'da yok
             window.fetch = async () => ({ json: async () => kopyala(DB_JSON) });
             window.__hatalar = [];
             window.addEventListener('error', (e) => window.__hatalar.push(String(e.message)));
