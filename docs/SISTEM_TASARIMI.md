@@ -192,12 +192,12 @@ Editör ve Admin'in moderasyon araçları vardır; **sonucu elle yazamazlar** (s
 
 ### 7.6 Dışa aktarma ve yayın
 - Güncel `db.json` herkese açık indirilebilir (giriş gerekmez). Kuralları `docs/db-sema.md` belirler. ✅
-- `db.json` eklentiyle birlikte **aylık mağaza güncellemesiyle** gelir; eklenti siteden veri çekmez. Kullanıcı isterse dosyayı elle indirip içe aktarır. ✅
+- `db.json` eklentiyle birlikte **aylık GitHub Releases güncellemesiyle** gelir; eklenti siteden veri çekmez. Kullanıcı isterse dosyayı elle indirip içe aktarır. ✅
 - Yayın sürümünü **yalnızca Admin** onaylar ve yayınlar. Editör yayın uçlarına erişemez. ✅ (2026-10-27)
 
 ### 7.7 Site uygulama durumu (2026-10-27)
 
 - Site S1–S7 olarak yerelde kodlandı: kamusal kabuk, anonim oy, link/metadata ve talepler, oturum/editör paneli, moderasyon, admin/arşiv/yayın, kamusal metinler ve QA.
 - `npm test`, `npm run tip`, `npm run build` ve HTTP QA dumanı yeşil. Ayrıntı ve manuel kontrol listesi: `SITE_QA.md`.
-- Docker Compose + PostgreSQL + Caddy üretim denemesi, gerçek tarayıcı/ekran okuyucu QA'sı, ekran görüntüleri, gerçek eklentiye `db.json` yükleme ve mağaza yüklemesi kullanıcıda.
+- Docker Compose + PostgreSQL + Caddy üretim denemesi, gerçek tarayıcı/ekran okuyucu QA'sı, ekran görüntüleri, gerçek eklentiye `db.json` yükleme ve GitHub Releases paketlemesi kullanıcıda.
 - Bu bölümdeki 7.1–7.6 ürün kuralları değişmedi; site uygulaması bu kuralları izler. Uygulama belgeleri: `../site/README.md`, `SITE_HAZIRLIK.md` ve `SITE_QA.md`.

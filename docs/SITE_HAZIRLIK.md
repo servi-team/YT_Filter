@@ -1,6 +1,6 @@
 # Site Hazırlığı — YouTube Filter Store
 
-> Durum: **karar/uygulama belgesi.** 2026-10-27 itibarıyla roller, anonim oy, saklama ve moderasyon kararları kapandı; site S1–S7 olarak kodlandı. Site tarafında açık kalanlar yalnızca gerçek tarayıcı QA'sı, alan adı, hukuki inceleme ve mağaza işleridir. (#8/#10/#11 yalnızca eklenti davranışı için teyit bekliyor; site v1'ini etkilemez.)
+> Durum: **karar/uygulama belgesi.** 2026-10-27 itibarıyla roller, anonim oy, saklama ve moderasyon kararları kapandı; site S1–S7 olarak kodlandı. Site tarafında açık kalanlar yalnızca gerçek tarayıcı QA'sı, alan adı, hukuki inceleme ve GitHub Releases işleridir. (#8/#10/#11 yalnızca eklenti davranışı için teyit bekliyor; site v1'ini etkilemez.)
 > Son güncelleme: 2026-10-27. Ürün kurallarının tek kaynağı `docs/SISTEM_TASARIMI.md`'dir.
 
 Bu belge, site kararlarını ve site–eklenti arasındaki sözleşmeleri tek yerde toplar. Uygulama ayrıntıları `site/README.md`, QA `docs/SITE_QA.md` içindedir.
@@ -101,7 +101,7 @@ Ayrıntı ve gerekçeler: `docs/SISTEM_TASARIMI.md` bölüm 6. 2026-10-21'de #1,
 - Sunucu: kimlik doğrulaması istemez (ziyaretçi), IP bazlı hız sınırı + basit bot koruması uygular; `202 Accepted` döner.
 - Başarısızlıkta eklenti kullanıcıya "şu an gönderilemedi" der; sessizce yutmaz. Kuyruğa alma 2.0 kapsamı dışıdır.
 
-**Kabul ölçütleri (gelecek sürüm):** gerçek uç nokta yokken düğme görünmez; uç nokta eklenince gizlilik metni, mağaza veri formu ve `host_permissions` güncellenir; sunucu tarafında şema doğrulaması ve hız sınırı test edilir.
+**Kabul ölçütleri (gelecek sürüm):** gerçek uç nokta yokken düğme görünmez; uç nokta eklenince gizlilik metni ve `host_permissions` güncellenir; sunucu tarafında şema doğrulaması ve hız sınırı test edilir.
 
 ---
 

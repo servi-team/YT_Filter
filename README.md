@@ -10,7 +10,7 @@
 </p>
 <p align="center"><sub>YouTube Filter Store — yerel demo verisiyle alınmış ekran görüntüsü</sub></p>
 
-> **Durum:** 2.0.0 geliştirme dalı. Uzantı ve site yerelde doğrulandı; site S1–S7 dilimleri tamamlandı. Gerçek tarayıcı/ekran okuyucu QA'sı, mağaza yüklemesi ve Docker/PostgreSQL/Caddy üretim denemesi henüz yapılmadı.
+> **Durum:** 2.1.0 geliştirme dalı. Uzantı ve site yerelde doğrulandı; site S1–S7 dilimleri tamamlandı. Gerçek tarayıcı/ekran okuyucu QA'sı, GitHub Releases paketlemesi ve Docker/PostgreSQL/Caddy üretim denemesi henüz yapılmadı.
 
 > **Veri notu:** Paketli `src/data/db.json` şu an yalnızca örnek bir kanal içeriyor. Site yayına alınıp yeni veri yayımlanana kadar yaygın YouTube içeriklerinin çoğu "bilinmeyen" olarak değerlendirilir.
 
@@ -130,14 +130,14 @@ npm run build
 
 - Kök testleri saf karar/migrasyon/veri modüllerini, jsdom smoke testlerini ve derleme güncelliğini kapsar.
 - Site testleri PGlite ve Node test koşucusuyla çalışır; `npm run qa:duman` çalışan siteye HTTP dumanı gönderir.
-- Otomatik testler gerçek tarayıcı, ekran okuyucu ve mağaza doğrulamasının yerini tutmaz.
+- Otomatik testler gerçek tarayıcı, ekran okuyucu ve GitHub Releases paketlemesi doğrulamasının yerini tutmaz.
 
 ## Proje yapısı
 
 ```text
 src/                  Uzantı kaynakları (content, options, core/, data/, icons/)
 manifests/            Chromium ve Firefox manifestleri
-scripts/              Derleme, ikon ve mağaza görseli üretimi
+scripts/              Derleme ve ikon üretimi
 tests/                Node testleri + tests/smoke/ (jsdom)
 chromium/             Derlenmiş Chromium uzantısı (izlenir)
 firefox/              Derlenmiş Firefox uzantısı (izlenir)
@@ -170,7 +170,7 @@ Sürüm numarası üç yerde eşit tutulur: `package.json`, `manifests/manifest.
 ## Bilinen sınırlar
 
 - Paketli veri henüz örnek düzeyindedir; site yayını ve veri üretimi olmadan filtre kapsamı sınırlıdır.
-- Gerçek YouTube üzerinde uçtan uca tarayıcı testi, ekran okuyucu QA'sı ve mağaza yüklemesi yapılmadı.
+- Gerçek YouTube üzerinde uçtan uca tarayıcı testi, ekran okuyucu QA'sı ve GitHub Releases paketlemesi yapılmadı.
 - Docker/PostgreSQL/Caddy üretim yığını bu makinede denenmedi; doğrulama statik testlerle sınırlı.
 - Site içi "Bildir" formu/uç noktası yoktur; iletişim GitHub Issues üzerindendir.
 - README ekran görüntüleri yerel demo verisiyle alınmıştır; gerçek topluluk verisini temsil etmez.

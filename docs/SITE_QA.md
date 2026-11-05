@@ -18,7 +18,7 @@ Otomatik testlerin kapsamadığı, bu dosyada manuel kontrol edilecek alanlar:
 - Ekran okuyucu (NVDA/VoiceOver) ile okuma sırası ve duyuru kontrolü.
 - Renk kontrastının DevTools ile ölçülmesi, koyu tema ve hareket azaltma.
 - Uçtan uca iş akışlarının gerçek oturumlarla denenmesi.
-- Docker/PostgreSQL üretim denemesi, gerçek eklentiye `db.json` yükleme ve mağaza yüklemesi.
+- Docker/PostgreSQL üretim denemesi, gerçek eklentiye `db.json` yükleme ve GitHub Releases paketlemesi.
 - Tam manuel QA seti (17 sayfa × 2 çözünürlük) henüz alınmadı; README için beş görüntü `docs/gorseller/` altında.
 
 Bu sayılan manuel işler kullanıcıya aittir; otomatik testlerin yeşil olması bunların yerini tutmaz.
@@ -180,7 +180,7 @@ Ek kontroller:
 - [ ] İkinci admin açılıyor; kendi hesabını düşürme/pasifleştirme 409; son aktif admin korunuyor.
 - [ ] `/admin/yayinlar` önizleme → yayınla → `/db.json` iniyor; eski sürüm `?surum=N` ile değişmeden iniyor.
 - [ ] İndirilen `db.json` gerçek eklentiye yükleniyor ve eklenti veriyi okuyor (kullanıcı doğrulaması).
-- [ ] Mağaza paketleme/yükleme akışı deneniyor (kullanıcı doğrulaması).
+- [ ] GitHub Releases paketleme akışı deneniyor (kullanıcı doğrulaması).
 
 ## 9. Gizlilik ve ağ
 
@@ -224,7 +224,7 @@ Manuel sonuç: _____________________________________________________________
 Açık riskler:
 
 - Docker/PostgreSQL üretim ortamı ve Caddy yapılandırması denenmedi.
-- Gerçek eklentiye `db.json` yükleme ve mağaza yüklemesi denenmedi.
+- Gerçek eklentiye `db.json` yükleme ve GitHub Releases paketlemesi denenmedi.
 - Ekran okuyucu ve gerçek tarayıcı kontrolleri bu oturumda yapılmadı.
 
 İmza / tarih: ____________________________________________________________
