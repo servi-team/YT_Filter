@@ -17,7 +17,7 @@ test('koşullar ve iletişim sayfaları taslak metni ve gerçek issue bağlantı
   const k = oku('../app/(kamusal)/kosullar/page.tsx');
   for (const metin of ['Kullanım Koşulları', 'sorumluluk', 'moderasyon', 'değişiklik', 'YouTube']) assert.ok(k.includes(metin), metin);
   const i = oku('../app/(kamusal)/iletisim/page.tsx');
-  assert.match(i, /github\.com\/TalhaOzz\/YouTubeFilter\/issues/);
+  assert.match(i, /github\.com\/servi-team\/YT_Filter\/issues/);
   assert.equal(i.includes('<form'), false);
 });
 
@@ -35,4 +35,19 @@ test('404 ve hata sayfaları Türkçe ve erişilebilir', () => {
   const e = oku('../app/error.tsx');
   assert.match(e, /'use client'/);
   assert.match(e, /Tekrar dene/);
+});
+
+test('güncel gizlilik, iletişim, koşullar ve alt bilgi ana depoyu gösterir', () => {
+  const dosyalar = [
+    '../app/(kamusal)/gizlilik/page.tsx',
+    '../app/(kamusal)/kosullar/page.tsx',
+    '../app/(kamusal)/iletisim/page.tsx',
+    '../app/bilesenler/alt-bilgi.tsx',
+    '../../docs/GIZLILIK.md',
+  ];
+  for (const yol of dosyalar) {
+    const s = oku(yol);
+    assert.equal(s.includes('TalhaOzz/YouTubeFilter'), false, yol);
+    assert.ok(s.includes('servi-team/YT_Filter'), yol);
+  }
 });

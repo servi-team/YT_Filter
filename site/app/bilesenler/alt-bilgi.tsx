@@ -23,7 +23,7 @@ export function AltBilgi({ veriSurumu }: { veriSurumu: number | null }) {
           <Link href="/gizlilik">Gizlilik</Link>
           <Link href="/kosullar">Koşullar</Link>
           <Link href="/iletisim">İletişim</Link>
-          <a href="https://github.com/TalhaOzz/YouTubeFilter" rel="noreferrer">GitHub</a>
+          <a href="https://github.com/servi-team/YT_Filter" rel="noreferrer">GitHub</a>
         </nav>
       </div>
 

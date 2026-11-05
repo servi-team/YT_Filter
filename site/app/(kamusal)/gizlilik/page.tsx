@@ -88,7 +88,7 @@ export default function GizlilikSayfasi() {
         <h2 id="silme-iletisim">Veri silme ve iletişim</h2>
         <p>
           Verilerinizle ilgili silme veya düzeltme talebi için{' '}
-          <a href="https://github.com/TalhaOzz/YouTubeFilter/issues">GitHub Issues</a> üzerinden konu açabilirsiniz.
+          <a href="https://github.com/servi-team/YT_Filter/issues">GitHub Issues</a> üzerinden konu açabilirsiniz.
           Talebinizi değerlendirirken ilgili kaydı ve saklama süresini dikkate alırız.
         </p>
       </section>

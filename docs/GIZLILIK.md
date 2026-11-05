@@ -1,7 +1,7 @@
 # Gizlilik Politikası — YouTube Filtreleyici
 
 > Bu metin, YouTube Filtreleyici tarayıcı uzantısının gizlilik politikasıdır.
-> Son güncelleme: 2026-10-21 · İletişim: https://github.com/TalhaOzz/YouTubeFilter/issues
+> Son güncelleme: 2026-10-21 · İletişim: https://github.com/servi-team/YT_Filter/issues
 
 ## Özet
 
@@ -45,7 +45,7 @@ Bu politikada değişiklik olursa bu dosyanın "Son güncelleme" tarihi yenileni
 
 ## 7. İletişim
 
-Sorularınız için: https://github.com/TalhaOzz/YouTubeFilter/issues
+Sorularınız için: https://github.com/servi-team/YT_Filter/issues
 
 ---
 

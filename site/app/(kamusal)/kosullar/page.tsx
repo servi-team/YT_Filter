@@ -80,7 +80,7 @@ export default function KosullarSayfasi() {
         <h2 id="iletisim">İletişim</h2>
         <p>
           Sorularınız ve itirazlarınız için{' '}
-          <a href="https://github.com/TalhaOzz/YouTubeFilter/issues">GitHub Issues</a> üzerinden konu açabilirsiniz.
+          <a href="https://github.com/servi-team/YT_Filter/issues">GitHub Issues</a> üzerinden konu açabilirsiniz.
           Ayrıca <Link href="/gizlilik">gizlilik sayfasını</Link> inceleyebilirsiniz.
         </p>
       </section>

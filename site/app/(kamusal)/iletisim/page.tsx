@@ -21,8 +21,8 @@ export default function IletisimSayfasi() {
         <h2 id="issue-baslik">GitHub Issues</h2>
         <p>
           Yeni bir konu açmak veya mevcut konuları incelemek için{' '}
-          <a href="https://github.com/TalhaOzz/YouTubeFilter/issues">
-            github.com/TalhaOzz/YouTubeFilter/issues
+          <a href="https://github.com/servi-team/YT_Filter/issues">
+            github.com/servi-team/YT_Filter/issues
           </a>{' '}
           adresini kullanın.
         </p>
