@@ -262,13 +262,16 @@ function kilidiAc() {
     kilitZamanlayici = null;
     const kalan = Number(mevcutVeri.pinKilitBitis || 0) - Date.now();
     if (kalan > 0) {
-        kilitZamanlayici = setTimeout(kilitle, kalan);
+        kilitZamanlayici = setTimeout(() => {
+            // PIN bu arada iptal edilmişse kilit ekranı açılmaz
+            if (YTF.kilitGerekli(mevcutVeri)) kilitle();
+        }, kalan);
     }
 
     arayuzuDoldur();
 }
 
-// "Kilitle": ana arayüzü kapatır, PIN ekranını gösterir, içerik oturumunu siler.
+// "Kilitle": ana arayüzü kapatır, PIN ekranını gösterir; depo yazımı yapmaz.
 function kilitle() {
     clearTimeout(kilitZamanlayici);
     kilitZamanlayici = null;
@@ -287,8 +290,15 @@ function kilitle() {
     document.getElementById('pinEkrani').style.display = 'flex';
     document.getElementById('btnPinKilitle').style.display = 'none';
     document.getElementById('pinGiris').value = '';
-    document.getElementById('pinHata').style.display = 'none';
-    document.getElementById('pinHata').classList.remove('pin-bekleme');
+    const btnOnayla = document.getElementById('btnPinOnayla');
+    if (YTF.hataBeklemesi(mevcutVeri) > 0) {
+        btnOnayla.disabled = true;
+        pinBeklemeGuncelle();
+    } else {
+        btnOnayla.disabled = false;
+        document.getElementById('pinHata').style.display = 'none';
+        document.getElementById('pinHata').classList.remove('pin-bekleme');
+    }
 
     // İlk giriş yapıldıysa kilit ekranında 1234 yazısı artık asla gösterilmez
     const pinIpucu = document.getElementById('pinVarsayilanIpucu');
@@ -323,6 +333,7 @@ function pinBeklemeGuncelle() {
     const guncelle = () => {
         const kalanMs = YTF.hataBeklemesi(mevcutVeri);
         if (kalanMs > 0) {
+            btnOnayla.disabled = true;
             hata.style.display = 'block';
             hata.classList.add('pin-bekleme');
             hata.textContent = `Çok fazla hatalı deneme yapıldı. ${Math.ceil(kalanMs / 1000)} saniye sonra tekrar deneyin.`;
@@ -1137,12 +1148,17 @@ function initEvents() {
                 if (!confirm('Mevcut filtre ayarlarınızın ve listelerinizin üzerine yazılacak. Devam edilsin mi?')) return;
 
                 ayar = yeniAyar;
+                const ithalPinKodu = yuklenen.pinKodu || mevcutVeri.pinKodu;
+                const ithalPinVarsayilan = yuklenen.pinVarsayilan !== undefined
+                    ? yuklenen.pinVarsayilan === true
+                    : (yuklenen.pinKodu ? yuklenen.pinKodu === '1234' : mevcutVeri.pinVarsayilan);
                 await setStorageData({
                     surum: 2,
                     ayar,
                     ayarlar: yuklenen.ayarlar || mevcutVeri.ayarlar,
                     kanalBilgileri: yuklenen.kanalBilgileri ? YTF.kanalBilgileriTemizle(yuklenen.kanalBilgileri) : kanalBilgileri,
-                    pinKodu: yuklenen.pinKodu || mevcutVeri.pinKodu,
+                    pinKodu: ithalPinKodu,
+                    pinVarsayilan: ithalPinVarsayilan,
                     pinDegistirildi: yuklenen.pinDegistirildi || mevcutVeri.pinDegistirildi,
                     ilkGirisYapildi: yuklenen.ilkGirisYapildi || mevcutVeri.ilkGirisYapildi
                 });
@@ -1278,6 +1294,12 @@ async function kaydetTumAyarlar(bildirimVer = true) {
     const secilenEylem = document.getElementById('selEngelEylemi').value;
     ayar.engelEylemi = YTF.ENGEL_EYLEMLERI.includes(secilenEylem) ? secilenEylem : 'kaldir';
     mevcutVeri.ayar = ayar;
+
+    // PIN iptal edildiyse açık oturum zamanlayıcısı kilit ekranı açmasın
+    if (mevcutVeri.ayarlar.pinIptal) {
+        clearTimeout(kilitZamanlayici);
+        kilitZamanlayici = null;
+    }
 
     await setStorageData({
         surum: 2,

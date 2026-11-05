@@ -128,6 +128,18 @@ test('options: beş hatalı PIN denemesinden sonra onay kapanır', async () => {
     } finally { dom.window.close(); }
 });
 
+test('options: bekleme açıkken kilit ekranı sayacı gösterir', async () => {
+    const baslangic = await pinliBaslangic();
+    baslangic.pinHataSayisi = 5;
+    baslangic.pinHataBitis = Date.now() + 30000;
+    const { dom, belge } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        assert.strictEqual(belge.getElementById('btnPinOnayla').disabled, true);
+        assert.ok(/(29|30) saniye sonra/.test(belge.getElementById('pinHata').textContent));
+    } finally { dom.window.close(); }
+});
+
 test('options: içerik ekleme, listeleme ve silme depoyla senkron', async () => {
     const { dom, belge, chrome, pencere } = await arayuzuAc({ baslangic: temelBaslangic() });
     try {
