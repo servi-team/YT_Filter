@@ -153,10 +153,10 @@ Puan dosyası bu kurallara göre güncellendi: "Kararsız" sütunu oy **sayısı
 
 ### 8.2 Site uygulama notları
 
-- **Anonim oy:** Hesap gerekmez; HttpOnly çerez kimliğiyle hedef + konu/etiket başına tek oy kullanılır, oy değiştirilebilir. Ham çerez kimliği panelde veya günlükte görünmez.
+- **Anonim oy:** Hesap gerekmez; HttpOnly çerez kimliğiyle hedef + konu/etiket başına tek oy kullanılır, oy değiştirilebilir. Çerez değeri sunucuda HMAC ile imzalanır; imzasız veya kurcalanmış çerez yok sayılır ve yeni kimlik verilir. Ham çerez kimliği panelde veya günlükte görünmez. API gövdeleri en fazla 64 KiB kabul eder; aşan istekler `413 govde-buyuk` döner.
 - **İki geri alma bayrağı:** `ziyaretciGeriAlindi` geçicidir (ziyaretçi yeniden oy verebilir); `moderasyonGeriAlindi` kalıcıdır ve gerekçeli moderasyon kaydıyla tutulur. İki durumda da oy silinmez, hesaba girmez.
 - **Video/kanal ayrımı:** Video eklemek kanal satırı oluşturmaz. Video kaydı `kanal_id`, `kanal_adi`, `kanal_handle` ve `kanal_avatar` alanlarını taşır; kanal ayrıca eklenir. Avatar yoksa baş harf rozeti gösterilir.
 - **Arşiv:** İçerik silinmez, arşivlenir. Arşivli kayıt kamusal listeden ve yeni `db.json`'dan çıkar; oyları, kilidi ve moderasyon kayıtları korunur. Aynı link yeniden eklenince arşivden geri getirilir.
-- **IP özeti:** Ham IP saklanmaz; `x-forwarded-for` değerinin `IP_HASH_SECRET` ile HMAC-SHA256 özeti tutulur. Oy IP özeti 30 gün sonra `npm run bakim` ile temizlenir; aktif engel varsa engel süresince saklanır.
+- **IP özeti:** Ham IP saklanmaz; `x-forwarded-for` değerinin `IP_HASH_SECRET` ile HMAC-SHA256 özeti tutulur. Aynı anahtar ziyaretçi çerezini de imzalar; anahtar döndürülürse eski IP özetleri ve imzalı çerezler geçersiz olur. Oy IP özeti 30 gün sonra `npm run bakim` ile temizlenir; aktif engel varsa engel süresince saklanır.
 - **Yayın:** `db.json`'ı yalnızca admin yayınlar. `veriSurumu` otomatik artar; geçmiş sürümler `?surum=N` ile değişmeden indirilebilir.
 - **Gizlilik metinleri:** Site metni `/gizlilik`; eklenti metni `docs/GIZLILIK.md`. İki metin ayrıdır ve birbirinin yerine kullanılmaz.

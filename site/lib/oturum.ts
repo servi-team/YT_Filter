@@ -17,6 +17,19 @@ const KAYAN_PENCERE_MS = 7 * GUN_MS;
 const MUTLAK_PENCERE_MS = 30 * GUN_MS;
 const SON_GORULME_ESIK_MS = 5 * 60 * 1000;
 
+/**
+ * Bilinmeyen veya pasif hesapta da bir scrypt doğrulaması çalıştırmak için
+ * kullanılan geçerli biçimli sahte özet. Amaç, yanıt süresinden hesabın var
+ * olup olmadığını ayırt etmeyi zorlaştırmaktır; bu özet hiçbir parolayla eşleşmez.
+ */
+export const SAHTE_PAROLA_OZETI =
+  'scrypt$32768$8$1$1GN9NljjBSIv7GlBcpD0_Q$QwkNGgulELtyc0uGsomUc0y-34OelW2_sLbE51iUVNuxbRwQwWeXlMjKIo1RRiO0WwPATPCczLGH1IdEQJefNQ';
+
+/** Giriş doğrulamasında kullanılacak özet; hesap yoksa sahte özete düşer. */
+export function girisDogrulamaOzeti(hesap: { parolaOzeti: string } | null): string {
+  return hesap?.parolaOzeti ?? SAHTE_PAROLA_OZETI;
+}
+
 export interface OturumKullanicisi {
   id: string;
   eposta: string;
@@ -85,8 +98,10 @@ export async function girisYap(db: Db, girdi: GirisGirdisi): Promise<GirisSonucu
     .where(sql`lower(${hesaplar.eposta}) = ${eposta}`)
     .limit(1);
 
-  if (!hesap || !hesap.aktif) throw girisHatasi();
-  if (!(await parolaDogrula(girdi.parola, hesap.parolaOzeti))) throw girisHatasi();
+  // Hesap yok veya pasif olsa da doğrulama çalıştırılır; böylece yanıt süresi
+  // hesabın varlığını ele vermez. Hata mesajı her durumda aynıdır.
+  const dogruMu = await parolaDogrula(girdi.parola, girisDogrulamaOzeti(hesap?.aktif ? hesap : null));
+  if (!hesap || !hesap.aktif || !dogruMu) throw girisHatasi();
 
   const token = yeniToken();
   const sonKullanma = enErken(

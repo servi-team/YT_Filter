@@ -5,12 +5,37 @@
 import { createHmac } from 'node:crypto';
 import { HttpHatasi } from './hata.ts';
 
+/** Gövde üst sınırı: 64 KiB. Daha büyük istekler 413 ile reddedilir. */
+export const AZAMI_GOVDE_BAYT = 64 * 1024;
+
+/**
+ * Pozitif güvenli tam sayı ortam değeri okur. Boş, sayı olmayan, sıfır,
+ * negatif, ondalık veya güvenli aralık dışı değerlerde varsayılana döner ve
+ * uyarı üretir; böylece hatalı env yapılandırması limitleri devre dışı bırakamaz.
+ */
+export function sinirDegeri(
+  ad: string,
+  varsayilan: number,
+  uyar: (mesaj: string) => void = (mesaj) => console.warn(mesaj),
+): number {
+  const ham = process.env[ad];
+  if (ham === undefined) return varsayilan;
+
+  const temiz = ham.trim();
+  const sayi = /^[1-9][0-9]*$/.test(temiz) ? Number(temiz) : NaN;
+  if (!Number.isSafeInteger(sayi)) {
+    uyar(`Geçersiz ${ad} değeri (${JSON.stringify(ham)}); varsayılan ${varsayilan} kullanılıyor.`);
+    return varsayilan;
+  }
+  return sayi;
+}
+
 /** Kamusal oy hız limitleri (env ile ezilebilir). */
-export const OY_LIMITI_DAKIKA = Number(process.env.OY_LIMITI_DAKIKA ?? 120);
-export const OY_LIMITI_GUN = Number(process.env.OY_LIMITI_GUN ?? 2000);
-export const TALEP_LIMITI_SAAT = Number(process.env.TALEP_LIMITI_SAAT ?? 5);
-export const GIRIS_LIMITI_15DK = Number(process.env.GIRIS_LIMITI_15DK ?? 10);
-export const PANEL_YAZMA_LIMITI_DAKIKA = Number(process.env.PANEL_YAZMA_LIMITI_DAKIKA ?? 120);
+export const OY_LIMITI_DAKIKA = sinirDegeri('OY_LIMITI_DAKIKA', 120);
+export const OY_LIMITI_GUN = sinirDegeri('OY_LIMITI_GUN', 2000);
+export const TALEP_LIMITI_SAAT = sinirDegeri('TALEP_LIMITI_SAAT', 5);
+export const GIRIS_LIMITI_15DK = sinirDegeri('GIRIS_LIMITI_15DK', 10);
+export const PANEL_YAZMA_LIMITI_DAKIKA = sinirDegeri('PANEL_YAZMA_LIMITI_DAKIKA', 120);
 
 /**
  * `Origin` başlığı beklenen siteyle aynı mı? Caddy/proxy arkasında `req.url`
@@ -49,10 +74,41 @@ export function hataCevap(hata: unknown): Response {
   return jsonCevap({ hata: 'Sunucu hatası', kod: 'sunucu' }, 500);
 }
 
-/** İstek gövdesini JSON olarak okur; çözümlenemezse 400 `gecersiz-govde`. */
+/**
+ * İstek gövdesini en fazla 64 KiB okuyup JSON olarak çözer. Sınır aşılırsa
+ * 413 `govde-buyuk`, gövde çözümlenemezse 400 `gecersiz-govde` fırlatır.
+ */
 export async function govdeOku<T>(req: Request): Promise<T> {
+  const bildirilen = req.headers.get('content-length');
+  if (bildirilen) {
+    const uzunluk = Number(bildirilen);
+    if (Number.isFinite(uzunluk) && uzunluk > AZAMI_GOVDE_BAYT) {
+      throw new HttpHatasi(413, 'govde-buyuk');
+    }
+  }
+
+  if (!req.body) throw new HttpHatasi(400, 'gecersiz-govde');
+
+  const okuyucu = req.body.getReader();
+  const parcalar: Uint8Array[] = [];
+  let toplam = 0;
   try {
-    return await req.json() as T;
+    for (;;) {
+      const { done, value } = await okuyucu.read();
+      if (done) break;
+      toplam += value.byteLength;
+      if (toplam > AZAMI_GOVDE_BAYT) {
+        await okuyucu.cancel().catch(() => undefined);
+        throw new HttpHatasi(413, 'govde-buyuk');
+      }
+      parcalar.push(value);
+    }
+  } finally {
+    okuyucu.releaseLock();
+  }
+
+  try {
+    return JSON.parse(Buffer.concat(parcalar).toString('utf8')) as T;
   } catch {
     throw new HttpHatasi(400, 'gecersiz-govde');
   }

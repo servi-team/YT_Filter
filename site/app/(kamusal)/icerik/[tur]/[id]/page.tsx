@@ -6,7 +6,7 @@ import { db } from '../../../../../lib/db.ts';
 import { icerikGetir, videoKapak } from '../../../../../lib/icerik-deposu.ts';
 import { benimOylarim } from '../../../../../lib/oy-deposu.ts';
 import { taksonomi } from '../../../../../lib/ortak.ts';
-import { ZIYARETCI_CEREZI } from '../../../../../lib/ziyaretci.ts';
+import { ZIYARETCI_CEREZI, ziyaretciKimligiCoz } from '../../../../../lib/ziyaretci.ts';
 import type { HedefTuru } from '../../../../../lib/tipler.ts';
 import { OyAlani } from '../../../../bilesenler/oy-alani.tsx';
 import { Rozet } from '../../../../bilesenler/rozet.tsx';
@@ -53,7 +53,7 @@ export default async function IcerikSayfasi({ params }: SayfaProps) {
   if (!detay) notFound();
 
   const cerezler = await cookies();
-  const kimlik = cerezler.get(ZIYARETCI_CEREZI)?.value ?? null;
+  const kimlik = ziyaretciKimligiCoz(cerezler.get(ZIYARETCI_CEREZI)?.value ?? null);
   const oylar = kimlik ? await benimOylarim(veritabani, hedefTuru, id, kimlik) : [];
 
   const { icerik, sayimlar, sonuc, kilitliSonuc, kilit } = detay;

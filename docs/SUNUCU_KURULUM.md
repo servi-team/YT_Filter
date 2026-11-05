@@ -31,10 +31,18 @@ Doldurulması gerekenler:
 | `SITE_DOMAIN` | Gerçek alan adı, örn. `filtre.ornek.com` |
 | `SITE_ORIGIN` | `https://filtre.ornek.com` |
 | `POSTGRES_PASSWORD` | En az 24 karakter, rastgele; yalnızca harf ve rakam |
-| `IP_HASH_SECRET` | Uzun, rastgele bir anahtar |
+| `IP_HASH_SECRET` | Uzun, rastgele bir anahtar; IP özetlerini ve ziyaretçi çerezi imzasını korur. Değiştirilirse eski IP özetleri ve ziyaretçi çerezleri geçersiz olur. |
 | `ILK_ADMIN_EPOSTA` | İlk yönetici e-postası |
 | `ILK_ADMIN_PAROLA` | İlk yönetici parolası (en az 12 karakter) |
 | `YOUTUBE_API_KEY` | Varsa YouTube Data API anahtarı; yoksa boş bırakın |
+| `OY_LIMITI_DAKIKA` | Opsiyonel; dakikadaki oy isteği sınırı (varsayılan `120`) |
+| `OY_LIMITI_GUN` | Opsiyonel; günlük oy isteği sınırı (varsayılan `2000`) |
+| `TALEP_LIMITI_SAAT` | Opsiyonel; saatlik içerik talebi sınırı (varsayılan `5`) |
+| `GIRIS_LIMITI_15DK` | Opsiyonel; 15 dakikadaki giriş denemesi sınırı (varsayılan `10`) |
+| `PANEL_YAZMA_LIMITI_DAKIKA` | Opsiyonel; dakikadaki panel yazma sınırı (varsayılan `120`) |
+
+Hız limitleri pozitif tam sayı olmalıdır. Geçersiz değerler günlüğe uyarı yazıp
+varsayılana döner; böylece hatalı bir değer limitleri devre dışı bırakamaz.
 
 `site/.env` dosyasını kimseyle paylaşmayın ve git'e eklemeyin.
 
