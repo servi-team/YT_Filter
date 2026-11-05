@@ -17,6 +17,8 @@ let aktifFiltre = 'all';      // 'all' | 'beyaz' | 'kara' | 'ozel:<liste adı>'
 let aramaMetni = '';
 let aktifYouTubeIcerigi = null;
 let kanalBilgileri = {};      // sayfadan toplanan kanal adı/avatarı (yalnızca görüntüleme)
+let kilitZamanlayici = null;      // PIN oturumu dolunca kilitleyen zamanlayıcı
+let pinBeklemeZamanlayici = null; // hata beklemesi geri sayımı
 
 const trKucuk = (x) => String(x == null ? '' : x).toLocaleLowerCase('tr-TR');
 
@@ -170,6 +172,12 @@ document.addEventListener('DOMContentLoaded', async () => {
     kanalBilgileri = YTF.kanalBilgileriTemizle(mevcutVeri.kanalBilgileri);
     if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
 
+    // Eski kayıt geçişi: henüz bayrak yazılmamış düz metin "1234" PIN bellekte varsayılan sayılır;
+    // kalıcı yazım ilk başarılı girişte yapılır.
+    if (mevcutVeri.pinKodu === '1234' && mevcutVeri.pinVarsayilan === undefined) {
+        mevcutVeri.pinVarsayilan = true;
+    }
+
     await ayariHazirla();
     await veriTabaniniYukle();
 
@@ -186,7 +194,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // PIN İpucu Kontrolü (İlk giriş yapıldıysa veya PIN değiştirildiyse ipucunu gösterme)
     const pinIpucu = document.getElementById('pinVarsayilanIpucu');
-    if (mevcutVeri.ilkGirisYapildi || (mevcutVeri.pinKodu && mevcutVeri.pinKodu !== "1234")) {
+    if (mevcutVeri.ilkGirisYapildi || mevcutVeri.pinVarsayilan !== true) {
         if (pinIpucu) pinIpucu.style.display = 'none';
     } else {
         if (pinIpucu) pinIpucu.style.display = 'inline-flex';
@@ -195,12 +203,8 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Aktif YouTube Sekmesini Algıla (Ama henüz açma)
     await algilaAktifYouTubeSekmesi();
 
-    // PIN Kontrolü
-    if (mevcutVeri.ayarlar.pinIptal || !mevcutVeri.pinKodu) {
-        kilidiAc();
-    } else {
-        kilitle();
-    }
+    // PIN Kontrolü: PIN varsa açık içerik oturumuna rağmen her açılışta PIN ister
+    YTF.kilitGerekli(mevcutVeri) ? kilitle() : kilidiAc();
 
     // Olay Dinleyicilerini Kur
     initEvents();
@@ -209,7 +213,13 @@ document.addEventListener('DOMContentLoaded', async () => {
 function kilidiAc() {
     document.getElementById('pinEkrani').style.display = 'none';
     document.getElementById('anaArayuz').style.display = 'block';
-    
+    document.getElementById('btnTemaGecis').style.display = 'flex';
+
+    // Açık bekleme varsa temizlenir; PIN doğrulandığı için yeniden deneme serbest
+    clearInterval(pinBeklemeZamanlayici);
+    pinBeklemeZamanlayici = null;
+    document.getElementById('btnPinOnayla').disabled = false;
+
     // İlk giriş yapıldı olarak işaretle ve ipucunu kalıcı olarak kapat
     if (!mevcutVeri.ilkGirisYapildi) {
         mevcutVeri.ilkGirisYapildi = true;
@@ -224,14 +234,10 @@ function kilidiAc() {
         kurulumKarti.style.display = (!mevcutVeri.pinKodu && !mevcutVeri.pinKurulumAtlandi) ? 'block' : 'none';
     }
 
-    // PIN hala 1234 ise uyarı banner'ını göster
+    // PIN hâlâ varsayılan (1234) ise uyarı banner'ını göster
     const uyariBanner = document.getElementById('pinDegistirUyarisi');
     if (uyariBanner) {
-        if (mevcutVeri.pinKodu === "1234" && !mevcutVeri.pinDegistirildi) {
-            uyariBanner.style.display = 'flex';
-        } else {
-            uyariBanner.style.display = 'none';
-        }
+        uyariBanner.style.display = (mevcutVeri.pinVarsayilan === true) ? 'flex' : 'none';
     }
 
     // Quick Action Banner: SADECE KİLİT AÇILDIKTAN SONRA GÖRÜNÜR OLUR!
@@ -250,53 +256,141 @@ function kilidiAc() {
     } else {
         document.getElementById('btnPinKilitle').style.display = 'none';
     }
-    
+
+    // Kısa oturum: süre dolunca yeniden kilitle; oturum yoksa zamanlayıcı kurulmaz
+    clearTimeout(kilitZamanlayici);
+    kilitZamanlayici = null;
+    const kalan = Number(mevcutVeri.pinKilitBitis || 0) - Date.now();
+    if (kalan > 0) {
+        kilitZamanlayici = setTimeout(kilitle, kalan);
+    }
+
     arayuzuDoldur();
 }
 
+// "Kilitle": ana arayüzü kapatır, PIN ekranını gösterir, içerik oturumunu siler.
 function kilitle() {
+    clearTimeout(kilitZamanlayici);
+    kilitZamanlayici = null;
+    clearInterval(pinBeklemeZamanlayici);
+    pinBeklemeZamanlayici = null;
+
     document.getElementById('anaArayuz').style.display = 'none';
 
     // Kilitliyken Quick Action Banner ASLA görünmez ve seçilemez
     const banner = document.getElementById('quickActionBanner');
     if (banner) banner.style.display = 'none';
 
+    // Kilitliyken tema düğmesi de gizlenir (koyu tema yazımı PIN'siz yapılamaz)
+    document.getElementById('btnTemaGecis').style.display = 'none';
+
     document.getElementById('pinEkrani').style.display = 'flex';
     document.getElementById('btnPinKilitle').style.display = 'none';
     document.getElementById('pinGiris').value = '';
     document.getElementById('pinHata').style.display = 'none';
+    document.getElementById('pinHata').classList.remove('pin-bekleme');
 
     // İlk giriş yapıldıysa kilit ekranında 1234 yazısı artık asla gösterilmez
     const pinIpucu = document.getElementById('pinVarsayilanIpucu');
     if (pinIpucu) {
-        if (mevcutVeri.ilkGirisYapildi || (mevcutVeri.pinKodu && mevcutVeri.pinKodu !== "1234")) {
+        if (mevcutVeri.ilkGirisYapildi || mevcutVeri.pinVarsayilan !== true) {
             pinIpucu.style.display = 'none';
         } else {
             pinIpucu.style.display = 'inline-flex';
         }
     }
 
-    setTimeout(() => document.getElementById('pinGiris').focus(), 50);
+    setTimeout(() => {
+        const giris = document.getElementById('pinGiris');
+        if (giris) giris.focus();
+    }, 50);
+}
+
+// "Kilitle" düğmesi: arayüzü anında kilitler ve içerik oturumunu depodan siler.
+async function kilitleVeOturumuSil() {
+    kilitle(); // depo yazımı sürerken arayüz hemen kilitlenir (senkron geri bildirim)
+    await removeStorageData(['pinKilitBitis']);
+    mevcutVeri.pinKilitBitis = 0;
+}
+
+// Bekleme süresince kalan saniyeleri pinHata'ya yazar; süre bitince onay düğmesini açar.
+function pinBeklemeGuncelle() {
+    const hata = document.getElementById('pinHata');
+    const btnOnayla = document.getElementById('btnPinOnayla');
+    clearInterval(pinBeklemeZamanlayici);
+    pinBeklemeZamanlayici = null;
+
+    const guncelle = () => {
+        const kalanMs = YTF.hataBeklemesi(mevcutVeri);
+        if (kalanMs > 0) {
+            hata.style.display = 'block';
+            hata.classList.add('pin-bekleme');
+            hata.textContent = `Çok fazla hatalı deneme yapıldı. ${Math.ceil(kalanMs / 1000)} saniye sonra tekrar deneyin.`;
+        } else {
+            clearInterval(pinBeklemeZamanlayici);
+            pinBeklemeZamanlayici = null;
+            btnOnayla.disabled = false;
+            hata.classList.remove('pin-bekleme');
+            hata.textContent = 'Hatalı PIN kodu, tekrar deneyin!';
+        }
+    };
+
+    guncelle();
+    if (pinBeklemeZamanlayici === null && YTF.hataBeklemesi(mevcutVeri) > 0) {
+        pinBeklemeZamanlayici = setInterval(guncelle, 1000);
+        hata.style.display = 'block';
+    }
 }
 
 async function pinDogrula() {
+    // Bekleme sürüyorsa yeni deneme kabul edilmez; kalan süre gösterilir
+    if (YTF.hataBeklemesi(mevcutVeri) > 0) {
+        pinBeklemeGuncelle();
+        return;
+    }
     const girilen = document.getElementById('pinGiris').value;
     const pinKutu = document.getElementById('pinEkrani');
-    const dogru = await YTF.pinDogrulaGirdi(girilen, mevcutVeri.pinKodu);
+    const dogru = await YTF.pinDogrula(girilen, mevcutVeri);
     if (dogru) {
         // Eski sürümden kalan düz metin kayıt ilk başarılı girişte karma'ya yükseltilir.
+        const yazilacak = { pinHataSayisi: 0, pinHataBitis: 0, pinVarsayilan: girilen === '1234' };
+        mevcutVeri.pinHataSayisi = 0;
+        mevcutVeri.pinHataBitis = 0;
+        mevcutVeri.pinVarsayilan = girilen === '1234';
         if (YTF.pinDuzMetinMi(mevcutVeri.pinKodu)) {
             const karma = await YTF.pinKarmala(girilen);
             mevcutVeri.pinKodu = karma;
-            await setStorageData({ pinKodu: karma });
+            yazilacak.pinKodu = karma;
         }
-        document.getElementById('pinHata').style.display = 'none';
+        // PIN doğrulandıysa kısa oturum aç
+        const bitis = YTF.kilitBitisZamani(Date.now());
+        mevcutVeri.pinKilitBitis = bitis;
+        yazilacak.pinKilitBitis = bitis;
+        await setStorageData(yazilacak);
+
+        // Hata durumunu temizle
+        clearInterval(pinBeklemeZamanlayici);
+        pinBeklemeZamanlayici = null;
+        const hata = document.getElementById('pinHata');
+        hata.style.display = 'none';
+        hata.classList.remove('pin-bekleme');
+        hata.textContent = 'Hatalı PIN kodu, tekrar deneyin!';
+        document.getElementById('btnPinOnayla').disabled = false;
         kilidiAc();
     } else {
+        const sonuc = YTF.hataKaydet(mevcutVeri);
+        Object.assign(mevcutVeri, sonuc); // yalnızca dönen iki alan birleştirilir
+        await setStorageData(sonuc);
         document.getElementById('pinHata').style.display = 'block';
         pinKutu.classList.remove('pin-error-shake');
         void pinKutu.offsetWidth; // Reflow tetikle
         pinKutu.classList.add('pin-error-shake');
+        if (Number(sonuc.pinHataBitis || 0) > 0) {
+            document.getElementById('btnPinOnayla').disabled = true;
+            pinBeklemeGuncelle();
+        } else {
+            document.getElementById('pinHata').textContent = 'Hatalı PIN kodu, tekrar deneyin!';
+        }
     }
 }
 
@@ -802,8 +896,8 @@ function initEvents() {
         if (e.key === 'Enter') pinDogrula();
     });
 
-    // Yeniden Kilitleme Butonu
-    document.getElementById('btnPinKilitle').addEventListener('click', kilitle);
+    // Yeniden Kilitleme Butonu (içerik oturumunu siler ve arayüzü kilitler)
+    document.getElementById('btnPinKilitle').addEventListener('click', kilitleVeOturumuSil);
 
     // Sekmeler (Tabs)
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -867,7 +961,8 @@ function initEvents() {
         mevcutVeri.pinKodu = karma;
         mevcutVeri.pinDegistirildi = true;
         mevcutVeri.ilkGirisYapildi = true;
-        await setStorageData({ pinKodu: karma, pinDegistirildi: true, ilkGirisYapildi: true });
+        mevcutVeri.pinVarsayilan = pin === '1234';
+        await setStorageData({ pinKodu: karma, pinDegistirildi: true, ilkGirisYapildi: true, pinVarsayilan: pin === '1234' });
         document.getElementById('pinKurulumKarti').style.display = 'none';
         document.getElementById('btnPinKilitle').style.display = 'flex';
         showToast('PIN kaydedildi');
@@ -929,10 +1024,12 @@ function initEvents() {
         mevcutVeri.pinKodu = karma;
         mevcutVeri.pinDegistirildi = true;
         mevcutVeri.ilkGirisYapildi = true;
+        mevcutVeri.pinVarsayilan = yeni === '1234';
         await setStorageData({
             pinKodu: karma,
             pinDegistirildi: true,
-            ilkGirisYapildi: true
+            ilkGirisYapildi: true,
+            pinVarsayilan: yeni === '1234'
         });
         document.getElementById('yeniPin').value = '';
 

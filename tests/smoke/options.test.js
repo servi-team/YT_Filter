@@ -5,11 +5,16 @@
 const test = require('node:test');
 const assert = require('node:assert');
 const { bekle, DB_JSON, arayuzuAc } = require('./ortak');
+const { pinKarmala } = require('../../src/core/pin.js');
 
 const BOS_LISTELER = { beyaz: {}, kara: {}, ozel: [] };
 
 function temelBaslangic() {
     return { surum: 2, ayar: { listeler: BOS_LISTELER }, ayarlar: {} };
+}
+
+async function pinliBaslangic(pin = '2468') {
+    return { surum: 2, pinKodu: await pinKarmala(pin), ayarlar: {}, ayar: { listeler: BOS_LISTELER } };
 }
 
 test('options: ilk açılışta kilit yok, arayüz ve veritabanı durumu görünür', async () => {
@@ -75,6 +80,52 @@ test('options: eski düz metin PIN ilk başarılı girişte karma\'ya yükseltil
     } finally {
         dom.window.close();
     }
+});
+
+test('options: PIN varsa açık oturuma rağmen her açılışta PIN ister', async () => {
+    const baslangic = await pinliBaslangic();
+    baslangic.pinKilitBitis = Date.now() + 600000;
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        assert.strictEqual(belge.getElementById('btnTemaGecis').style.display, 'none');
+        belge.getElementById('pinGiris').value = '2468';
+        belge.getElementById('btnPinOnayla').click();
+        await bekle(() => belge.getElementById('anaArayuz').style.display === 'block');
+        assert.ok(chrome.__depo.pinKilitBitis > Date.now());
+        assert.notStrictEqual(belge.getElementById('btnTemaGecis').style.display, 'none');
+    } finally { dom.window.close(); }
+});
+
+test('options: "Kilitle" oturumu siler ve PIN ekranına döner', async () => {
+    const baslangic = await pinliBaslangic();
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        belge.getElementById('pinGiris').value = '2468';
+        belge.getElementById('btnPinOnayla').click();
+        await bekle(() => belge.getElementById('anaArayuz').style.display === 'block');
+        belge.getElementById('btnPinKilitle').click();
+        await bekle(() => !chrome.__depo.pinKilitBitis);
+        assert.strictEqual(belge.getElementById('pinEkrani').style.display, 'flex');
+        assert.strictEqual(belge.getElementById('anaArayuz').style.display, 'none');
+    } finally { dom.window.close(); }
+});
+
+test('options: beş hatalı PIN denemesinden sonra onay kapanır', async () => {
+    const baslangic = await pinliBaslangic();
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        for (let i = 0; i < 5; i++) {
+            belge.getElementById('pinGiris').value = '0000';
+            belge.getElementById('btnPinOnayla').click();
+            await bekle(() => chrome.__depo.pinHataSayisi === i + 1 || chrome.__depo.pinHataBitis > 0);
+        }
+        assert.ok(chrome.__depo.pinHataBitis > Date.now());
+        assert.strictEqual(belge.getElementById('btnPinOnayla').disabled, true);
+        assert.ok(belge.getElementById('pinHata').textContent.includes('30'));
+    } finally { dom.window.close(); }
 });
 
 test('options: içerik ekleme, listeleme ve silme depoyla senkron', async () => {
