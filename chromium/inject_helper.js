@@ -2,8 +2,6 @@
     if (window.__yt_filter_helper_active) return;
     window.__yt_filter_helper_active = true;
 
-    console.log("YT Filter: Main World Helper Active");
-
     function findChannelHandleInElement(el) {
         const paths = [
             'data.ownerText.runs.0.navigationEndpoint.browseEndpoint.canonicalBaseUrl',
@@ -179,8 +177,10 @@
                 });
             }
         });
-        console.table(sonuc.ornek);
-        console.log('YT Filter tanılama:', { toplamKart: sonuc.toplamKart, videoIdBulunan: sonuc.videoIdBulunan, handleBulunan: sonuc.handleBulunan, kanalIdBulunan: sonuc.kanalIdBulunan });
+        if (window.__ytFilterDebug) {
+            console.table(sonuc.ornek);
+            console.log('YT Filter tanılama:', { toplamKart: sonuc.toplamKart, videoIdBulunan: sonuc.videoIdBulunan, handleBulunan: sonuc.handleBulunan, kanalIdBulunan: sonuc.kanalIdBulunan });
+        }
         return sonuc;
     };
 

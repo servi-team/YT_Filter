@@ -57,3 +57,11 @@ test('manifest: Firefox veri toplama beyanı ve uzantı ikonları eksiksiz', () 
         assert.ok(m.action.default_icon['48']);
     });
 });
+
+test('manifest: yardımcı betik yalnızca MAIN world ile yüklenir, elle enjeksiyon yok', () => {
+    const content = fs.readFileSync(path.join(KOK, 'src', 'content.js'), 'utf8');
+    assert.equal(content.includes('ensureHelperInjected'), false);
+    const helper = fs.readFileSync(path.join(KOK, 'src', 'inject_helper.js'), 'utf8');
+    assert.equal(helper.includes('Main World Helper Active'), false);
+    assert.match(helper, /__ytFilterDebug/);
+});

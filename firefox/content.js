@@ -18,21 +18,6 @@ let bulanikResizeObserver = null;
 let stilElemani = document.createElement('style');
 document.head.appendChild(stilElemani);
 
-function ensureHelperInjected() {
-    if (window !== window.top) return; // iframe/embed'de gerekmez; orada chrome-extension:// yüklemesi hata verir
-    if (!document.querySelector('script[data-yt-filter-helper]')) {
-        try {
-            const script = document.createElement('script');
-            script.src = browserAPI.runtime.getURL('inject_helper.js');
-            script.setAttribute('data-yt-filter-helper', 'true');
-            script.onload = () => script.remove();
-            (document.head || document.documentElement).appendChild(script);
-        } catch (e) {
-            // Manifest MAIN world üzerinden zaten yüklendiyse veya CSP izin vermiyorsa yakala
-        }
-    }
-}
-
 // Kanal bağlamı SAKLANMAZ: her çağrıda güncel adresten hesaplanır. Yalnızca gerçek kanal sayfasında
 // (yol "/@handle" ile başlar) bir kanal vardır. Eskiden değişken saklanıyordu ve tek sayfa geçişinde bayat kalıp
 // (ör. TRT Spor kanalından çıkınca) başka kanalların video/kartları o kanal sanılıp engelleniyordu.
@@ -1058,7 +1043,6 @@ function finishProcessing(element, videoId, channelHandle) {
 }
 
 async function init() {
-    ensureHelperInjected();
     await loadData();
     document.querySelectorAll(videoSelectors).forEach(processVideo);
     checkWatchPage();
