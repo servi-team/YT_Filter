@@ -45,3 +45,8 @@ browserAPI.runtime.onInstalled.addListener((details) => {
         browserAPI.storage.local.set(varsayilanVeriler);
     }
 });
+
+// Tarayıcı açılışında önceki oturumdan kalan PIN süresi/hata kayıtları temizlenir.
+browserAPI.runtime.onStartup.addListener(() => {
+    browserAPI.storage.local.remove(['pinKilitBitis', 'pinHataSayisi', 'pinHataBitis']);
+});
