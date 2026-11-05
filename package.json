@@ -9,6 +9,7 @@
     "build:firefox": "node scripts/build.js --target firefox",
     "build:check": "node scripts/build.js --check",
     "ikon": "node scripts/ikon-uret.js",
+    "paket": "node scripts/paket.js",
     "watch": "node scripts/build.js --watch"
   },
   "engines": {
