@@ -252,6 +252,107 @@ test('options: hızlı banttaki kanal eklenince ad/avatar depoya yazılır ve li
     }
 });
 
+test('options: PIN koruması kapalıyken yeni PIN belirlemek korumayı açar ve oturum başlatır', async () => {
+    const baslangic = await pinliBaslangic('1111');
+    baslangic.ayarlar.pinIptal = true;
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('anaArayuz').style.display === 'block');
+        assert.strictEqual(belge.getElementById('chkPinIptal').checked, true);
+
+        belge.getElementById('yeniPin').value = '2468';
+        belge.getElementById('btnPinGuncelle').click();
+        await bekle(() => chrome.__depo.ayarlar.pinIptal === false);
+
+        assert.ok(chrome.__depo.pinKilitBitis > Date.now());
+        assert.strictEqual(belge.getElementById('chkPinIptal').checked, false);
+        assert.strictEqual(belge.getElementById('btnPinKilitle').style.display, 'flex');
+
+        const ikinci = await arayuzuAc({ baslangic: chrome.__depo });
+        try {
+            await bekle(() => ikinci.belge.getElementById('pinEkrani').style.display === 'flex');
+        } finally {
+            ikinci.dom.window.close();
+        }
+    } finally {
+        dom.window.close();
+    }
+});
+
+test('options: ilk PIN kurulumu pinIptal bayrağını temizler ve oturum açar', async () => {
+    const baslangic = temelBaslangic();
+    baslangic.ayarlar.pinIptal = true;
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinKurulumKarti').style.display === 'block');
+        belge.getElementById('kurulumPin').value = '2468';
+        belge.getElementById('btnKurulumPinKaydet').click();
+        await bekle(() => chrome.__depo.ayarlar.pinIptal === false);
+
+        assert.ok(chrome.__depo.pinKilitBitis > Date.now());
+        assert.strictEqual(belge.getElementById('chkPinIptal').checked, false);
+    } finally {
+        dom.window.close();
+    }
+});
+
+test('options: başka pencerede oturum silinince açık ayarlar penceresi kilitlenir', async () => {
+    const baslangic = await pinliBaslangic();
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        belge.getElementById('pinGiris').value = '2468';
+        belge.getElementById('btnPinOnayla').click();
+        await bekle(() => belge.getElementById('anaArayuz').style.display === 'block');
+
+        chrome.storage.local.remove('pinKilitBitis');
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        assert.strictEqual(belge.getElementById('anaArayuz').style.display, 'none');
+        assert.strictEqual(belge.defaultView.yazmaIzniVar(), false);
+    } finally {
+        dom.window.close();
+    }
+});
+
+test('options: reddedilen yazmadan sonra başarı bildirimi gösterilmez', async () => {
+    const baslangic = await pinliBaslangic();
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        belge.getElementById('pinGiris').value = '2468';
+        belge.getElementById('btnPinOnayla').click();
+        await bekle(() => belge.getElementById('anaArayuz').style.display === 'block');
+
+        chrome.storage.local.remove('pinKilitBitis');
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+
+        const kutu = belge.getElementById('chkHizliEkleme');
+        kutu.checked = true;
+        kutu.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+        await bekle(() => belge.getElementById('toastMessage').textContent.includes('Oturum süresi doldu'));
+        await new Promise(r => setTimeout(r, 20));
+        assert.strictEqual(belge.getElementById('toastMessage').textContent, 'Oturum süresi doldu; yeniden giriş yapın');
+    } finally {
+        dom.window.close();
+    }
+});
+
+test('options: PIN doğrulama sürerken onay düğmesi ikinci denemeyi kabul etmez', async () => {
+    const baslangic = await pinliBaslangic();
+    const { dom, belge } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        belge.getElementById('pinGiris').value = '0000';
+        belge.getElementById('btnPinOnayla').click();
+        assert.strictEqual(belge.getElementById('btnPinOnayla').disabled, true);
+
+        await bekle(() => belge.getElementById('pinHata').style.display === 'block'
+            && belge.getElementById('btnPinOnayla').disabled === false);
+    } finally {
+        dom.window.close();
+    }
+});
+
 test('options: hızlı bant, içerik betiği yanıt vermezse URL yedeğiyle dolar', async () => {
     const baslangic = temelBaslangic();
     baslangic.ayar.etiketlenmemis = 'engelle';

@@ -39,6 +39,49 @@ test('bulanık: 5 saniyelik yeniden kontrol önceki ses değerini ezmez', async 
     } finally { dom.window.close(); }
 });
 
+test('bulanık: engelden bulanıklaştırmaya geçerken oynatıcı ve video kaynağı geri gelir', async () => {
+    const html = '<html><body><div id="ytd-player"><video src="https://example.com/video.mp4"></video></div><div class="html5-video-player"></div></body></html>';
+    const baslangic = { surum: 2, ayar: { engelEylemi: 'kaldir', listeler: { beyaz: {}, kara: { aaaaaaaaaaa: true }, ozel: [] } } };
+    const { dom, belge, chrome } = icerikArayuzuAc({ html, baslangic });
+    try {
+        await bekle(() => belge.getElementById('yt-filter-engel-banner'));
+        const oynatici = belge.getElementById('ytd-player');
+        const video = belge.querySelector('video');
+        assert.strictEqual(oynatici.style.display, 'none');
+        assert.strictEqual(video.getAttribute('src'), null);
+
+        chrome.storage.local.set({ ayar: { ...baslangic.ayar, engelEylemi: 'bulaniklastir' } });
+        await bekle(() => belge.querySelector('[data-ytf-bulanik-kalkan]'));
+
+        assert.notStrictEqual(oynatici.style.display, 'none');
+        assert.notStrictEqual(video.style.display, 'none');
+        assert.strictEqual(video.getAttribute('src'), 'https://example.com/video.mp4');
+    } finally { dom.window.close(); }
+});
+
+test('bulanık: başka videoya geçince eski engelli kaynak geri yüklenmez', async () => {
+    const html = '<html><body><div id="ytd-player"><video src="https://example.com/eski.mp4"></video></div></body></html>';
+    const baslangic = {
+        surum: 2,
+        ayar: {
+            engelEylemi: 'kaldir',
+            etiketlenmemis: 'ac',
+            listeler: { beyaz: {}, kara: { aaaaaaaaaaa: true }, ozel: [] }
+        }
+    };
+    const { dom, belge, pencere } = icerikArayuzuAc({ html, baslangic });
+    try {
+        await bekle(() => belge.getElementById('yt-filter-engel-banner'));
+        const video = belge.querySelector('video');
+        assert.strictEqual(video.getAttribute('src'), null);
+
+        pencere.history.pushState({}, '', '/watch?v=bbbbbbbbbbb');
+        pencere.checkWatchPage();
+
+        assert.strictEqual(video.getAttribute('src'), null);
+    } finally { dom.window.close(); }
+});
+
 test('bulanık: engel kalkınca filtre, kalkan ve ses durumu temizlenir', async () => {
     const { dom, belge, pencere } = icerikArayuzuAc({ html: HTML, baslangic: bulanikBaslangic() });
     try {

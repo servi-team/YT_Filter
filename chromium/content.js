@@ -296,8 +296,13 @@ function pinPenceresiAc() {
                 const yazilacak = {
                     pinKilitBitis: YTF.kilitBitisZamani(),
                     pinHataSayisi: 0,
-                    pinHataBitis: 0
+                    pinHataBitis: 0,
+                    pinVarsayilan: girilen === '1234'
                 };
+                // Eski sürümden kalan düz metin PIN ilk başarılı girişte karma'ya yükseltilir.
+                if (YTF.pinDuzMetinMi(hafiza.pinKodu)) {
+                    yazilacak.pinKodu = await YTF.pinKarmala(girilen);
+                }
                 await setStorageData(yazilacak);
                 Object.assign(hafiza, yazilacak);
                 bitir(true);
@@ -785,6 +790,36 @@ function kanalSayfasiniKontrolEt() {
     }
 }
 
+// Engel kaynağı geri yükleme kimliği: SPA geçişinde eski videonun kaldırılmış kaynağını yenisine geri yüklememek için.
+function engelSayfaKimligi() {
+    const url = new URL(window.location.href);
+    if (url.pathname === '/watch') return `watch:${url.searchParams.get('v') || ''}`;
+    if (url.pathname.startsWith('/embed/')) return `embed:${url.pathname.split('/')[2] || ''}`;
+    if (url.pathname.startsWith('/shorts/')) return `shorts:${url.pathname.split('/')[2] || ''}`;
+    return `sayfa:${url.pathname}${url.search}`;
+}
+
+// Tam engelleme sırasında oynatıcıya uygulanan gizleme ve kaynak kaldırma izlerini geri alır.
+// Böylece "Gizle/Uyarı"dan "Bulanıklaştır"a geçince oynatıcı görünür ve video kaynağı geri gelir.
+function engelGorunumunuTemizle(isEmbed) {
+    const kimlik = engelSayfaKimligi();
+    document.querySelectorAll('#ytd-player, #player, .html5-video-player').forEach(oynatici => {
+        oynatici.style.removeProperty('display');
+    });
+    if (isEmbed) document.body.style.removeProperty('display');
+    document.querySelectorAll('video').forEach(v => {
+        v.style.removeProperty('display');
+        const kaynak = v.dataset.ytfKaldirilanKaynak;
+        const kaynakSayfa = v.dataset.ytfKaldirilanKaynakSayfa;
+        // Yalnızca aynı video/sayfadaysa geri yükle; başka videoya geçildiyse eski kaynağı taşıma.
+        if (kaynak && !v.getAttribute('src') && kaynakSayfa === kimlik) {
+            v.setAttribute('src', kaynak);
+        }
+        delete v.dataset.ytfKaldirilanKaynak;
+        delete v.dataset.ytfKaldirilanKaynakSayfa;
+    });
+}
+
 // Oynatılan, Tıklanan ve Dış Sitedeki (Google) Embed Videoları için Kontrolcü
 function checkWatchPage() {
     if (!motorHazir) return;
@@ -839,6 +874,11 @@ function checkWatchPage() {
         if (html5Player) html5Player.style.setProperty('display', 'none', 'important');
         if (isEmbed) document.body.style.setProperty('display', 'none', 'important');
         videoElements.forEach(v => {
+            const kaynak = v.getAttribute('src');
+            if (kaynak) {
+                v.dataset.ytfKaldirilanKaynak = kaynak;
+                v.dataset.ytfKaldirilanKaynakSayfa = engelSayfaKimligi();
+            }
             v.style.setProperty('display', 'none', 'important');
             if (!v.paused) v.pause();
             if (v.src) v.removeAttribute('src');
@@ -850,15 +890,16 @@ function checkWatchPage() {
         }
     } else if (isBlurred) {
         engelBanneriniKaldir();
+        engelGorunumunuTemizle(isEmbed);
         bulanikUygula();
     } else {
         engelBanneriniKaldir();
         bulanikTemizle();
-        if (ytdPlayer) { ytdPlayer.style.removeProperty('display'); ytdPlayer.style.removeProperty('filter'); }
-        if (embedPlayer) { embedPlayer.style.removeProperty('display'); embedPlayer.style.removeProperty('filter'); }
-        if (html5Player) { html5Player.style.removeProperty('display'); html5Player.style.removeProperty('filter'); }
-        if (isEmbed) { document.body.style.removeProperty('display'); document.body.style.removeProperty('filter'); }
-        videoElements.forEach(v => { v.style.removeProperty('display'); });
+        engelGorunumunuTemizle(isEmbed);
+        if (ytdPlayer) ytdPlayer.style.removeProperty('filter');
+        if (embedPlayer) embedPlayer.style.removeProperty('filter');
+        if (html5Player) html5Player.style.removeProperty('filter');
+        if (isEmbed) document.body.style.removeProperty('filter');
     }
 }
 

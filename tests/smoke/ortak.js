@@ -84,7 +84,13 @@ function sahteChrome(baslangic = {}, { sekmeler = [], mesajYaniti = null } = {})
                 },
                 remove(keys, cb) {
                     const liste = Array.isArray(keys) ? keys : [keys];
-                    liste.forEach(k => { delete depo[k]; });
+                    const degisim = {};
+                    liste.forEach(k => {
+                        if (!(k in depo)) return;
+                        degisim[k] = { oldValue: depo[k] };
+                        delete depo[k];
+                    });
+                    if (Object.keys(degisim).length) bildir(degisim);
                     if (cb) queueMicrotask(cb);
                 }
             },

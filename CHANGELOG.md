@@ -17,7 +17,7 @@ Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izle
 
 ### Doğrulama
 - Kök ve site testleri, tip denetimi, site build ve `npm run build:check` yeşil.
-- `npm run paket` ile `v2.1.0` etiketinden iki zip üretildi.
+- Paketleme betiği iki zip üretir; GitHub sürümü yayın adımında oluşturulur.
 
 ## [Yayınlanmamış] — 2.1.0 sonrası
 

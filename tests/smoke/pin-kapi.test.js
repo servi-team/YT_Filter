@@ -49,6 +49,23 @@ test('içerik: doğru PIN bekleyen yazmayı bir kez çalıştırır', async () =
     } finally { dom.window.close(); }
 });
 
+test('içerik: eski düz metin PIN başarılı girişte karmaya yükseltilir ve varsayılan işaretlenir', async () => {
+    const baslangic = await pinliKaraVideo();
+    baslangic.pinKodu = '1234';
+    const { dom, belge, chrome } = icerikArayuzuAc({ html: IZLE, baslangic });
+    try {
+        await bekle(() => belge.querySelector('#yt-filter-engel-banner .ytf-btn-beyaz'));
+        belge.querySelector('#yt-filter-engel-banner .ytf-btn-beyaz').click();
+        await bekle(() => belge.getElementById('ytf-pin-giris'));
+        belge.getElementById('ytf-pin-giris').value = '1234';
+        belge.getElementById('ytf-pin-onay').click();
+        await bekle(() => chrome.__depo.ayar.listeler.beyaz['aaaaaaaaaaa'] === true);
+
+        assert.match(String(chrome.__depo.pinKodu), /^pbkdf2-sha256\$/);
+        assert.strictEqual(chrome.__depo.pinVarsayilan, true);
+    } finally { dom.window.close(); }
+});
+
 test('içerik: başka sekmedeki oturum yazmayı açar', async () => {
     const baslangic = await pinliKaraVideo();
     baslangic.pinKilitBitis = Date.now() + 600000;
