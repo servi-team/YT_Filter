@@ -65,3 +65,10 @@ test('manifest: yardımcı betik yalnızca MAIN world ile yüklenir, elle enjeks
     assert.equal(helper.includes('Main World Helper Active'), false);
     assert.match(helper, /__ytFilterDebug/);
 });
+
+test('manifest: 2.1.0 sürümü ve Servi Ekibi Firefox kimliği', () => {
+    assert.strictEqual(paket.version, '2.1.0');
+    assert.strictEqual(chromium.version, '2.1.0');
+    assert.strictEqual(firefox.version, '2.1.0');
+    assert.strictEqual(firefox.browser_specific_settings.gecko.id, 'yt-filter@servifiltre');
+});

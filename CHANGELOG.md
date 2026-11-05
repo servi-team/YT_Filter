@@ -2,7 +2,24 @@
 
 Bu belge [Keep a Changelog](https://keepachangelog.com/tr/1.1.0/) düzenini izler. Henüz sürüm numarası verilmemiş çalışmalar "Yayınlanmamış" altında toplanır.
 
-## [Yayınlanmamış] — 2.0.0 geliştirme dalı
+## [2.1.0] — 2026-11-04
+
+### Eklendi
+- PIN'siz yazma yolu kapatıldı; ayarlar her açılışta PIN ister, içerik yazımları 10 dakikalık oturum kullanır.
+- YouTube video/kanal sayfalarında isteğe bağlı beyaz/kara hızlı ekleme rayı.
+- Site footer'ı yayınlanmış en son `db.json` veri sürümünü gösterir.
+
+### Değişti
+- "Bulanıklaştır" artık videoyu durdurur, sesi kapatır ve oynatıcı etkileşimini engeller.
+- "Uyarı sayfası" tam engel davranışı testlerle sabitlendi.
+- Mağaza görsel araçları kaldırıldı; ikon üretimi korundu.
+- Güncel gizlilik/iletişim bağlantıları `servi-team/YT_Filter` deposunu gösterir.
+
+### Doğrulama
+- Kök ve site testleri, tip denetimi, site build ve `npm run build:check` yeşil.
+- `npm run paket` ile `v2.1.0` etiketinden iki zip üretildi.
+
+## [Yayınlanmamış] — 2.1.0 sonrası
 
 ### Site — YouTube Filter Store S1–S7 (2026-10-27)
 
