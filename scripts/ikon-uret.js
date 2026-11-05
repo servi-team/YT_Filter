@@ -6,7 +6,6 @@
  * Bağımlılık yoktur: 4x süper örnekleme ile "Sinyal Kalkanı" işaretini çizip
  * PNG olarak yazar:
  *   src/icons/icon{16,32,48,128}.png   (manifest ikonları, tam taşlı)
- *   store/icon-128.png                 (96x96 görsel + 16 px saydam çerçeve)
  *   site/public/ikon{16,32,48,128}.png (site favicon'ları)
  *   site/app/icon.png                  (32 px Next.js ikonu)
  *   site/app/apple-icon.png            (180 px Apple dokunma ikonu)
@@ -27,11 +26,6 @@ const KOK = path.join(__dirname, '..');
 const CIKTI_DIR = path.join(KOK, 'src', 'icons');
 const BOYUTLAR = [16, 32, 48, 128];
 const ORNEKLEME = 4;
-
-const MAGAZA_DIR = path.join(KOK, 'store');
-const MAGAZA_IKON = path.join(MAGAZA_DIR, 'icon-128.png');
-const GORSEL_BOYUT = 96; // mağaza ikonundaki görsel kısım (128 - 2*16 boşluk)
-const BOSLUK = 16;
 
 const SITE_DIR = path.join(KOK, 'site');
 const SITE_PUBLIC = path.join(SITE_DIR, 'public');
@@ -294,38 +288,6 @@ function pngOlustur(boyut, pikseller) {
     ]);
 }
 
-// ---------- mağaza çerçevesi ----------
-
-// Chrome Web Store ikonu: 96x96 görsel + her kenarda 16 px saydam boşluk.
-function magazaIkonPikselleri() {
-    const ic = ikonPikselleri(GORSEL_BOYUT);
-    const cikti = new Uint8Array(128 * 128 * 4);
-    for (let y = 0; y < GORSEL_BOYUT; y++) {
-        for (let x = 0; x < GORSEL_BOYUT; x++) {
-            const kaynak = (y * GORSEL_BOYUT + x) * 4;
-            const hedef = ((y + BOSLUK) * 128 + (x + BOSLUK)) * 4;
-            cikti[hedef] = ic[kaynak];
-            cikti[hedef + 1] = ic[kaynak + 1];
-            cikti[hedef + 2] = ic[kaynak + 2];
-            cikti[hedef + 3] = ic[kaynak + 3];
-        }
-    }
-    return cikti;
-}
-
-// Dış 16 px halkasının her pikselinde alfa tam olarak 0 mı?
-function cerceveDogrula(pikseller, boyut, cerceve) {
-    for (let y = 0; y < boyut; y++) {
-        for (let x = 0; x < boyut; x++) {
-            const halkada = x < cerceve || x >= boyut - cerceve || y < cerceve || y >= boyut - cerceve;
-            if (halkada && pikseller[(y * boyut + x) * 4 + 3] !== 0) {
-                return `şeffaf olmayan piksel: (${x}, ${y})`;
-            }
-        }
-    }
-    return null;
-}
-
 // ---------- çıktılar ----------
 
 const onbellek = new Map();
@@ -374,13 +336,3 @@ for (const boyut of BOYUTLAR) {
 pngYaz(path.join(SITE_APP, 'icon.png'), 32);
 pngYaz(path.join(SITE_APP, 'apple-icon.png'), 180);
 svgYaz(path.join(SITE_PUBLIC, 'kalkan.svg'));
-
-const magaza = magazaIkonPikselleri();
-const cerceveHatasi = cerceveDogrula(magaza, 128, BOSLUK);
-if (cerceveHatasi) {
-    process.exitCode = 1;
-    throw new Error(`Mağaza ikonunun 16 px şeffaf çerçevesi ihlal edildi: ${cerceveHatasi}`);
-}
-fs.mkdirSync(MAGAZA_DIR, { recursive: true });
-fs.writeFileSync(MAGAZA_IKON, pngOlustur(128, magaza));
-console.log(`✓ ${path.relative(KOK, MAGAZA_IKON)} (128x128, 96x96 görsel + 16 px şeffaf çerçeve tamam)`);
