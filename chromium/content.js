@@ -11,6 +11,10 @@ let veriTabani = null;     // indekslenmiş veritabanı (core/db.js)
 let paketliDbSozu = null;  // paketle gelen db.json, sayfa başına bir kez okunur
 let motorHazir = false;     // loadData bitmeden karar verilmez (varsayılan ayarla geçici engel/banner çıkmasın)
 let sonKararAnahtari = '';  // tanılama günlüğü yalnızca karar değişince yazılsın
+let bulanikKok = null;      // bulanıklaştırılan tek oynatıcı kökü
+let bulanikKalkan = null;   // oynatıcının üstünü kaplayan kalkan
+let bulanikDinleyiciler = [];
+let bulanikResizeObserver = null;
 let stilElemani = document.createElement('style');
 document.head.appendChild(stilElemani);
 
@@ -547,8 +551,154 @@ function kararGunlugu(tur, ayrinti, sonuc) {
     console.info('YT Filter: sayfa kararı', tur, ayrinti, sonuc.karar, sonuc.sebepler);
 }
 
+// ---------- Gerçek bulanıklaştırma ----------
+// Yalnızca oynatıcının kendisi filtrelenir; body'yi filtrelemek tüm sayfayı bulanıklaştırıyordu.
+function bulanikKokBul() {
+    return document.querySelector('#ytd-player')
+        || document.querySelector('.html5-video-player')
+        || document.querySelector('#player')
+        || document.querySelector('video');
+}
+
+function bulanikKalkanKonumu() {
+    if (!bulanikKalkan || !bulanikKok || !bulanikKok.isConnected) return;
+    const kutu = bulanikKok.getBoundingClientRect();
+    bulanikKalkan.style.setProperty('top', `${Math.max(0, kutu.top)}px`, 'important');
+    bulanikKalkan.style.setProperty('left', `${Math.max(0, kutu.left)}px`, 'important');
+    bulanikKalkan.style.setProperty('width', `${Math.max(0, kutu.width)}px`, 'important');
+    bulanikKalkan.style.setProperty('height', `${Math.max(0, kutu.height)}px`, 'important');
+}
+
+function bulanikKalkanOlustur() {
+    const kalkan = document.createElement('div');
+    kalkan.className = 'ytf-bulanik-kalkan';
+    kalkan.setAttribute('data-ytf-bulanik-kalkan', 'true');
+    kalkan.setAttribute('role', 'note');
+
+    const kilit = document.createElement('div');
+    kilit.className = 'ytf-bulanik-kilit';
+    kilit.textContent = '🔒';
+
+    const metin = document.createElement('div');
+    metin.className = 'ytf-bulanik-metin';
+    metin.setAttribute('aria-live', 'polite');
+    metin.textContent = 'Bu video bulanıklaştırıldı';
+
+    const geri = document.createElement('button');
+    geri.type = 'button';
+    geri.className = 'ytf-btn ytf-btn-geri';
+    geri.textContent = '← Geri dön';
+    geri.addEventListener('click', () => {
+        if (history.length > 1) history.back(); else location.href = '/';
+    });
+
+    kalkan.append(kilit, metin, geri);
+    return kalkan;
+}
+
+function bulanikDinleyiciEkle(hedef, tur, islev, secenekler) {
+    hedef.addEventListener(tur, islev, secenekler);
+    bulanikDinleyiciler.push({ hedef, tur, islev, secenekler });
+}
+
+function bulanikUygula() {
+    const kok = bulanikKokBul();
+    if (!kok || !document.body) {
+        bulanikTemizle();
+        return;
+    }
+    if (bulanikKok !== kok) bulanikTemizle();
+    bulanikKok = kok;
+
+    kok.style.setProperty('filter', 'blur(35px)', 'important');
+    kok.style.setProperty('pointer-events', 'none', 'important');
+
+    if (!bulanikKalkan || !bulanikKalkan.isConnected) {
+        bulanikKalkan = bulanikKalkanOlustur();
+        document.body.appendChild(bulanikKalkan);
+    }
+    bulanikKalkanKonumu();
+
+    document.querySelectorAll('video').forEach(v => {
+        if (v.dataset.ytfOncekiSessiz === undefined) {
+            v.dataset.ytfOncekiSessiz = v.muted ? '1' : '0';
+        }
+        v.muted = true;
+        v.style.setProperty('pointer-events', 'none', 'important');
+        if (!v.paused) v.pause();
+    });
+
+    if (bulanikDinleyiciler.length === 0) {
+        const konumGuncelle = () => bulanikKalkanKonumu();
+        bulanikDinleyiciEkle(window, 'resize', konumGuncelle);
+        bulanikDinleyiciEkle(document, 'scroll', konumGuncelle, { capture: true, passive: true });
+        bulanikDinleyiciEkle(document, 'yt-navigate-finish', konumGuncelle);
+
+        const oynatmayiDurdur = (olay) => {
+            if (!bulanikKok) return;
+            const v = olay.target;
+            if (v && v.tagName === 'VIDEO') {
+                v.muted = true;
+                v.pause();
+            }
+        };
+        bulanikDinleyiciEkle(document, 'play', oynatmayiDurdur, true);
+
+        const tuslariEngelle = (olay) => {
+            if (!bulanikKok) return;
+            const hedef = olay.target;
+            if (hedef && (hedef.isContentEditable ||
+                ['INPUT', 'TEXTAREA', 'SELECT'].includes(String(hedef.tagName || '').toUpperCase()))) return;
+            const tuslar = [' ', 'k', 'K', 'j', 'J', 'l', 'L', 'f', 'F', 'm', 'M',
+                'ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'];
+            if (tuslar.includes(olay.key)) {
+                olay.preventDefault();
+                olay.stopPropagation();
+            }
+        };
+        bulanikDinleyiciEkle(document, 'keydown', tuslariEngelle, true);
+
+        if (typeof ResizeObserver === 'function') {
+            bulanikResizeObserver = new ResizeObserver(konumGuncelle);
+            bulanikResizeObserver.observe(kok);
+        }
+    }
+}
+
+function bulanikTemizle() {
+    if (bulanikKalkan) {
+        bulanikKalkan.remove();
+        bulanikKalkan = null;
+    }
+    if (bulanikKok) {
+        bulanikKok.style.removeProperty('filter');
+        bulanikKok.style.removeProperty('pointer-events');
+        bulanikKok = null;
+    }
+    // 2.0.0 embed yolu body'yi filtreliyordu; yükseltmeden kalan izi temizle.
+    if (document.body) document.body.style.removeProperty('filter');
+
+    if (bulanikResizeObserver) {
+        bulanikResizeObserver.disconnect();
+        bulanikResizeObserver = null;
+    }
+    (bulanikDinleyiciler || []).forEach(({ hedef, tur, islev, secenekler }) => {
+        hedef.removeEventListener(tur, islev, secenekler);
+    });
+    bulanikDinleyiciler = [];
+
+    document.querySelectorAll('video').forEach(v => {
+        if (v.dataset.ytfOncekiSessiz !== undefined) {
+            v.muted = v.dataset.ytfOncekiSessiz === '1';
+            delete v.dataset.ytfOncekiSessiz;
+        }
+        v.style.removeProperty('pointer-events');
+    });
+}
+
 // Kanal sayfası (/@handle, /channel/UC...): engelliyse tam sayfa banner.
 function kanalSayfasiniKontrolEt() {
+    bulanikTemizle();
     const yol = window.location.pathname;
     const hm = yol.match(/^\/(@[a-zA-Z0-9._-]+)/);
     const im = yol.match(/^\/channel\/(UC[A-Za-z0-9_-]{22})/);
@@ -585,6 +735,7 @@ function checkWatchPage() {
 
     // İzleme sayfası değilse: kanal sayfası mı diye bak (değilse banner'ı kaldırır)
     if (!videoId) {
+        bulanikTemizle();
         kanalSayfasiniKontrolEt();
         return;
     }
@@ -600,8 +751,9 @@ function checkWatchPage() {
     const html5Player = document.querySelector('.html5-video-player');
     const videoElements = document.querySelectorAll('video');
 
-    let isBlocked = (sonuc.karar === 'engelle' && sonuc.engelEylemi !== 'bulaniklastir');
-    let isBlurred = (sonuc.karar === 'engelle' && sonuc.engelEylemi === 'bulaniklastir');
+    const eylem = sonuc.engelEylemi;
+    let isBlocked = (sonuc.karar === 'engelle' && (eylem === 'kaldir' || eylem === 'uyari'));
+    let isBlurred = (sonuc.karar === 'engelle' && eylem === 'bulaniklastir');
 
     // Shorts Videolar Gizliyse, URL'den Direkt Girmeyi De Kesin Engelle
     let shortsZorla = false;
@@ -611,6 +763,7 @@ function checkWatchPage() {
     }
 
     if (isBlocked) {
+        bulanikTemizle();
         // Oynatıcıyı gizle
         if (ytdPlayer) ytdPlayer.style.setProperty('display', 'none', 'important');
         if (embedPlayer) embedPlayer.style.setProperty('display', 'none', 'important');
@@ -628,13 +781,10 @@ function checkWatchPage() {
         }
     } else if (isBlurred) {
         engelBanneriniKaldir();
-        if (ytdPlayer) ytdPlayer.style.setProperty('filter', 'blur(35px)', 'important');
-        if (embedPlayer) embedPlayer.style.setProperty('filter', 'blur(35px)', 'important');
-        if (html5Player) html5Player.style.setProperty('filter', 'blur(35px)', 'important');
-        if (isEmbed) document.body.style.setProperty('filter', 'blur(35px)', 'important');
-        videoElements.forEach(v => { v.muted = true; });
+        bulanikUygula();
     } else {
         engelBanneriniKaldir();
+        bulanikTemizle();
         if (ytdPlayer) { ytdPlayer.style.removeProperty('display'); ytdPlayer.style.removeProperty('filter'); }
         if (embedPlayer) { embedPlayer.style.removeProperty('display'); embedPlayer.style.removeProperty('filter'); }
         if (html5Player) { html5Player.style.removeProperty('display'); html5Player.style.removeProperty('filter'); }

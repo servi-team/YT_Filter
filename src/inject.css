@@ -129,6 +129,44 @@ ytd-thumbnail, ytd-rich-grid-media, ytd-rich-item-renderer, ytd-video-renderer {
 .ytf-uyari-baslik { font-size: 14px !important; font-weight: 700 !important; }
 .ytf-uyari-sebep { font-size: 12px !important; color: #bbb !important; line-height: 1.4 !important; }
 
+/* Bulanıklaştırma kalkanı: yalnızca oynatıcı kökü filtrelenir, kalkan üstünü kapatır */
+.ytf-bulanik-kalkan {
+    position: fixed !important;
+    z-index: 2147483000 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    padding: 16px !important;
+    background: rgba(8, 8, 8, 0.72) !important;
+    color: #fff !important;
+    text-align: center !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    box-sizing: border-box !important;
+    animation: ytf-bulanik-acilis 0.16s ease-out !important;
+}
+.ytf-bulanik-kilit {
+    font-size: 40px !important;
+    line-height: 1 !important;
+}
+.ytf-bulanik-metin {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6) !important;
+}
+.ytf-bulanik-kalkan .ytf-btn {
+    margin-top: 4px !important;
+}
+@keyframes ytf-bulanik-acilis {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ytf-bulanik-kalkan { animation: none !important; }
+}
+
 /* PIN penceresi */
 .ytf-pin-pencere {
     position: fixed !important;
