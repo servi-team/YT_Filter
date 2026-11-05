@@ -116,9 +116,35 @@ async function ayariHazirla() {
     Object.assign(mevcutVeri, yazilacak);
 }
 
+// ---- Yazma kapısı: PIN varsa ve oturum kapalıysa hiçbir ayar yazılmaz ----
+
+function yazmaIzniVar(simdi = Date.now()) {
+    if (!YTF.kilitGerekli(mevcutVeri)) return true;
+    if (YTF.kilitAcik(mevcutVeri, simdi)) return true;
+    kilitle();
+    return false;
+}
+
+async function veriyiYenidenYukle() {
+    mevcutVeri = (await getStorageData(null)) || {};
+    if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
+    ayar = YTF.ayarTemizle(mevcutVeri.ayar);
+    arayuzuDoldur();
+}
+
+async function yazmaReddedildi() {
+    await veriyiYenidenYukle();
+    showToast('Oturum süresi doldu; yeniden giriş yapın');
+}
+
 async function ayarKaydet() {
+    if (!yazmaIzniVar()) {
+        await yazmaReddedildi();
+        return false;
+    }
     mevcutVeri.ayar = ayar;
     await setStorageData({ surum: 2, ayar });
+    return true;
 }
 
 // Paketle gelen veritabanını ve varsa kullanıcının içe aktardığı veritabanını okur.
@@ -444,6 +470,7 @@ function hedefAdi(hedef) {
 
 // Sayfa kimliğinden gelen kanal adı/avatarını (varsa) depoya yazar; liste kurallarını etkilemez.
 async function kanalBilgisiKaydet(anahtar, durum) {
+    if (!yazmaIzniVar()) return;
     if (!durum || durum.tur !== 'Kanal' || !durum.kanalAdi) return;
     const temiz = YTF.kanalBilgileriTemizle({ [anahtar]: { ad: durum.kanalAdi, avatar: durum.avatar } });
     if (!temiz[anahtar]) return;
@@ -479,7 +506,7 @@ async function icerikEkle() {
     const anahtar = anahtarCikar(ham);
     if (anahtar.length > 100) { showToast('Geçersiz giriş'); return; }
     if (!listeyeEkle(anahtar, hedef)) { showToast('Hedef liste bulunamadı'); return; }
-    await ayarKaydet();
+    if (!(await ayarKaydet())) return;
     if (aktifYouTubeIcerigi && aktifYouTubeIcerigi.tespit && aktifYouTubeIcerigi.tespit.toLowerCase() === anahtar) {
         await kanalBilgisiKaydet(anahtar, aktifYouTubeIcerigi);
     }
@@ -498,7 +525,7 @@ async function ozelListeOlustur() {
         return;
     }
     ayar.listeler.ozel.push({ ad, eylem: document.getElementById('yeniListeEylemi').value === 'izinver' ? 'izinver' : 'engelle', uyeler: {} });
-    await ayarKaydet();
+    if (!(await ayarKaydet())) return;
     girdi.value = '';
     renderListeler();
     showToast(`"${ad}" listesi oluşturuldu`);
@@ -590,7 +617,7 @@ function cakismaSor(adlar) {
 async function listeleriIceAktarUygula(gelen, strateji) {
     const { listeler, rapor } = YTF.listeleriBirlestir(ayar.listeler, gelen, strateji);
     ayar.listeler = listeler;
-    await ayarKaydet();
+    if (!(await ayarKaydet())) return;
     renderListeler();
     let mesaj = `Listeler içe aktarıldı: ${rapor.eklenen} yeni kayıt`;
     if (rapor.tasinan) mesaj += `, ${rapor.tasinan} taşındı`;
@@ -689,7 +716,7 @@ function renderItemList() {
         sil.innerHTML = SVG_COP;
         sil.addEventListener('click', async () => {
             listedenCikar(id);
-            await ayarKaydet();
+            if (!(await ayarKaydet())) return;
             renderListeler();
             showToast(`${id} silindi`);
         });
@@ -726,7 +753,7 @@ function renderOzelListeler() {
             const uyeSayisi = Object.keys(liste.uyeler).length;
             if (!confirm(`"${liste.ad}" listesi${uyeSayisi ? ` ve içindeki ${uyeSayisi} içerik` : ''} silinecek. Emin misiniz?`)) return;
             ayar.listeler.ozel = ayar.listeler.ozel.filter(l => l !== liste);
-            await ayarKaydet();
+            if (!(await ayarKaydet())) return;
             renderListeler();
             showToast(`"${liste.ad}" silindi`);
         });
@@ -744,7 +771,7 @@ function renderOzelListeler() {
         secim.value = liste.eylem;
         secim.addEventListener('change', async () => {
             liste.eylem = secim.value === 'izinver' ? 'izinver' : 'engelle';
-            await ayarKaydet();
+            if (!(await ayarKaydet())) return;
             showToast('Liste eylemi güncellendi');
         });
         alan1.appendChild(secim);
@@ -826,7 +853,7 @@ function renderKonular() {
         kutu.setAttribute('aria-label', konu.ad);
         kutu.addEventListener('change', async () => {
             ayar.konular[konu.id] = kutu.checked ? 'izinli' : ayar.engelEylemi;
-            await ayarKaydet();
+            if (!(await ayarKaydet())) return;
             renderKonular();
             showToast(`${konu.ad}: ${kutu.checked ? 'izinli' : 'engelli (' + eylemAdi(ayar.konular[konu.id]) + ')'}`);
         });
@@ -835,7 +862,7 @@ function renderKonular() {
         if (konuEngelliMi(konu.id)) {
             oge.appendChild(eylemMenusu(konu.ad, ayar.konular[konu.id], async (v) => {
                 ayar.konular[konu.id] = v;
-                await ayarKaydet();
+                if (!(await ayarKaydet())) return;
                 showToast(`${konu.ad}: ${eylemAdi(v)}`);
             }, false));
         }
@@ -853,7 +880,7 @@ function renderEtiketler() {
         const deger = ayar.etiketler[etiket.id] || 'kaldir';
         const menu = eylemMenusu(etiket.ad, deger, async (v) => {
             ayar.etiketler[etiket.id] = v;
-            await ayarKaydet();
+            if (!(await ayarKaydet())) return;
             showToast(`${etiket.ad}: ${v === 'izinli' ? 'izin veriliyor' : eylemAdi(v)}`);
         }, true);
         oge.append(grup, menu);
@@ -861,11 +888,12 @@ function renderEtiketler() {
     });
 }
 
-function tumKonulariAyarla(deger) {
+async function tumKonulariAyarla(deger) {
     // 'engelli' -> genel engelleme biçimi (Görünüm sekmesi); her konu sonradan kendi biçimini seçebilir
     YTF.KONULAR.forEach(k => { ayar.konular[k.id] = deger === 'izinli' ? 'izinli' : ayar.engelEylemi; });
     renderKonular();
-    return ayarKaydet().then(() => showToast(deger === 'izinli' ? 'Tüm konulara izin verildi' : 'Tüm konular engellendi'));
+    if (!(await ayarKaydet())) return;
+    showToast(deger === 'izinli' ? 'Tüm konulara izin verildi' : 'Tüm konular engellendi');
 }
 
 // Arayüzü Verilerle Doldur
@@ -893,6 +921,10 @@ function arayuzuDoldur() {
 function initEvents() {
     // Tema Değiştirme
     document.getElementById('btnTemaGecis').addEventListener('click', async () => {
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
+            return;
+        }
         document.body.classList.toggle('dark-theme');
         const isDark = document.body.classList.contains('dark-theme');
         document.getElementById('lblTemaIkon').innerText = isDark ? '☀️' : '🌙';
@@ -928,7 +960,7 @@ function initEvents() {
     kaydirici.addEventListener('input', () => modAciklamasiniGuncelle(Number(kaydirici.value)));
     kaydirici.addEventListener('change', async () => {
         ayar.mod = MODLAR[Number(kaydirici.value)] || 'orta';
-        await ayarKaydet();
+        if (!(await ayarKaydet())) return;
         showToast('Filtre modu güncellendi');
     });
 
@@ -937,7 +969,7 @@ function initEvents() {
         r.addEventListener('change', async () => {
             if (!r.checked) return;
             ayar.etiketlenmemis = r.value === 'ac' ? 'ac' : 'engelle';
-            await ayarKaydet();
+            if (!(await ayarKaydet())) return;
             renderEtiketlenmemis();
             showToast('Seçiminiz kaydedildi');
         });
@@ -946,7 +978,7 @@ function initEvents() {
     // Kanal kontrol ayarı
     document.getElementById('chkKanalKontrol').addEventListener('change', async (e) => {
         ayar.kanalKontrol = e.target.checked;
-        await ayarKaydet();
+        if (!(await ayarKaydet())) return;
         showToast(ayar.kanalKontrol ? 'Kanalın konu ve etiketlerine de bakılacak' : 'Yalnızca videonun kendi kaydına bakılacak');
     });
 
@@ -955,7 +987,7 @@ function initEvents() {
         r.addEventListener('change', async () => {
             if (!r.checked) return;
             ayar.kararsiz = r.value === 'engelle' ? 'engelle' : 'izinver';
-            await ayarKaydet();
+            if (!(await ayarKaydet())) return;
             kararsizAlaniniGuncelle(Math.max(0, MODLAR.indexOf(ayar.mod)));
             showToast('Seçiminiz kaydedildi');
         });
@@ -963,6 +995,10 @@ function initEvents() {
 
     // İlk kurulum PIN kartı
     document.getElementById('btnKurulumPinKaydet').addEventListener('click', async () => {
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
+            return;
+        }
         const pin = document.getElementById('kurulumPin').value.trim();
         if (!/^\d{4}$/.test(pin)) {
             document.getElementById('kurulumPinHata').style.display = 'block';
@@ -979,6 +1015,10 @@ function initEvents() {
         showToast('PIN kaydedildi');
     });
     document.getElementById('btnKurulumPinAtla').addEventListener('click', async () => {
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
+            return;
+        }
         mevcutVeri.pinKurulumAtlandi = true;
         await setStorageData({ pinKurulumAtlandi: true });
         document.getElementById('pinKurulumKarti').style.display = 'none';
@@ -1026,6 +1066,10 @@ function initEvents() {
 
     // PIN Güncelle
     document.getElementById('btnPinGuncelle').addEventListener('click', async () => {
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
+            return;
+        }
         const yeni = document.getElementById('yeniPin').value.trim();
         if (!/^\d{4}$/.test(yeni)) {
             alert("PIN tam 4 rakam olmalıdır.");
@@ -1082,6 +1126,10 @@ function initEvents() {
         if (!dosya) return;
         const okuyucu = new FileReader();
         okuyucu.onload = async (olay) => {
+            if (!yazmaIzniVar()) {
+                await yazmaReddedildi();
+                return;
+            }
             let json;
             try {
                 json = JSON.parse(olay.target.result);
@@ -1121,6 +1169,10 @@ function initEvents() {
     });
 
     document.getElementById('btnDbSifirla').addEventListener('click', async () => {
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
+            return;
+        }
         if (!confirm('İçe aktarılan veritabanı kaldırılsın ve paketli veri kullanılsın mı?')) return;
         delete mevcutVeri.dbOverride;
         await removeStorageData(['dbOverride']);
@@ -1135,6 +1187,10 @@ function initEvents() {
         if (!dosya) return;
         const okuyucu = new FileReader();
         okuyucu.onload = async (olay) => {
+            if (!yazmaIzniVar()) {
+                await yazmaReddedildi();
+                return;
+            }
             try {
                 const yuklenen = JSON.parse(olay.target.result);
                 let yeniAyar;
@@ -1247,7 +1303,7 @@ function hizliBandiDoldur(durum) {
 
     const hizliEkle = async (hedef) => {
         listeyeEkle(durum.tespit.toLowerCase(), hedef);
-        await ayarKaydet();
+        if (!(await ayarKaydet())) return;
         await kanalBilgisiKaydet(durum.tespit.toLowerCase(), durum);
         renderListeler();
         showToast(`${durum.tespit} → ${hedefAdi(hedef)}`);
@@ -1282,6 +1338,10 @@ async function algilaAktifYouTubeSekmesi() {
 
 // Tüm Ayarları Manuel Kaydet
 async function kaydetTumAyarlar(bildirimVer = true) {
+    if (!yazmaIzniVar()) {
+        await yazmaReddedildi();
+        return false;
+    }
     mevcutVeri.ayarlar = {
         shortsGizle: document.getElementById('chkShorts').checked,
         yorumGizle: document.getElementById('chkYorum').checked,
@@ -1307,7 +1367,17 @@ async function kaydetTumAyarlar(bildirimVer = true) {
         ayarlar: mevcutVeri.ayarlar
     });
 
+    const pinKilitleBtn = document.getElementById('btnPinKilitle');
+    if (mevcutVeri.ayarlar.pinIptal) {
+        await removeStorageData(['pinKilitBitis']);
+        mevcutVeri.pinKilitBitis = 0;
+        pinKilitleBtn.style.display = 'none';
+    } else if (mevcutVeri.pinKodu) {
+        pinKilitleBtn.style.display = 'flex';
+    }
+
     if (bildirimVer) {
         showToast("Tüm ayarlar başarıyla kaydedildi!");
     }
+    return true;
 }

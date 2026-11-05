@@ -140,6 +140,34 @@ test('options: bekleme açıkken kilit ekranı sayacı gösterir', async () => {
     } finally { dom.window.close(); }
 });
 
+test('options: süresi dolmuş oturum yazmayı reddeder ve arayüzü kilitler', async () => {
+    const baslangic = await pinliBaslangic();
+    baslangic.pinKilitBitis = Date.now() - 1000; // süresi dolmuş içerik oturumu
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        assert.strictEqual(belge.defaultView.yazmaIzniVar(), false);
+        assert.strictEqual(belge.getElementById('pinEkrani').style.display, 'flex');
+
+        const onceki = JSON.stringify(chrome.__depo.ayar);
+        await belge.defaultView.ayarKaydet();
+        assert.strictEqual(JSON.stringify(chrome.__depo.ayar), onceki);
+        assert.strictEqual(belge.getElementById('anaArayuz').style.display, 'none');
+    } finally { dom.window.close(); }
+});
+
+test('options: kilitliyken tema düğmesi koyuTema yazmaz', async () => {
+    const baslangic = await pinliBaslangic();
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic });
+    try {
+        await bekle(() => belge.getElementById('pinEkrani').style.display === 'flex');
+        const onceki = chrome.__depo.ayarlar.koyuTema;
+        belge.getElementById('btnTemaGecis').click();
+        await new Promise(r => setTimeout(r, 20));
+        assert.strictEqual(chrome.__depo.ayarlar.koyuTema, onceki);
+    } finally { dom.window.close(); }
+});
+
 test('options: içerik ekleme, listeleme ve silme depoyla senkron', async () => {
     const { dom, belge, chrome, pencere } = await arayuzuAc({ baslangic: temelBaslangic() });
     try {
