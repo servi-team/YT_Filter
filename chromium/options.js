@@ -902,6 +902,7 @@ function arayuzuDoldur() {
     document.getElementById('chkYorum').checked = mevcutVeri.ayarlar.yorumGizle || false;
     document.getElementById('chkOnerilen').checked = mevcutVeri.ayarlar.onerilenGizle || false;
     document.getElementById('chkOtomatikOynatma').checked = mevcutVeri.ayarlar.otomatikOynatmaKapat || false;
+    document.getElementById('chkHizliEkleme').checked = mevcutVeri.ayarlar.hizliEkleme === true;
     document.getElementById('chkPinIptal').checked = mevcutVeri.ayarlar.pinIptal || false;
     document.getElementById('chkRozetGoster').checked = ayar.rozetGoster !== false;
     document.getElementById('selEngelEylemi').value = YTF.ENGEL_EYLEMLERI.includes(ayar.engelEylemi) ? ayar.engelEylemi : 'kaldir';
@@ -1231,7 +1232,7 @@ function initEvents() {
     });
 
     // Otomatik Anlık Kaydedilen Tweak Switch'leri ve görünüm ayarları
-    const anlikKaydedilenler = ['chkShorts', 'chkYorum', 'chkOnerilen', 'chkOtomatikOynatma', 'chkPinIptal', 'chkRozetGoster', 'selEngelEylemi'];
+    const anlikKaydedilenler = ['chkShorts', 'chkYorum', 'chkOnerilen', 'chkOtomatikOynatma', 'chkHizliEkleme', 'chkPinIptal', 'chkRozetGoster', 'selEngelEylemi'];
     anlikKaydedilenler.forEach(id => {
         document.getElementById(id).addEventListener('change', async () => {
             await kaydetTumAyarlar(false);
@@ -1347,6 +1348,7 @@ async function kaydetTumAyarlar(bildirimVer = true) {
         yorumGizle: document.getElementById('chkYorum').checked,
         onerilenGizle: document.getElementById('chkOnerilen').checked,
         otomatikOynatmaKapat: document.getElementById('chkOtomatikOynatma').checked,
+        hizliEkleme: document.getElementById('chkHizliEkleme').checked,
         pinIptal: document.getElementById('chkPinIptal').checked,
         koyuTema: document.body.classList.contains('dark-theme')
     };

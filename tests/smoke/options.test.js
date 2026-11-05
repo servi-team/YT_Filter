@@ -168,6 +168,20 @@ test('options: kilitliyken tema düğmesi koyuTema yazmaz', async () => {
     } finally { dom.window.close(); }
 });
 
+test('options: hızlı ekleme anahtarı anında kaydedilir', async () => {
+    const { dom, belge, chrome } = await arayuzuAc({ baslangic: temelBaslangic() });
+    try {
+        await bekle(() => belge.getElementById('anaArayuz').style.display === 'block');
+        const kutu = belge.getElementById('chkHizliEkleme');
+        assert.strictEqual(kutu.checked, false);
+        kutu.checked = true;
+        kutu.dispatchEvent(new dom.window.Event('change', { bubbles: true }));
+        await bekle(() => chrome.__depo.ayarlar.hizliEkleme === true);
+        assert.strictEqual(belge.getElementById('chkHizliEkleme').checked, true);
+        await new Promise(r => setTimeout(r, 20));
+    } finally { dom.window.close(); }
+});
+
 test('options: içerik ekleme, listeleme ve silme depoyla senkron', async () => {
     const { dom, belge, chrome, pencere } = await arayuzuAc({ baslangic: temelBaslangic() });
     try {

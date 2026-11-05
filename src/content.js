@@ -83,6 +83,7 @@ async function loadData() {
         }
         motorHazir = true;
         arayuzAyarlariniUygula();
+        if (document.body) hizliRayCiz();
     } catch (e) {
         console.error("Veri yükleme hatası", e);
     }
@@ -413,6 +414,89 @@ async function listeYaz(anahtar, hedef, sonra) {
 
     if (typeof sonra === 'function') sonra();
     return true;
+}
+
+// ---------- Hızlı ekleme rayı (isteğe bağlı) ----------
+const HIZLI_EKLEME_HOSTLARI = ['www.youtube.com', 'm.youtube.com', 'youtube.com'];
+
+function hizliEklemeUygunMu() {
+    if (window !== window.top) return false;
+    if (!hafiza.ayarlar || hafiza.ayarlar.hizliEkleme !== true) return false;
+    if (!HIZLI_EKLEME_HOSTLARI.includes(window.location.hostname)) return false;
+
+    const yol = window.location.pathname;
+    if (yol.startsWith('/embed/')) return false;
+    if (yol.startsWith('/shorts/') && hafiza.ayarlar.shortsGizle) return false;
+    if (yol === '/watch' || yol.startsWith('/shorts/')) return true;
+    if (/^\/@[a-zA-Z0-9._-]+/.test(yol)) return true;
+    if (/^\/channel\/UC[A-Za-z0-9_-]{22}/.test(yol)) return true;
+    return false;
+}
+
+function hizliRayKaldir() {
+    const ray = document.getElementById('ytf-hizli-ray');
+    if (ray) ray.remove();
+}
+
+function hizliRayDugmesi(hedef, metin, ikonMetni, sinif, anahtar) {
+    const dugme = document.createElement('button');
+    dugme.type = 'button';
+    dugme.className = `ytf-hizli-ray-btn ${sinif}`;
+    dugme.setAttribute('data-ytf-hedef', hedef);
+    dugme.setAttribute('aria-label', metin);
+
+    const ikon = document.createElement('span');
+    ikon.className = 'ytf-hizli-ray-ikon';
+    ikon.textContent = ikonMetni;
+
+    const yazi = document.createElement('span');
+    yazi.className = 'ytf-hizli-ray-metin';
+    yazi.textContent = metin;
+
+    dugme.append(ikon, yazi);
+    dugme.addEventListener('click', () => {
+        listeYaz(anahtar, hedef, hizliRayCiz);
+    });
+    return dugme;
+}
+
+function hizliRayCiz() {
+    if (!hizliEklemeUygunMu()) {
+        hizliRayKaldir();
+        return;
+    }
+    if (!document.body) {
+        hizliRayKaldir();
+        return;
+    }
+    const durum = sayfaKimligi();
+    if (!durum || !durum.tespit) {
+        hizliRayKaldir();
+        return;
+    }
+
+    const anahtar = String(durum.tespit).toLowerCase();
+    const imza = `${durum.tur}:${anahtar}`;
+    const mevcut = document.getElementById('ytf-hizli-ray');
+    if (mevcut && mevcut.dataset.ytfImza === imza) return;
+    hizliRayKaldir();
+
+    const ray = document.createElement('div');
+    ray.id = 'ytf-hizli-ray';
+    ray.dataset.ytfImza = imza;
+    ray.setAttribute('role', 'group');
+    ray.setAttribute('aria-label', 'Hızlı ekleme');
+
+    const etiket = document.createElement('div');
+    etiket.className = 'ytf-hizli-ray-etiket';
+    etiket.textContent = durum.tur === 'Kanal' ? 'Kanal' : 'Video';
+
+    ray.append(
+        etiket,
+        hizliRayDugmesi('beyaz', 'Beyaz listeye ekle', '✓', 'ytf-hizli-ray-beyaz', anahtar),
+        hizliRayDugmesi('kara', 'Kara listeye ekle', '✕', 'ytf-hizli-ray-kara', anahtar)
+    );
+    document.body.appendChild(ray);
 }
 
 function sayfaKimligi() {
@@ -1000,6 +1084,7 @@ function sayfaGuncelle() {
     }
     sonSayfaKontrolu = Date.now();
     checkWatchPage();
+    hizliRayCiz();
     if (location.href !== lastUrl) {
         lastUrl = location.href;
         document.querySelectorAll(videoSelectors).forEach(el => resetElement(el));
@@ -1032,6 +1117,7 @@ if (storageObj && storageObj.onChanged) {
         loadData().then(() => {
             document.querySelectorAll(videoSelectors).forEach(processVideo);
             checkWatchPage();
+            hizliRayCiz();
         });
     });
 }
