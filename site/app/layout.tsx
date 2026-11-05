@@ -1,10 +1,21 @@
 import type { Metadata, Viewport } from 'next';
+import { unstable_cache } from 'next/cache';
 import './stil.css';
 import { fraunces, manrope } from './fontlar.ts';
 import { Atla } from './bilesenler/atla.tsx';
 import { UstBar } from './bilesenler/ust-bar.tsx';
 import { AltBilgi } from './bilesenler/alt-bilgi.tsx';
 import { siteKullanici } from '../lib/sunucu-oturum.ts';
+import { db } from '../lib/db.ts';
+import { sonYayinSurumu } from '../lib/yayin-deposu.ts';
+
+const veriSurumuOku = unstable_cache(async (): Promise<number | null> => {
+  try {
+    return await sonYayinSurumu(await db());
+  } catch {
+    return null;
+  }
+}, ['footer-veri-surumu'], { revalidate: 60 });
 
 export const metadata: Metadata = {
   title: {
@@ -30,6 +41,7 @@ export default async function KokDuzen({ children }: { children: React.ReactNode
   const ustKullanici = kullanici
     ? { ad: kullanici.eposta.split('@')[0] ?? kullanici.eposta, rol: kullanici.rol }
     : null;
+  const sonSurum = await veriSurumuOku();
 
   return (
     <html lang="tr" className={`${fraunces.variable} ${manrope.variable}`}>
@@ -39,7 +51,7 @@ export default async function KokDuzen({ children }: { children: React.ReactNode
         <main id="icerik" className="kap sayfa" tabIndex={-1}>
           {children}
         </main>
-        <AltBilgi veriSurumu={null} />
+        <AltBilgi veriSurumu={sonSurum} />
       </body>
     </html>
   );

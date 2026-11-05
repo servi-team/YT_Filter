@@ -272,6 +272,20 @@ export async function yayinGetir(db: Db, veriSurumu: number): Promise<YayinSatir
   return satir ? satiraCevir(satir) : null;
 }
 
+/** En son yayınlanan veri sürümünü döndürür; içerik yüklemez, hatada null döner. */
+export async function sonYayinSurumu(db: Db): Promise<number | null> {
+  try {
+    const [satir] = await db.select({
+      veriSurumu: yayinSurumleri.veriSurumu,
+    }).from(yayinSurumleri)
+      .orderBy(desc(yayinSurumleri.veriSurumu))
+      .limit(1);
+    return satir ? Number(satir.veriSurumu) : null;
+  } catch {
+    return null;
+  }
+}
+
 /** Son yayınları içerikleri olmadan listeler (varsayılan ve üst sınır 50). */
 export async function yayinGecmisi(db: Db, limit = 50): Promise<YayinOzetSatiri[]> {
   const adet = Number.isInteger(limit) && limit > 0 ? Math.min(limit, 50) : 50;

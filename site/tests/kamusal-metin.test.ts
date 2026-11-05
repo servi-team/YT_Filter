@@ -21,6 +21,13 @@ test('koşullar ve iletişim sayfaları taslak metni ve gerçek issue bağlantı
   assert.equal(i.includes('<form'), false);
 });
 
+test('layout footer veri sürümünü gerçek sorguya bağlar', () => {
+  const l = oku('../app/layout.tsx');
+  assert.match(l, /sonYayinSurumu/);
+  assert.match(l, /<AltBilgi veriSurumu=\{sonSurum\}/);
+  assert.equal(l.includes('veriSurumu={null}'), false);
+});
+
 test('404 ve hata sayfaları Türkçe ve erişilebilir', () => {
   const n = oku('../app/not-found.tsx');
   assert.match(n, /Sayfa bulunamadı/);

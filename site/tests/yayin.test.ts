@@ -5,7 +5,7 @@ import { testDb } from './yardim.ts';
 import { oyVer } from '../lib/oy-deposu.ts';
 import { kayitKilitle } from '../lib/moderasyon-deposu.ts';
 import { icerikArsivle } from '../lib/arsiv-deposu.ts';
-import { yayinAdayiUret, yayinla, sonYayin, yayinGetir, yayinGecmisi } from '../lib/yayin-deposu.ts';
+import { yayinAdayiUret, yayinla, sonYayin, yayinGetir, yayinGecmisi, sonYayinSurumu } from '../lib/yayin-deposu.ts';
 
 const K = 'UC' + 'u'.repeat(22);
 const K2 = 'UC' + 'v'.repeat(22);
@@ -79,5 +79,24 @@ test('eşzamanlı iki yayın aynı sürüm numarasını üretmez', async () => {
     const satirlar = await v.db.execute(sql`select veri_surumu, icerik from yayin_surumleri order by veri_surumu`);
     assert.equal(new Set(satirlar.rows.map((r: any) => r.veri_surumu)).size, satirlar.rows.length);
     for (const r of satirlar.rows as any[]) assert.equal(r.icerik.veriSurumu, r.veri_surumu);
+  } finally { await v.kapat(); }
+});
+
+test('sonYayinSurumu boş, dolu ve hatalı veritabanında doğru sonucu verir', async () => {
+  const v = await testDb();
+  try {
+    assert.equal(await sonYayinSurumu(v.db), null);
+    const admin = (await v.db.execute(sql`insert into hesaplar (eposta, parola_ozeti, rol) values ('s@x','x','admin') returning id`)).rows[0].id;
+    await v.db.execute(sql`insert into kanallar (id) values (${K})`);
+    for (const c of ['s1', 's2', 's3']) {
+      await oyVer(v.db, { hedefTuru: 'kanal', hedefId: K, ogeTuru: 'konu', ogeId: 'spor', deger: 'up', tarayiciId: c });
+    }
+    await yayinla(v.db, { onaylayan: admin });
+    assert.equal(await sonYayinSurumu(v.db), 1);
+    await yayinla(v.db, { onaylayan: admin });
+    assert.equal(await sonYayinSurumu(v.db), 2);
+
+    const bozuk = { select() { throw new Error('db yok'); } } as any;
+    assert.equal(await sonYayinSurumu(bozuk), null);
   } finally { await v.kapat(); }
 });
