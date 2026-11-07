@@ -1,0 +1,164 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="680" viewBox="0 0 1200 680" role="img" aria-labelledby="mimari-title mimari-desc">
+  <title id="mimari-title">Sistem mimarisi</title>
+  <desc id="mimari-desc">Tarayıcıdaki uzantı YouTube DOM'undan karar üretir ve yalnızca yerel depoyu kullanır. Next.js sitesi anonim oyları PostgreSQL'de toplar, moderasyondan geçirir ve sürümlü db.json yayımlar. İki taraf bu tek sözleşmede buluşur.</desc>
+
+  <rect width="1200" height="680" rx="26" fill="#F7F3EB"/>
+  <rect x="1" y="1" width="1198" height="678" rx="25" fill="none" stroke="#E3DCCF"/>
+
+  <!-- Başlık -->
+  <text x="64" y="52" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="15" font-weight="600" letter-spacing="2.4" fill="#C9342B">MİMARİ</text>
+  <text x="64" y="94" font-family="Georgia, 'Times New Roman', serif" font-size="34" font-weight="700" letter-spacing="-0.6" fill="#171A1C">İki çalışma alanı, tek veri sözleşmesi.</text>
+  <text x="1136" y="78" text-anchor="end" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12" font-weight="600" letter-spacing="1" fill="#6B6861">KARAR TARAYICIDA · VERİ SİTEDE</text>
+
+  <!-- Tarayıcı paneli -->
+  <g id="tarayici-paneli">
+    <rect x="64" y="124" width="472" height="436" rx="20" fill="#171A1C"/>
+    <rect x="65" y="125" width="470" height="434" rx="19" fill="none" stroke="#F3EFE7" stroke-opacity="0.1"/>
+
+    <text x="88" y="160" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="13" font-weight="600" letter-spacing="2" fill="#E9B45C">TARAYICI</text>
+    <text x="88" y="196" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" letter-spacing="-0.4" fill="#F3EFE7">Uzantı</text>
+    <text x="88" y="220" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#A7A39B">Chromium + Firefox · aynı kaynak</text>
+
+    <g transform="translate(360 150)">
+      <rect width="152" height="28" rx="14" fill="#1E2326" stroke="#F3EFE7" stroke-opacity="0.14"/>
+      <circle cx="16" cy="14" r="4" fill="#63C9A8"/>
+      <text x="28" y="18.5" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" letter-spacing="0.6" fill="#CFC8BC">VERİ YERELDE</text>
+    </g>
+
+    <!-- YouTube DOM -->
+    <g>
+      <rect x="88" y="244" width="424" height="56" rx="12" fill="#24282C" stroke="#F3EFE7" stroke-opacity="0.14"/>
+      <rect x="104" y="258" width="40" height="28" rx="7" fill="#C9342B"/>
+      <path d="M120 266L134 272L120 278Z" fill="#FFFDF8"/>
+      <text x="156" y="268" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#F3EFE7">YouTube DOM</text>
+      <text x="156" y="288" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#A7A39B">ana sayfa · arama · kanal · izleme</text>
+    </g>
+
+    <path d="M300 300V318" stroke="#F2635A" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M294 314L300 320L306 314" fill="none" stroke="#F2635A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Karar çekirdeği -->
+    <g>
+      <rect x="88" y="320" width="424" height="82" rx="12" fill="#24282C" stroke="#F3EFE7" stroke-opacity="0.14"/>
+      <rect x="88" y="332" width="4" height="58" rx="2" fill="#F2635A"/>
+      <text x="108" y="344" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="12" font-weight="600" letter-spacing="1.4" fill="#E9B45C">KARAR ÇEKİRDEĞİ</text>
+      <text x="108" y="368" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#F3EFE7">content.js → engine → decision</text>
+      <text x="108" y="390" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#A7A39B">video → kanal · üç mod · etiket önceliği</text>
+    </g>
+
+    <path d="M300 402V420" stroke="#F2635A" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M294 416L300 422L306 416" fill="none" stroke="#F2635A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Çıktılar -->
+    <g font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="13" font-weight="700" letter-spacing="0.8" text-anchor="middle">
+      <rect x="88" y="422" width="136" height="34" rx="9" fill="#F3EFE7"/>
+      <text x="156" y="444" fill="#171A1C">GİZLE</text>
+      <rect x="232" y="422" width="136" height="34" rx="9" fill="#C9342B"/>
+      <text x="300" y="444" fill="#FFFDF8">BULANIKLAŞTIR</text>
+      <rect x="376" y="422" width="136" height="34" rx="9" fill="#E9B45C"/>
+      <text x="444" y="444" fill="#171A1C">UYARI</text>
+    </g>
+
+    <!-- Yerel depo -->
+    <g>
+      <rect x="88" y="470" width="424" height="54" rx="12" fill="none" stroke="#F3EFE7" stroke-opacity="0.22" stroke-dasharray="5 5"/>
+      <g fill="none" stroke="#63C9A8" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+        <rect x="104" y="489" width="16" height="13" rx="3"/>
+        <path d="M107 489V485C107 480.5 117 480.5 117 485V489"/>
+      </g>
+      <text x="132" y="492" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" font-weight="700" fill="#F3EFE7">storage.local</text>
+      <text x="132" y="510" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#A7A39B">ayarlar · listeler · PIN karması · db.json kopyası</text>
+    </g>
+  </g>
+
+  <!-- Site paneli -->
+  <g id="site-paneli">
+    <rect x="720" y="124" width="416" height="436" rx="20" fill="#FFFDF8" stroke="#E3DCCF"/>
+
+    <text x="744" y="160" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="13" font-weight="600" letter-spacing="2" fill="#C9342B">SUNUCU</text>
+    <text x="744" y="196" font-family="Georgia, 'Times New Roman', serif" font-size="27" font-weight="700" letter-spacing="-0.4" fill="#171A1C">YouTube Filter Store</text>
+    <text x="744" y="220" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#6B6861">Next.js · PostgreSQL · Caddy</text>
+
+    <g transform="translate(956 150)">
+      <rect width="156" height="28" rx="14" fill="#F7F3EB" stroke="#E3DCCF"/>
+      <circle cx="16" cy="14" r="4" fill="#C9342B"/>
+      <text x="28" y="18.5" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="10" font-weight="600" letter-spacing="0.5" fill="#6B6861">HAM OYLAR SİTEDE</text>
+    </g>
+
+    <!-- Ziyaretçi oyu -->
+    <g>
+      <rect x="744" y="244" width="368" height="62" rx="12" fill="#F7F3EB" stroke="#E3DCCF"/>
+      <text x="762" y="270" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="16" font-weight="700" fill="#171A1C">Ziyaretçi oyu</text>
+      <text x="762" y="290" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#6B6861">imzalı HttpOnly çerez · HMAC IP özeti · tek oy</text>
+    </g>
+
+    <path d="M928 306V326" stroke="#C9342B" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M922 322L928 328L934 322" fill="none" stroke="#C9342B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- PostgreSQL -->
+    <g>
+      <rect x="744" y="328" width="368" height="64" rx="12" fill="#171A1C"/>
+      <g>
+        <ellipse cx="777" cy="347" rx="15" ry="6" fill="#2B3034" stroke="#E9B45C" stroke-width="1.8"/>
+        <path d="M762 347V369C762 377 792 377 792 369V347" fill="#2B3034" stroke="#E9B45C" stroke-width="1.8"/>
+        <path d="M762 358C762 366 792 366 792 358" fill="none" stroke="#E9B45C" stroke-width="1.8"/>
+      </g>
+      <text x="808" y="354" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="700" fill="#F3EFE7">PostgreSQL</text>
+      <text x="808" y="374" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#A7A39B">oylama · kayıt · moderasyon · yayın sürümleri</text>
+    </g>
+
+    <path d="M928 392V412" stroke="#C9342B" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M922 408L928 414L934 408" fill="none" stroke="#C9342B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Moderasyon ve yayın -->
+    <g>
+      <rect x="744" y="414" width="368" height="86" rx="12" fill="#FFFDF8" stroke="#E3DCCF"/>
+      <text x="762" y="440" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="15" font-weight="700" fill="#171A1C">Editör / admin</text>
+      <text x="762" y="460" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#6B6861">3 oy eşiği · kayıt kilidi · gerekçeli moderasyon</text>
+      <text x="762" y="478" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#6B6861">yayın adayı → katı doğrulama → veriSurumu +1</text>
+    </g>
+
+    <text x="744" y="528" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#6B6861">Ham oylar sitede kalır; dışa aktarılan yalnızca sonuç.</text>
+  </g>
+
+  <!-- Sözleşme köprüsü -->
+  <text x="628" y="160" text-anchor="middle" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" font-weight="600" letter-spacing="1.6" fill="#6B6861">SÖZLEŞME</text>
+
+  <g id="sozlesme-karti">
+    <rect x="568" y="176" width="120" height="300" rx="14" fill="#C9342B"/>
+    <rect x="569" y="177" width="118" height="298" rx="13" fill="none" stroke="#98251F"/>
+
+    <path d="M606 200H634L650 216V248H606Z" fill="#FFFDF8" fill-opacity="0.12" stroke="#F3EFE7" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M634 200V216H650" fill="none" stroke="#F3EFE7" stroke-width="2" stroke-linejoin="round"/>
+    <path d="M616 226H640M616 234H640M616 242H630" stroke="#F3EFE7" stroke-width="2" stroke-linecap="round"/>
+
+    <text x="628" y="284" text-anchor="middle" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="19" font-weight="700" fill="#FFFDF8">db.json</text>
+    <path d="M588 302H668" stroke="#F3EFE7" stroke-opacity="0.3"/>
+
+    <g text-anchor="middle" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" fill="#F3EFE7">
+      <text x="628" y="328" font-size="14">sema 1</text>
+      <text x="628" y="352" font-size="14">veriSurumu</text>
+      <text x="628" y="374" font-size="11" fill-opacity="0.78">her yayında +1</text>
+    </g>
+
+    <path d="M588 394H668" stroke="#F3EFE7" stroke-opacity="0.3"/>
+    <text x="628" y="424" text-anchor="middle" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="10" font-weight="600" letter-spacing="0.4" fill="#F3EFE7" fill-opacity="0.7">2 TARAF · 1 DOSYA</text>
+  </g>
+
+  <text x="628" y="500" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#6B6861">paketli veya</text>
+  <text x="628" y="516" text-anchor="middle" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="12" fill="#6B6861">içe aktarılmış</text>
+
+  <!-- Site yayımlar -->
+  <path d="M720 462H696" stroke="#C9342B" stroke-width="2.5" stroke-linecap="round"/>
+  <path d="M698 456L690 462L698 468Z" fill="#C9342B"/>
+
+  <!-- Uzantı yerel kopyaya alır -->
+  <path d="M568 452H552V497H520" fill="none" stroke="#C9342B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M520 491L512 497L520 503Z" fill="#C9342B"/>
+
+  <!-- Alt bilgi -->
+  <path d="M64 586H1136" stroke="#E3DCCF"/>
+  <text x="64" y="612" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="14" fill="#171A1C">Karar tarayıcıda verilir; site bu veriyi sürümlü dosya olarak dışa aktarır.</text>
+  <text x="64" y="636" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#6B6861">Paketli ve içe aktarılan kopyadan veriSurumu büyük olan kazanır; eşitlikte paketli sürüm geçerlidir.</text>
+  <text x="1136" y="612" text-anchor="end" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="11" fill="#6B6861">KAYNAK: docs/db-sema.md</text>
+</svg>

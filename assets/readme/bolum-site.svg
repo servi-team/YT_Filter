@@ -1,0 +1,26 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="132" viewBox="0 0 1200 132" role="img" aria-labelledby="b2-title b2-desc">
+  <title id="b2-title">02 — Site</title>
+  <desc id="b2-desc">Anonim oyların editör moderasyonundan geçip sürümlü db.json dosyasına dönüştüğü site bölümü.</desc>
+
+  <rect width="1200" height="132" rx="22" fill="#F7F3EB"/>
+  <rect x="1" y="1" width="1198" height="130" rx="21" fill="none" stroke="#E3DCCF"/>
+
+  <text x="64" y="92" font-family="Georgia, 'Times New Roman', serif" font-size="68" font-weight="700" letter-spacing="-2" fill="#C9342B">02</text>
+  <rect x="150" y="28" width="2" height="76" fill="#171A1C" fill-opacity="0.14"/>
+  <text x="182" y="40" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="14" font-weight="600" letter-spacing="2.2" fill="#C9342B">TOPLULUK</text>
+  <text x="182" y="76" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" letter-spacing="-0.4" fill="#171A1C">Anonim oylar, editör moderasyonu,</text>
+  <text x="182" y="106" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" letter-spacing="-0.4" fill="#171A1C">sürümlü db.json.</text>
+
+  <g transform="translate(864 26)">
+    <rect width="272" height="80" rx="12" fill="#FFFDF8" stroke="#E3DCCF"/>
+    <circle cx="22" cy="40" r="11" fill="#1E6B52"/>
+    <path d="M17 40L20.5 43.5L27 36.5" fill="none" stroke="#FFFDF8" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+    <text x="42" y="36" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="17" font-weight="700" fill="#171A1C">3 oy</text>
+    <text x="42" y="54" font-family="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif" font-size="13" fill="#6B6861">anonim</text>
+    <path d="M96 40H118" fill="none" stroke="#C9342B" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M112 35L118 40L112 45" fill="none" stroke="#C9342B" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+    <path d="M138 40C138 32 158 28 174 28C190 28 210 32 210 40V60C210 68 190 72 174 72C158 72 138 68 138 60Z" fill="#171A1C"/>
+    <ellipse cx="174" cy="40" rx="36" ry="9" fill="#2B3034" stroke="#F3EFE7" stroke-opacity="0.18"/>
+    <text x="174" y="61" text-anchor="middle" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="13" font-weight="600" fill="#F3EFE7">db.json</text>
+  </g>
+</svg>
