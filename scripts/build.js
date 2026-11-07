@@ -11,6 +11,7 @@
  *   node scripts/build.js --target chromium # Yalnızca Chromium için derler
  *   node scripts/build.js --target firefox  # Yalnızca Firefox için derler
  *   node scripts/build.js --watch       # Değişiklikleri izler ve otomatik günceller
+ *   node scripts/build.js --check       # Çıktılar src/ ile güncel mi denetler (yazmaz)
  */
 
 const fs = require('fs');
@@ -97,6 +98,65 @@ function buildAll(targetFilter = null) {
     }
 }
 
+function dosyalariTopla(dir, kok = dir, harita = new Map()) {
+    for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
+        const tam = path.join(dir, entry.name);
+        if (entry.isDirectory()) dosyalariTopla(tam, kok, harita);
+        else harita.set(path.relative(kok, tam).replace(/\\/g, '/'), tam);
+    }
+    return harita;
+}
+
+function checkTarget(targetKey) {
+    const target = TARGETS[targetKey];
+    if (!target) {
+        console.error(`Bilinmeyen hedef: ${targetKey}`);
+        return false;
+    }
+    if (!fs.existsSync(target.outDir)) {
+        console.error(`✗ [CHECK] ${targetKey}: çıktı klasörü yok (${path.relative(ROOT_DIR, target.outDir)})`);
+        return false;
+    }
+
+    const kaynak = dosyalariTopla(SRC_DIR);
+    const cikti = dosyalariTopla(target.outDir);
+    const farklar = [];
+
+    for (const [rel, srcPath] of kaynak) {
+        const outPath = path.join(target.outDir, rel);
+        if (!fs.existsSync(outPath)) farklar.push(`eksik: ${rel}`);
+        else if (!fs.readFileSync(srcPath).equals(fs.readFileSync(outPath))) farklar.push(`farklı: ${rel}`);
+    }
+    for (const rel of cikti.keys()) {
+        if (rel === 'manifest.json') continue;
+        if (!kaynak.has(rel)) farklar.push(`fazla: ${rel}`);
+    }
+
+    const hedefManifest = path.join(target.outDir, 'manifest.json');
+    if (!fs.existsSync(hedefManifest)) farklar.push('eksik: manifest.json');
+    else if (!fs.readFileSync(target.manifest).equals(fs.readFileSync(hedefManifest))) farklar.push('farklı: manifest.json');
+
+    if (farklar.length) {
+        console.error(`✗ [CHECK] ${targetKey}: ${farklar.length} fark`);
+        farklar.slice(0, 10).forEach(f => console.error(`  - ${f}`));
+        if (farklar.length > 10) console.error(`  … ve ${farklar.length - 10} fark daha`);
+        return false;
+    }
+    console.log(`✓ [CHECK] ${targetKey} güncel`);
+    return true;
+}
+
+function checkAll(targetFilter = null) {
+    const hedefler = targetFilter ? [targetFilter] : Object.keys(TARGETS);
+    const sonuc = hedefler.map(checkTarget).every(Boolean);
+    if (!sonuc) {
+        console.error('\nDerleme çıktıları src/ ile uyumsuz. `node scripts/build.js` çalıştırıp yeniden deneyin.\n');
+        process.exitCode = 1;
+    } else {
+        console.log('\n=== Derleme çıktıları güncel ===\n');
+    }
+}
+
 function startWatch() {
     console.log(`\nİzleme modu aktif. Dosya değişiklikleri bekleniyor... (Ctrl+C ile durdurun)\n`);
     buildAll();
@@ -117,10 +177,13 @@ function startWatch() {
 // Komut satırı argümanlarını ayrıştır
 const args = process.argv.slice(2);
 const isWatch = args.includes('--watch');
+const isCheck = args.includes('--check');
 const targetIdx = args.indexOf('--target');
 const targetFilter = targetIdx !== -1 && args[targetIdx + 1] ? args[targetIdx + 1].toLowerCase() : null;
 
-if (isWatch) {
+if (isCheck) {
+    checkAll(targetFilter);
+} else if (isWatch) {
     startWatch();
 } else {
     buildAll(targetFilter);

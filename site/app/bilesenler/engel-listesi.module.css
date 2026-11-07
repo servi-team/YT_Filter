@@ -1,0 +1,86 @@
+.tabloSar {
+  overflow-x: auto;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.tablo {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.tablo th,
+.tablo td {
+  padding: 0.7rem 0.8rem;
+  border-bottom: 1px solid var(--cizgi);
+  text-align: left;
+  vertical-align: top;
+}
+
+.tablo th {
+  color: var(--ikincil);
+  font-size: 0.72rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.tablo tbody tr:last-child td {
+  border-bottom: 0;
+}
+
+.kimlik {
+  font-family: var(--font-kimlik);
+  font-size: 0.8rem;
+  color: var(--ikincil);
+}
+
+.bildirimAlani {
+  margin-top: 0.75rem;
+}
+
+@media (max-width: 520px) {
+  .tabloSar {
+    overflow: visible;
+  }
+
+  .tablo,
+  .tablo tbody,
+  .tablo tr,
+  .tablo td {
+    display: block;
+    width: 100%;
+  }
+
+  .tablo thead {
+    display: none;
+  }
+
+  .tablo tr {
+    padding: 0.35rem 0;
+    border-bottom: 1px solid var(--cizgi);
+  }
+
+  .tablo tr:last-child {
+    border-bottom: 0;
+  }
+
+  .tablo td {
+    padding: 0.4rem 0.9rem;
+    border: 0;
+  }
+
+  .tablo td[data-etiket]::before {
+    content: attr(data-etiket) ': ';
+    color: var(--ikincil);
+    font-size: 0.72rem;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .tablo td[data-etiket='Eylem']::before {
+    display: block;
+    margin-bottom: 0.35rem;
+  }
+}

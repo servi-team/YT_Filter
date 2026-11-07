@@ -1,0 +1,143 @@
+.panel {
+  padding: 1rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+}
+
+.ust {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+.surumEtiket {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+.surumDeger {
+  margin: 0;
+  font-family: var(--font-baslik);
+  font-size: clamp(1.7rem, 3vw, 2.3rem);
+  font-weight: 600;
+  line-height: 1.1;
+}
+
+.rozet {
+  display: inline-block;
+  margin: 0;
+  padding: 0.25rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.78rem;
+  font-weight: 700;
+}
+
+.rozetGecerli {
+  background: color-mix(in srgb, var(--yesil) 16%, transparent);
+  color: var(--yesil);
+}
+
+.rozetGecersiz {
+  background: color-mix(in srgb, var(--kirmizi) 16%, transparent);
+  color: var(--kirmizi);
+}
+
+.sayaclar {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.8rem;
+  margin-bottom: 1rem;
+}
+
+.sayac {
+  display: grid;
+  gap: 0.2rem;
+  padding: 0.8rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 12px;
+}
+
+.sayacEtiket {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.74rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.sayacDeger {
+  margin: 0;
+  font-family: var(--font-baslik);
+  font-size: clamp(1.4rem, 2.4vw, 1.9rem);
+  font-weight: 600;
+  line-height: 1;
+}
+
+.liste {
+  margin: 0.25rem 0 0;
+  padding-left: 1.15rem;
+}
+
+.jsonBaslik {
+  margin: 1.4rem 0 0.35rem;
+}
+
+.jsonNot {
+  margin: 0;
+  color: var(--ikincil);
+  font-size: 0.82rem;
+  line-height: 1.45;
+}
+
+.json {
+  max-height: 22rem;
+  margin: 0 0 1rem;
+  padding: 0.85rem;
+  overflow: auto;
+  border: 1px solid var(--cizgi);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--murekkep) 4%, var(--yuzey));
+  font-family: var(--font-kimlik);
+  font-size: 0.78rem;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.json:focus-visible {
+  outline: 2px solid var(--murekkep);
+  outline-offset: 2px;
+}
+
+.karakter {
+  margin: -0.5rem 0 0.85rem;
+  color: var(--ikincil);
+  font-size: 0.76rem;
+  text-align: right;
+}
+
+.ekranOkuyucu {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (max-width: 640px) {
+  .sayaclar {
+    grid-template-columns: 1fr;
+  }
+}

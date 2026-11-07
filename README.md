@@ -1,101 +1,177 @@
-# YouTube Filtreleyici 🛡️ (Cross-Browser: Chromium & Firefox)
+# YouTube Filtreleyici
 
-YouTube içeriklerini filtrelemek, video ve kanal bazlı istisnalar tanımlamak, PIN koruması ile ayarları güvenceye almak ve dikkati dağıtan öğeleri (Shorts, yorumlar, önerilenler vb.) gizlemek için geliştirilmiş **çoklu tarayıcı (Chromium & Firefox)** eklentisidir.
+<p align="center">
+  <img src="assets/readme/hero.svg" width="100%" alt="YouTube Filtreleyici: topluluk verisiyle çalışan, Chromium ve Firefox için konu ve etiket tabanlı yerel YouTube filtresi. Marka kalkanı spor, teknoloji, haber ve müzik etiketleriyle çevrilidir.">
+</p>
 
----
+**YouTube'un gürültüsünü topluluk verisiyle süz.** Konu ve etiket tabanlı filtreler Chromium ve Firefox'ta yerel çalışır. Veriyi YouTube Filter Store'daki anonim oylar üretir; uzantı filtre kararı için ağdan veri çekmez.
 
-## 📁 Proje Mimarisi ve Dizin Yapısı
+<p align="center">
+  <img src="docs/gorseller/site-ana-sayfa.png" alt="YouTube Filter Store ana sayfası: topluluk kütüphanesi, YouTube linki inceleme alanı ve son eklenen içerik" width="100%">
+</p>
+<p align="center"><sub>YouTube Filter Store — yerel demo verisiyle alınmış ana sayfa görüntüsü.</sub></p>
 
-Proje, **Tek Gerçek Kaynak (Single Source of Truth)** mimarisine göre yapılandırılmıştır. Tüm iş mantığı ve arayüz `src/` klasöründe geliştirilir; `scripts/build.js` betiği bu kodları tarayıcıya özel manifestlerle harmanlayarak doğrudan yüklenebilir `chromium/` ve `firefox/` klasörlerine senkronize eder.
+<p align="center">
+  <sub><a href="../../releases">Sürüm notları ve paketler →</a></sub>
+</p>
 
-```text
-YT_Filter/
-├── src/                          # Ortak Kaynak Kodlar (Tek Gerçek Kaynak)
-│   ├── background.js             # Kurulum ve varsayılan ayarları yükleyen servis
-│   ├── content.js                # YouTube DOM denetleyicisi, filtreleme & rozetleme motoru
-│   ├── inject_helper.js          # YouTube dahili nesnelerine erişen MAIN world yardımcısı
-│   ├── inject.css                # Filtre ve rozet CSS stilleri
-│   ├── options.html              # Yönetim, PIN, kural ve ayar arayüzü
-│   └── options.js                # Arayüz mantığı, veri yönetimi & içe/dışa aktarma
-│
-├── manifests/                    # Tarayıcıya Özel Manifest V3 Tanımları
-│   ├── manifest.chromium.json    # Chromium MV3 (Service Worker, Web Accessible Resources)
-│   └── manifest.firefox.json     # Firefox MV3 (Gecko ID, Background Scripts)
-│
-├── chromium/                     # Chromium için doğrudan yüklenebilir eklenti klasörü
-├── firefox/                      # Firefox için doğrudan yüklenebilir eklenti klasörü
-│
-├── scripts/
-│   └── build.js                  # Bağımsız, hızlı Node.js derleme ve senkronizasyon aracı
-│
-├── package.json                  # Proje ve derleme komutları
-└── README.md
-```
+## Ne yapar?
 
----
+YouTube'un ana sayfa, arama, kanal ve izleme sayfalarında çalışır. Her içerik önce video düzeyinde değerlendirilir; video verisi yoksa ve kanal kontrolü açıksa kanal verisine bakılır. Sonuç kullanıcıya göre **gizle**, **bulanıklaştır** veya **uyarı sayfası** olarak uygulanır.
 
-## 🚀 Kurulum ve Tarayıcıda Test Etme
+| Uzantı | Site |
+|---|---|
+| YouTube sayfalarını tarayıcıda filtreler. Ayarlar, listeler ve PIN karması yerel kalır. | Anonim oyları toplar, editör/admin moderasyonunu yürütür ve sürümlü `db.json` yayımlar. |
 
-### 1. Firefox'ta Test Etme (Mozilla Firefox / Developer Edition / Nightly)
+## Uzantı
 
-1. Firefox tarayıcınızın adres çubuğuna `about:debugging#/runtime/this-firefox` yazın ve Enter'a basın.
-2. Sağ üstte yer alan **"Geçici Eklenti Yükle..." (Load Temporary Add-on)** butonuna tıklayın.
-3. Proje dizinindeki `firefox/manifest.json` dosyasını seçip açın.
-4. Eklenti hemen aktif hale gelecektir. Araç çubuğundaki eklenti simgesine tıklayarak ayarları açabilirsiniz.
+<p align="center">
+  <img src="assets/readme/bolum-uzanti.svg" width="100%" alt="01 — Uzantı: tarayıcıda çalışır, veri yerelde kalır. Sağda tarayıcı paneli ve filtre anahtarları.">
+</p>
 
-### 2. Chromium'da Test Etme (Google Chrome, Brave, Edge, Opera)
+Chromium ve Firefox için aynı kaynaktan üretilir. Filtre kararı tarayıcıda verilir; YouTube sayfasından ayrılmadan çalışır.
 
-1. Tarayıcınızın adres çubuğuna `chrome://extensions` yazın ve Enter'a basın.
-2. Sağ üst köşedeki **"Geliştirici Modu" (Developer Mode)** seçeneğini açın.
-3. Sol üstteki **"Paketlenmemiş öğe yükle" (Load unpacked)** butonuna tıklayın.
-4. Proje dizinindeki `chromium/` klasörünü seçin.
-5. Eklenti yüklenecek ve YouTube sayfalarında anında çalışmaya başlayacaktır.
+| Filtre | İstisnalar |
+|:---:|:---:|
+| <img src="docs/gorseller/eklenti-filtre.png" alt="YT Filtreleyici Filtre paneli: filtre modu, etiketlenmemiş içerik ve konu seçenekleri" width="320"> | <img src="docs/gorseller/eklenti-istisnalar.png" alt="YT Filtreleyici İstisnalar paneli: beyaz, kara ve özel listeler" width="320"> |
+| <sub>Filtre modu ve konular</sub> | <sub>Beyaz, kara ve özel listeler</sub> |
 
----
+<p align="center">
+  <img src="docs/gorseller/eklenti-gorunum-koyu.png" alt="YT Filtreleyici Görünüm panelinin koyu tema görünümü" width="360">
+</p>
+<p align="center"><sub>Görünüm — arayüz temizleme ve koyu tema</sub></p>
 
-## 💻 Geliştirme ve Derleme Komutları
+### Öne çıkanlar
 
-Geliştirme yaparken dosyaları **yalnızca `src/` veya `manifests/`** klasörlerinde düzenleyin. Yaptığınız değişiklikleri `chromium/` ve `firefox/` klasörlerine aktarmak için aşağıdaki komutları kullanabilirsiniz:
+- **Üç mod:** Serbest, Orta ve Katı; konu ve etiket kurallarını farklı genişlikte uygular.
+- **Esnek engelleme:** Konu ve etiketler için izin ver, gizle, bulanıklaştır veya uyarı sayfası.
+- **İstisnalar:** Beyaz liste, kara liste ve özel listeler; video ya da kanalı tek tıkla listeye ekleme.
+- **Hızlı karar bandı:** Geçerli sayfanın kararını ve sebebini gösterir; "Her zaman izin ver / engelle" aksiyonları sunar.
+- **İsteğe bağlı hızlı ekleme:** Video ve kanal sayfalarında beyaz/kara listeye tek tıkla ekleme rayı.
+- **Sadeleştirme:** Shorts, yorumlar, önerilen videolar ve hareketli küçük resim önizlemelerini ayrı ayrı kapatma.
+- **İsteğe bağlı PIN kilidi:** PIN varsa ayarlar her açılışta istenir; PIN PBKDF2-SHA256 karması olarak saklanır, yazma işlemleri 10 dakikalık oturumla açılır.
+- **Yerel yedekleme:** Liste paketleri, tam ayar yedeği ve isteğe bağlı `db.json` içe/dışa aktarma.
+
+## Site
+
+<p align="center">
+  <img src="assets/readme/bolum-site.svg" width="100%" alt="02 — Site: anonim oylar, editör moderasyonu ve sürümlü db.json. Sağda oy sayacı ve veri dosyası.">
+</p>
+
+YouTube Filter Store, uzantının kullandığı veriyi üreten Next.js uygulamasıdır. Ziyaretçi hesap açmadan oy verir; editörler kayıt ve moderasyon yapar; adminler yayını yönetir.
+
+<p align="center">
+  <img src="docs/gorseller/site-icerik-oylama.png" alt="Video oylama sayfası: konu ve etiket oyları ile topluluk sonucu" width="100%">
+</p>
+<p align="center"><sub>Video oylama sayfası — yerel demo verisi; konu/etiket oyları, 3 oy eşiği ve sonuç paneli.</sub></p>
+
+### Öne çıkanlar
+
+- **Anonim oylama:** İmzalı HttpOnly çerez kimliğiyle hedef + konu/etiket başına tek oy; oy değiştirilebilir, hesap gerekmez.
+- **Topluluk eşiği:** Sonuç için en az 3 oy gerekir. Ana konu net puana göre belirlenir; beraberlikte upvote ve taksonomi sırası kullanılır.
+- **Rol tabanlı yönetim:** Ziyaretçi, editör ve admin rolleri. Herkese açık kayıt yoktur; hesapları admin oluşturur.
+- **Moderasyon:** Oy geri alma, içerik kilitleme, çerez/ağ engeli, gerekçeli moderasyon kaydı ve bakım betiği.
+- **Editör ve admin akışı:** Linkten içerik ekleme, YouTube metadata çözümleme, talep kuyruğu, arşivleme ve metadata düzeltme.
+- **Yayın:** `db.json` önizlemesi, doğrulama, sürüm artırma, yayımlama ve indirme; geçmiş sürümler `?surum=N` ile sabit.
+- **Kamusal deneyim:** Ana sayfa, keşfet, içerik sayfaları, gizlilik, koşullar, iletişim ve Türkçe hata sayfaları.
+
+## Nasıl çalışır?
+
+Uzantı veriyi ağdan çekmez. Konu/etiket kayıtlarını paketlenmiş `db.json` dosyasından veya kullanıcının içe aktardığı bir yedekten okur. Site oyları toplar, moderasyon sonucunu aynı sözleşmeye dönüştürür ve yalnızca yetkili adminin yayımlamasına izin verir.
+
+<p align="center">
+  <img src="assets/readme/karar-akisi.svg" width="100%" alt="Karar akışı: YouTube sayfası ve Filter Store'dan gelen db.json verisi YT Filtreleyici'de birleşir; tarayıcı içinde gizle, bulanıklaştır veya uyarı sayfası kararı verilir.">
+</p>
+
+| Sıra | Karar kuralı |
+|---|---|
+| 1 | Video verisi varsa yalnızca video değerlendirilir. |
+| 2 | Video verisi yoksa ve kanal kontrolü açıksa kanal verisine bakılır. |
+| 3 | Engellenen bir etiket her modda engeller. |
+
+## Mimari
+
+Tek depo iki çalışma alanı barındırır: kararı tarayıcıda veren uzantı ve veriyi üreten Next.js sitesi. İki taraf yalnızca sürümlü `db.json` sözleşmesinde buluşur; ham oylar ve moderasyon kayıtları sitede kalır.
+
+<p align="center">
+  <img src="assets/readme/mimari.svg" width="100%" alt="Mimari: tarayıcıdaki uzantı YouTube DOM'undan karar üretir ve yalnızca yerel depoyu kullanır; Next.js sitesi anonim oyları PostgreSQL'de toplar, moderasyondan geçirir ve sürümlü db.json yayımlar. Uzantı bu dosyayı paketli veya içe aktarılmış kopya olarak okur.">
+</p>
+
+| Katman | Görev | Sınır |
+|---|---|---|
+| **Uzantı** | YouTube DOM'unu izler, yerel kopyadan karar üretir ve gizle / bulanıklaştır / uyarı uygular. | Filtre için ağ isteği yapmaz; ayarlar, listeler ve PIN karması `storage.local` içinde kalır. |
+| **Site** | Anonim oyları toplar, editör/admin moderasyonunu yürütür ve yayın adayını doğrular. | Ham oylar PostgreSQL'de kalır; dışa aktarılan dosya yalnızca sonuçları taşır. |
+| **Köprü** | Sürümlü `db.json` (sema 1) paketlenir veya içe aktarılır. | `veriSurumu` büyük olan kazanır; eşitlikte paketli sürüm kullanılır. |
+
+## Geliştirme
+
+<p align="center">
+  <img src="assets/readme/bolum-gelistirme.svg" width="100%" alt="03 — Geliştirme: iki parça, tek depo. Testler, tip denetimi ve derleme; terminalde npm run build.">
+</p>
+
+Uzantı kaynağı `src/`, site kaynağı `site/` altındadır. `chromium/` ve `firefox/` derleme çıktısıdır; doğrudan düzenlenmez.
+
+Gereksinimler: **Node.js 20+** (uzantı), **Node.js 22.18+** (site; `.nvmrc` 22.23.4).
 
 ```bash
-# Her iki tarayıcı sürümünü de anında derle ve senkronize et
+# Uzantı
+npm install
 npm run build
+npm test
+npm run build:check
 
-# Yalnızca Chromium klasörünü güncelle
-npm run build:chromium
-
-# Yalnızca Firefox klasörünü güncelle
-npm run build:firefox
-
-# Canlı izleme modu (src/ veya manifests/ değiştiğinde otomatik senkronize eder)
-npm run watch
+# Site
+cd site
+npm install
+Copy-Item .env.example .env
+npm run dev
+npm test
+npm run tip
+npm run build
 ```
 
-> **Not:** Derleme betiği sıfır harici bağımlılık (`zero dependency`) ile saf Node.js kullanır. Herhangi bir ağır `node_modules` paketine ihtiyaç duymaz, milisaniyeler içinde tamamlanır.
+## Proje yapısı
 
----
+```text
+src/                  Uzantı kaynakları
+manifests/            Chromium ve Firefox manifestleri
+scripts/              Derleme, ikon ve paketleme betikleri
+tests/                Node testleri + tests/smoke/ (jsdom)
+chromium/             Derlenmiş Chromium uzantısı
+firefox/              Derlenmiş Firefox uzantısı
+site/                 Next.js + TypeScript + PostgreSQL site uygulaması
+docs/                 Ürün kuralları, şemalar, QA ve gizlilik belgeleri
+docs/gorseller/       README ekran görüntüleri
+assets/readme/        README hero, bölüm şeritleri ve mimari SVG'leri
+```
 
-## ✨ Temel Özellikler
+## Belgeler
 
-- 🔒 **PIN Güvenlik Koruması:** Ayarlar ekranı varsayılan olarak `1234` PIN kodu ile korunur. PIN kodu değiştirilebilir veya istenirse koruma devre dışı bırakılabilir.
-- 🏷️ **Dinamik Etiket ve Eylem Kuralları:**
-  - `Küfür/Argo`, `Şiddet`, `Eğitici`, `Güvenli`, `Etiketlenmemiş` temel etiketleri.
-  - İstenildiği kadar **Yeni Özel Etiket** tanımlayabilme (örn. "Oyun", "Haber", "Dizi").
-  - Her etiket için bağımsız eylem: **İzin Ver**, **Bulanıklaştır (Blur)**, **Tamamen Kaldır**.
-  - Her etiket için rozet görünürlüğü: **Rozet Göster** veya **Rozet Gizle**.
-- 🎯 **Kanal ve Video Eşleştirme:**
-  - Kanal handle'ı (`@kanaladi`), Video ID'si (`dQw4w9WgXcQ`) veya doğrudan YouTube video linkini yapıştırarak istediğiniz kategoriye kolayca atayabilme.
-- 👁️ **Arayüz Temizleme Ayarları:**
-  - YouTube Shorts videolarını ve sol menü butonunu gizleme.
-  - Yorumlar bölümünü gizleme.
-  - Yan paneldeki önerilen videoları gizleme.
-  - Küçük resim (thumbnail) üstüne gelince otomatik önizleme oynatmasını engelleme.
-- 🌓 **Koyu / Açık Tema Desteği:** Ayarlar panelinde anlık tema geçişi.
-- 💾 **Yedekleme ve İçe/Dışa Aktarma:** Tüm ayarları ve özel eşleştirmeleri tek tıkla `JSON` formatında dışa aktarma ve geri yükleme.
-- 🌐 **İçerik İçi ve Dış Arama Koruması:** YouTube ana sayfası, arama sonuçları, kanal sayfaları, video oynatma sayfası ve harici iframe/embed oynatıcılar üzerinde tam denetim.
+| Belge | Kapsam |
+|---|---|
+| [`docs/SISTEM_TASARIMI.md`](docs/SISTEM_TASARIMI.md) | Ürün kurallarının tek kaynağı |
+| [`docs/db-sema.md`](docs/db-sema.md) | `db.json` sözleşmesi ve sürüm kuralları |
+| [`docs/SITE_HAZIRLIK.md`](docs/SITE_HAZIRLIK.md) | Site rolleri ve ürün kararları |
+| [`site/README.md`](site/README.md) | Site kurulumu, komutları ve mimarisi |
+| [`docs/SUNUCU_KURULUM.md`](docs/SUNUCU_KURULUM.md) | Docker Compose ile sunucu kurulumu |
+| [`docs/SITE_QA.md`](docs/SITE_QA.md) | Elle QA ve kabul listesi |
+| [`docs/GIZLILIK.md`](docs/GIZLILIK.md) | Uzantı gizlilik politikası |
+| [`CHANGELOG.md`](CHANGELOG.md) | Değişiklik geçmişi |
 
----
+## Gizlilik ve güvenlik
 
-## 📜 Lisans
+Uzantı hiçbir kişisel veri toplamaz, sunucuya göndermez ve satmaz. Ayarlar, listeler, PIN karması, sayfadan toplanan kanal adı/avatarı ve isteğe bağlı `db.json` kopyası yalnızca tarayıcının yerel deposunda tutulur.
 
-Bu proje [Apache License 2.0](LICENSE) ile lisanslanmıştır.
+Site, anonim oy için imzalı HttpOnly çerez kimliği ve `IP_HASH_SECRET` ile üretilmiş HMAC-SHA256 IP özeti kullanır; ham IP saklamaz. Analitik, reklam ve üçüncü taraf izleme yoktur. Ayrıntılar: [`docs/GIZLILIK.md`](docs/GIZLILIK.md) ve sitenin `/gizlilik` sayfası.
+
+## Sürüm ve lisans
+
+Son sürüm **2.1.0**. Paketler ve sürüm notları: [GitHub Releases](../../releases). Değişiklikler: [`CHANGELOG.md`](CHANGELOG.md).
+
+[Apache License 2.0](LICENSE). Bu proje YouTube'un resmî bir ürünü değildir.
+
+## Notlar
+
+- Paketli `src/data/db.json` şu an örnek düzeyinde; yaygın YouTube içerikleri "bilinmeyen" olarak değerlendirilir. Kapsam, site yayını ve topluluk oylarıyla büyür.
+- Gerçek YouTube üzerinde uçtan uca tarayıcı/ekran okuyucu QA'sı ve Docker/PostgreSQL/Caddy üretim denemesi bu makinede yapılmadı.
+- Site içi "Bildir" formu yoktur; iletişim [GitHub Issues](../../issues) üzerindendir.

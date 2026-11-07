@@ -1,12 +1,22 @@
 {
   "name": "yt-filter",
-  "version": "1.0.0",
+  "version": "2.1.0",
   "description": "YouTube Filtreleyici - Çoklu Tarayıcı Eklentisi (Chromium & Firefox)",
   "scripts": {
+    "test": "node --test \"tests/**/*.test.js\"",
     "build": "node scripts/build.js",
     "build:chromium": "node scripts/build.js --target chromium",
     "build:firefox": "node scripts/build.js --target firefox",
+    "build:check": "node scripts/build.js --check",
+    "ikon": "node scripts/ikon-uret.js",
+    "paket": "node scripts/paket.js",
     "watch": "node scripts/build.js --watch"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "devDependencies": {
+    "jsdom": "^27.0.0"
   },
   "keywords": [
     "youtube",

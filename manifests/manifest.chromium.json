@@ -1,15 +1,20 @@
 {
   "manifest_version": 3,
   "name": "YouTube Filtreleyici",
-  "version": "1.0",
-  "description": "Özel kanal istisnaları, video etiketleme, PIN koruması ve otomatik senkronizasyon içeren gelişmiş filtreleyici.",
+  "version": "2.1.0",
+  "minimum_chrome_version": "111",
+  "description": "YouTube'u konu ve etiketlere göre filtreler; kanal/video istisnaları, kararsız içerik seçimi ve PIN kilidi.",
+  "icons": {
+    "16": "icons/icon16.png",
+    "32": "icons/icon32.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  },
   "permissions": [
     "storage"
   ],
   "host_permissions": [
-    "*://*.youtube.com/*",
-    "*://*.google.com/*",
-    "*://*.google.com.tr/*"
+    "*://*.youtube.com/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -17,11 +22,9 @@
   "content_scripts": [
     {
       "matches": [
-        "*://*.youtube.com/*", 
-        "*://*.google.com/*", 
-        "*://*.google.com.tr/*"
+        "*://*.youtube.com/*"
       ],
-      "js": ["content.js"],
+      "js": ["core/taxonomy.js", "core/pin.js", "core/kilit.js", "core/decision.js", "core/migrate.js", "core/db.js", "core/engine.js", "content.js"],
       "css": ["inject.css"],
       "run_at": "document_idle",
       "all_frames": true
@@ -37,12 +40,17 @@
   ],
   "web_accessible_resources": [
     {
-      "resources": ["inject_helper.js", "inject.css"],
+      "resources": ["inject_helper.js", "inject.css", "data/db.json"],
       "matches": ["*://*.youtube.com/*"]
     }
   ],
   "action": {
     "default_title": "Filtre Ayarları",
-    "default_popup": "options.html"
+    "default_popup": "options.html",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "32": "icons/icon32.png",
+      "48": "icons/icon48.png"
+    }
   }
 }

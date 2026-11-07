@@ -1,0 +1,10 @@
+node_modules
+.next
+.env
+.env*.local
+*.tsbuildinfo
+next-env.d.ts
+.pglite/
+.pglite-dev/
+# next dev tarafından üretilen yerel ajan notu
+AGENTS.md

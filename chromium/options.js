@@ -1,25 +1,65 @@
 /**
  * YouTube Filtreleyici - Options Script
- * Hem Chromium hem de Firefox ile %100 uyumlu, modern arayüz yöneticisi.
+ * Hem Chromium hem de Firefox ile uyumlu arayüz yöneticisi.
+ *
+ * Veri modeli: storage.local içinde { surum: 2, ayar: {...} } (bkz. core/taxonomy.js varsayilanAyar).
+ * Eski model (customMapping + preferences) ilk açılışta bir kez yeni modele taşınır (core/migrate.js);
+ * eski veri "eskiYedek" altında saklanır.
  */
 
 const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
 
-let mevcutVeri = {};
-let aktifFiltre = 'all';
+let mevcutVeri = {};          // storage içeriği (ayarlar, PIN, ...)
+let ayar = null;              // yeni model; mevcutVeri.ayar ile aynı nesne
+let paketliDb = null;         // paketle gelen data/db.json (ham)
+let veriTabani = YTF.dbKur(null);
+let aktifFiltre = 'all';      // 'all' | 'beyaz' | 'kara' | 'ozel:<liste adı>'
 let aramaMetni = '';
 let aktifYouTubeIcerigi = null;
+let kanalBilgileri = {};      // sayfadan toplanan kanal adı/avatarı (yalnızca görüntüleme)
+let kilitZamanlayici = null;      // PIN oturumu dolunca kilitleyen zamanlayıcı
+let pinBeklemeZamanlayici = null; // hata beklemesi geri sayımı
+let pinMesgul = false;            // aynı anda ikinci PIN doğrulamasını engeller
 
-const coreTags = ["profanity", "violence", "educational", "safe", "untagged"];
-const tagLabels = { 
-    "profanity": "Küfür/Argo", 
-    "violence": "Şiddet", 
-    "educational": "Eğitici", 
-    "safe": "Güvenli", 
-    "untagged": "Etiketlenmemiş" 
+const trKucuk = (x) => String(x == null ? '' : x).toLocaleLowerCase('tr-TR');
+
+const MODLAR = YTF.MODLAR;    // ['serbest', 'orta', 'kati']
+const MOD_BILGI = {
+    serbest: 'Videonun herhangi bir konusu izinliyse video açılır. Engellediğiniz bir etiket (küfür, şiddet vb.) varsa yine de engellenir. Kararsız kalan konu ve etiketlere izin verilir.',
+    orta: 'Yalnızca ana konuya bakılır. Ana konu izinliyse ve video engellediğiniz bir etiketi taşımıyorsa video açılır. Kararsızları aşağıdan siz seçersiniz.',
+    kati: 'Videonun ana veya yan konularından biri engelliyse ya da engellediğiniz bir etiketi varsa video engellenir. Kararsız konu ve etiketler de (engellediklerinizse) engellenir.'
+};
+const KARARSIZ_IPUCU = {
+    serbest: 'Serbest modda kararsız konu ve etiketlere her zaman izin verilir.',
+    orta: {
+        izinver: 'Topluluk oylamasında sonuç çıkmamış konu ve etiketler engellemez.',
+        engelle: 'Kararsız kalan bir konu ya da etiketi siz engelliyorsanız, o video da engellenir.'
+    },
+    kati: 'Katı modda kararsız konu ve etiketler (engellediklerinizse) her zaman engellenir.'
+};
+const EYLEM_SECENEKLERI = [
+    ['kaldir', 'Gizle'],
+    ['bulaniklastir', 'Bulanıklaştır'],
+    ['uyari', 'Uyarı sayfası']
+];
+const ETIKETLENMEMIS_IPUCU = {
+    null: 'Henüz seçmediniz. Siz seçene kadar etiketlenmemiş içerikler engellenir.',
+    ac: 'Veritabanında olmayan kanal ve videolar normal şekilde açılır.',
+    engelle: 'Veritabanında olmayan kanal ve videolar engellenir. Bilinmeyen içerikte elinizde yalnızca istisna vardır; “Her zaman izin ver” ile tek tek açabilirsiniz.'
 };
 
-// Storage Yardımcıları
+const SVG_COP = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>';
+const SVG_KANAL = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>';
+const SVG_VIDEO = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>';
+
+function el(etiket, sinif, metin) {
+    const e = document.createElement(etiket);
+    if (sinif) e.className = sinif;
+    if (metin !== undefined) e.textContent = metin;
+    return e;
+}
+
+// ---- Storage yardımcıları, toast ----
 async function getStorageData(keys = null) {
     if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
         return await browser.storage.local.get(keys);
@@ -38,7 +78,15 @@ async function setStorageData(items) {
     });
 }
 
-// Toast Bildirimi
+async function removeStorageData(keys) {
+    if (typeof browser !== 'undefined' && browser.storage && browser.storage.local) {
+        return await browser.storage.local.remove(keys);
+    }
+    return new Promise((resolve) => {
+        chrome.storage.local.remove(keys, () => resolve());
+    });
+}
+
 function showToast(message) {
     const toast = document.getElementById('toastNotification');
     const toastMsg = document.getElementById('toastMessage');
@@ -51,21 +99,115 @@ function showToast(message) {
     }, 2400);
 }
 
+
+// ---- Ayar hazırlama / kaydetme ----
+
+// Yeni modeldeyse okur; eski modeldeyse bir kez taşır ve kalıcı yazar; hiç veri yoksa varsayılanı kullanır.
+async function ayariHazirla() {
+    if (mevcutVeri.surum >= 2 && mevcutVeri.ayar) {
+        ayar = YTF.ayarTemizle(mevcutVeri.ayar);
+        return;
+    }
+    const eskiVar = !!(mevcutVeri.customMapping || mevcutVeri.preferences);
+    const yama = eskiVar ? YTF.migrate(mevcutVeri) : null;
+    ayar = YTF.ayarTemizle(yama ? yama.ayar : null); // eski veri yoksa: varsayılan (etiketlenmemis: null -> ilk seçim)
+    const yazilacak = { surum: 2, ayar };
+    if (yama) yazilacak.eskiYedek = yama.eskiYedek;
+    await setStorageData(yazilacak);
+    Object.assign(mevcutVeri, yazilacak);
+}
+
+// ---- Yazma kapısı: PIN varsa ve oturum kapalıysa hiçbir ayar yazılmaz ----
+
+function yazmaIzniVar(simdi = Date.now()) {
+    if (!YTF.kilitGerekli(mevcutVeri)) return true;
+    if (YTF.kilitAcik(mevcutVeri, simdi)) return true;
+    kilitle();
+    return false;
+}
+
+async function veriyiYenidenYukle() {
+    mevcutVeri = (await getStorageData(null)) || {};
+    if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
+    ayar = YTF.ayarTemizle(mevcutVeri.ayar);
+    arayuzuDoldur();
+}
+
+async function yazmaReddedildi() {
+    await veriyiYenidenYukle();
+    showToast('Oturum süresi doldu; yeniden giriş yapın');
+}
+
+async function ayarKaydet() {
+    if (!yazmaIzniVar()) {
+        await yazmaReddedildi();
+        return false;
+    }
+    mevcutVeri.ayar = ayar;
+    await setStorageData({ surum: 2, ayar });
+    return true;
+}
+
+// Paketle gelen veritabanını ve varsa kullanıcının içe aktardığı veritabanını okur.
+// Hata olursa boş veritabanıyla devam eder.
+async function veriTabaniniYukle() {
+    try {
+        const yanit = await fetch(browserAPI.runtime.getURL('data/db.json'));
+        paketliDb = await yanit.json();
+    } catch (e) {
+        paketliDb = null;
+    }
+    const secilen = YTF.dbSec(paketliDb, mevcutVeri.dbOverride);
+    veriTabani = YTF.dbKur(secilen);
+    renderDbDurumu();
+}
+
+function renderDbDurumu() {
+    const kutu = document.getElementById('dbDurum');
+    const sifirla = document.getElementById('btnDbSifirla');
+    if (!kutu) return;
+
+    const paketSurum = Number(paketliDb && paketliDb.veriSurumu) || 0;
+    const override = mevcutVeri.dbOverride;
+    const overrideSurum = Number(override && override.veriSurumu) || 0;
+    const overrideAktif = !!override && YTF.dbSec(paketliDb, override) === override;
+    const sayac = veriTabani.sayac;
+
+    let metin = override
+        ? `Paketli: v${paketSurum} · İçe aktarılan: v${overrideSurum}${overrideAktif ? ' (kullanılıyor)' : ' (paketli veri daha yeni)'}`
+        : `Paketli veritabanı: v${paketSurum}`;
+    metin += ` · ${sayac.kanal} kanal, ${sayac.video} video`;
+    if (sayac.atlanan) metin += ` · ${sayac.atlanan} geçersiz kayıt atlandı`;
+    kutu.textContent = metin;
+    if (sifirla) sifirla.style.display = override ? 'block' : 'none';
+}
+
+function jsonIndir(veri, dosyaAdi) {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(veri, null, 2));
+    const indirmeLinki = document.createElement('a');
+    indirmeLinki.setAttribute("href", dataStr);
+    indirmeLinki.setAttribute("download", dosyaAdi);
+    document.body.appendChild(indirmeLinki);
+    indirmeLinki.click();
+    indirmeLinki.remove();
+}
+
 // Başlangıç Yüklemesi
 document.addEventListener('DOMContentLoaded', async () => {
     const veri = await getStorageData(null);
     mevcutVeri = veri || {};
-    if (!mevcutVeri.customMapping) mevcutVeri.customMapping = {};
-    if (!mevcutVeri.preferences) mevcutVeri.preferences = {};
+    kanalBilgileri = YTF.kanalBilgileriTemizle(mevcutVeri.kanalBilgileri);
     if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
-    
-    // Varsayılan Etiketleri Tanımla
-    coreTags.forEach(tag => {
-        if (!mevcutVeri.preferences[tag]) {
-            mevcutVeri.preferences[tag] = { visibility: "Show Badge", enforcement: "Allow Video", adi: tagLabels[tag] };
-        }
-    });
-    
+
+    // Eski kayıt geçişi: henüz bayrak yazılmamış düz metin "1234" PIN bellekte varsayılan sayılır;
+    // kalıcı yazım ilk başarılı girişte yapılır.
+    if (mevcutVeri.pinKodu === '1234' && mevcutVeri.pinVarsayilan === undefined) {
+        mevcutVeri.pinVarsayilan = true;
+    }
+
+    await ayariHazirla();
+    await veriTabaniniYukle();
+
     document.getElementById('lblKurulumTarihi').innerText = veri.kurulumTarihi || "Bilinmiyor";
 
     // Temayı Başlat
@@ -79,7 +221,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     // PIN İpucu Kontrolü (İlk giriş yapıldıysa veya PIN değiştirildiyse ipucunu gösterme)
     const pinIpucu = document.getElementById('pinVarsayilanIpucu');
-    if (mevcutVeri.ilkGirisYapildi || (mevcutVeri.pinKodu && mevcutVeri.pinKodu !== "1234")) {
+    if (mevcutVeri.ilkGirisYapildi || mevcutVeri.pinVarsayilan !== true) {
         if (pinIpucu) pinIpucu.style.display = 'none';
     } else {
         if (pinIpucu) pinIpucu.style.display = 'inline-flex';
@@ -88,22 +230,23 @@ document.addEventListener('DOMContentLoaded', async () => {
     // Aktif YouTube Sekmesini Algıla (Ama henüz açma)
     await algilaAktifYouTubeSekmesi();
 
-    // PIN Kontrolü
-    if (mevcutVeri.ayarlar.pinIptal || !mevcutVeri.pinKodu) {
-        kilidiAc();
-    } else {
-        kilitle();
-    }
+    // PIN Kontrolü: PIN varsa açık içerik oturumuna rağmen her açılışta PIN ister
+    YTF.kilitGerekli(mevcutVeri) ? kilitle() : kilidiAc();
 
     // Olay Dinleyicilerini Kur
     initEvents();
 });
 
-// Arayüz Kilidini Aç
 function kilidiAc() {
     document.getElementById('pinEkrani').style.display = 'none';
     document.getElementById('anaArayuz').style.display = 'block';
-    
+    document.getElementById('btnTemaGecis').style.display = 'flex';
+
+    // Açık bekleme varsa temizlenir; PIN doğrulandığı için yeniden deneme serbest
+    clearInterval(pinBeklemeZamanlayici);
+    pinBeklemeZamanlayici = null;
+    document.getElementById('btnPinOnayla').disabled = false;
+
     // İlk giriş yapıldı olarak işaretle ve ipucunu kalıcı olarak kapat
     if (!mevcutVeri.ilkGirisYapildi) {
         mevcutVeri.ilkGirisYapildi = true;
@@ -112,14 +255,16 @@ function kilidiAc() {
     const pinIpucu = document.getElementById('pinVarsayilanIpucu');
     if (pinIpucu) pinIpucu.style.display = 'none';
 
-    // PIN hala 1234 ise uyarı banner'ını göster
+    // Yeni kurulumda PIN henüz seçilmediyse seçim kartını göster
+    const kurulumKarti = document.getElementById('pinKurulumKarti');
+    if (kurulumKarti) {
+        kurulumKarti.style.display = (!mevcutVeri.pinKodu && !mevcutVeri.pinKurulumAtlandi) ? 'block' : 'none';
+    }
+
+    // PIN hâlâ varsayılan (1234) ise uyarı banner'ını göster
     const uyariBanner = document.getElementById('pinDegistirUyarisi');
     if (uyariBanner) {
-        if (mevcutVeri.pinKodu === "1234" && !mevcutVeri.pinDegistirildi) {
-            uyariBanner.style.display = 'flex';
-        } else {
-            uyariBanner.style.display = 'none';
-        }
+        uyariBanner.style.display = (mevcutVeri.pinVarsayilan === true) ? 'flex' : 'none';
     }
 
     // Quick Action Banner: SADECE KİLİT AÇILDIKTAN SONRA GÖRÜNÜR OLUR!
@@ -138,59 +283,729 @@ function kilidiAc() {
     } else {
         document.getElementById('btnPinKilitle').style.display = 'none';
     }
-    
+
+    // Kısa oturum: süre dolunca yeniden kilitle; oturum yoksa zamanlayıcı kurulmaz
+    clearTimeout(kilitZamanlayici);
+    kilitZamanlayici = null;
+    const kalan = Number(mevcutVeri.pinKilitBitis || 0) - Date.now();
+    if (kalan > 0) {
+        kilitZamanlayici = setTimeout(() => {
+            // PIN bu arada iptal edilmişse kilit ekranı açılmaz
+            if (YTF.kilitGerekli(mevcutVeri)) kilitle();
+        }, kalan);
+    }
+
     arayuzuDoldur();
 }
 
-// Arayüzü Kilitle
+// "Kilitle": ana arayüzü kapatır, PIN ekranını gösterir; depo yazımı yapmaz.
 function kilitle() {
+    clearTimeout(kilitZamanlayici);
+    kilitZamanlayici = null;
+    clearInterval(pinBeklemeZamanlayici);
+    pinBeklemeZamanlayici = null;
+
     document.getElementById('anaArayuz').style.display = 'none';
 
     // Kilitliyken Quick Action Banner ASLA görünmez ve seçilemez
     const banner = document.getElementById('quickActionBanner');
     if (banner) banner.style.display = 'none';
 
+    // Kilitliyken tema düğmesi de gizlenir (koyu tema yazımı PIN'siz yapılamaz)
+    document.getElementById('btnTemaGecis').style.display = 'none';
+
     document.getElementById('pinEkrani').style.display = 'flex';
     document.getElementById('btnPinKilitle').style.display = 'none';
     document.getElementById('pinGiris').value = '';
-    document.getElementById('pinHata').style.display = 'none';
+    const btnOnayla = document.getElementById('btnPinOnayla');
+    if (YTF.hataBeklemesi(mevcutVeri) > 0) {
+        btnOnayla.disabled = true;
+        pinBeklemeGuncelle();
+    } else {
+        btnOnayla.disabled = false;
+        document.getElementById('pinHata').style.display = 'none';
+        document.getElementById('pinHata').classList.remove('pin-bekleme');
+    }
 
     // İlk giriş yapıldıysa kilit ekranında 1234 yazısı artık asla gösterilmez
     const pinIpucu = document.getElementById('pinVarsayilanIpucu');
     if (pinIpucu) {
-        if (mevcutVeri.ilkGirisYapildi || (mevcutVeri.pinKodu && mevcutVeri.pinKodu !== "1234")) {
+        if (mevcutVeri.ilkGirisYapildi || mevcutVeri.pinVarsayilan !== true) {
             pinIpucu.style.display = 'none';
         } else {
             pinIpucu.style.display = 'inline-flex';
         }
     }
 
-    setTimeout(() => document.getElementById('pinGiris').focus(), 50);
+    setTimeout(() => {
+        const giris = document.getElementById('pinGiris');
+        if (giris) giris.focus();
+    }, 50);
 }
 
-// PIN Onayı
-function pinDogrula() {
-    const girilen = document.getElementById('pinGiris').value;
-    const pinKutu = document.getElementById('pinEkrani');
-    if (girilen === mevcutVeri.pinKodu || !mevcutVeri.pinKodu) {
-        document.getElementById('pinHata').style.display = 'none';
-        kilidiAc();
-    } else {
-        document.getElementById('pinHata').style.display = 'block';
-        pinKutu.classList.remove('pin-error-shake');
-        void pinKutu.offsetWidth; // Reflow tetikle
-        pinKutu.classList.add('pin-error-shake');
+// "Kilitle" düğmesi: arayüzü anında kilitler ve içerik oturumunu depodan siler.
+async function kilitleVeOturumuSil() {
+    kilitle(); // depo yazımı sürerken arayüz hemen kilitlenir (senkron geri bildirim)
+    await removeStorageData(['pinKilitBitis']);
+    mevcutVeri.pinKilitBitis = 0;
+}
+
+// Bekleme süresince kalan saniyeleri pinHata'ya yazar; süre bitince onay düğmesini açar.
+function pinBeklemeGuncelle() {
+    const hata = document.getElementById('pinHata');
+    const btnOnayla = document.getElementById('btnPinOnayla');
+    clearInterval(pinBeklemeZamanlayici);
+    pinBeklemeZamanlayici = null;
+
+    const guncelle = () => {
+        const kalanMs = YTF.hataBeklemesi(mevcutVeri);
+        if (kalanMs > 0) {
+            btnOnayla.disabled = true;
+            hata.style.display = 'block';
+            hata.classList.add('pin-bekleme');
+            hata.textContent = `Çok fazla hatalı deneme yapıldı. ${Math.ceil(kalanMs / 1000)} saniye sonra tekrar deneyin.`;
+        } else {
+            clearInterval(pinBeklemeZamanlayici);
+            pinBeklemeZamanlayici = null;
+            btnOnayla.disabled = false;
+            hata.classList.remove('pin-bekleme');
+            hata.textContent = 'Hatalı PIN kodu, tekrar deneyin!';
+        }
+    };
+
+    guncelle();
+    if (pinBeklemeZamanlayici === null && YTF.hataBeklemesi(mevcutVeri) > 0) {
+        pinBeklemeZamanlayici = setInterval(guncelle, 1000);
+        hata.style.display = 'block';
     }
 }
 
-// Olay Dinleyicileri
+// Yeni/ilk PIN'i kaydeder, korumayı açar ve içerik oturumunu başlatır.
+// PIN koruması daha önce kapatılmış olsa bile yeni PIN korumayı yeniden etkinleştirir.
+async function pinKurVeOturumAc(pin) {
+    const karma = await YTF.pinKarmala(pin); // PIN depoda düz metin tutulmaz
+    const bitis = YTF.kilitBitisZamani(Date.now());
+    mevcutVeri.pinKodu = karma;
+    mevcutVeri.pinDegistirildi = true;
+    mevcutVeri.ilkGirisYapildi = true;
+    mevcutVeri.pinVarsayilan = pin === '1234';
+    mevcutVeri.ayarlar.pinIptal = false;
+    mevcutVeri.pinKilitBitis = bitis;
+    await setStorageData({
+        pinKodu: karma,
+        pinDegistirildi: true,
+        ilkGirisYapildi: true,
+        pinVarsayilan: pin === '1234',
+        pinKilitBitis: bitis,
+        ayarlar: mevcutVeri.ayarlar
+    });
+    const iptalKutusu = document.getElementById('chkPinIptal');
+    if (iptalKutusu) iptalKutusu.checked = false;
+    const kilitleBtn = document.getElementById('btnPinKilitle');
+    if (kilitleBtn) kilitleBtn.style.display = 'flex';
+}
+
+async function pinDogrula() {
+    if (pinMesgul) return;
+
+    // Bekleme sürüyorsa yeni deneme kabul edilmez; kalan süre gösterilir
+    if (YTF.hataBeklemesi(mevcutVeri) > 0) {
+        pinBeklemeGuncelle();
+        return;
+    }
+
+    pinMesgul = true;
+    const btnOnayla = document.getElementById('btnPinOnayla');
+    btnOnayla.disabled = true;
+    try {
+        const girilen = document.getElementById('pinGiris').value;
+        const pinKutu = document.getElementById('pinEkrani');
+        const dogru = await YTF.pinDogrula(girilen, mevcutVeri);
+        if (dogru) {
+            // Eski sürümden kalan düz metin kayıt ilk başarılı girişte karma'ya yükseltilir.
+            const yazilacak = { pinHataSayisi: 0, pinHataBitis: 0, pinVarsayilan: girilen === '1234' };
+            mevcutVeri.pinHataSayisi = 0;
+            mevcutVeri.pinHataBitis = 0;
+            mevcutVeri.pinVarsayilan = girilen === '1234';
+            if (YTF.pinDuzMetinMi(mevcutVeri.pinKodu)) {
+                const karma = await YTF.pinKarmala(girilen);
+                mevcutVeri.pinKodu = karma;
+                yazilacak.pinKodu = karma;
+            }
+            // PIN doğrulandıysa kısa oturum aç
+            const bitis = YTF.kilitBitisZamani(Date.now());
+            mevcutVeri.pinKilitBitis = bitis;
+            yazilacak.pinKilitBitis = bitis;
+            await setStorageData(yazilacak);
+
+            // Hata durumunu temizle
+            clearInterval(pinBeklemeZamanlayici);
+            pinBeklemeZamanlayici = null;
+            const hata = document.getElementById('pinHata');
+            hata.style.display = 'none';
+            hata.classList.remove('pin-bekleme');
+            hata.textContent = 'Hatalı PIN kodu, tekrar deneyin!';
+            btnOnayla.disabled = false;
+            kilidiAc();
+        } else {
+            const sonuc = YTF.hataKaydet(mevcutVeri);
+            Object.assign(mevcutVeri, sonuc); // yalnızca dönen iki alan birleştirilir
+            await setStorageData(sonuc);
+            document.getElementById('pinHata').style.display = 'block';
+            pinKutu.classList.remove('pin-error-shake');
+            void pinKutu.offsetWidth; // Reflow tetikle
+            pinKutu.classList.add('pin-error-shake');
+            if (Number(sonuc.pinHataBitis || 0) > 0) {
+                btnOnayla.disabled = true;
+                pinBeklemeGuncelle();
+            } else {
+                document.getElementById('pinHata').textContent = 'Hatalı PIN kodu, tekrar deneyin!';
+            }
+        }
+    } finally {
+        pinMesgul = false;
+        const pinEkrani = document.getElementById('pinEkrani');
+        if (pinEkrani && pinEkrani.style.display === 'flex' && YTF.hataBeklemesi(mevcutVeri) <= 0) {
+            btnOnayla.disabled = false;
+        }
+    }
+}
+
+
+// ---- Liste işlemleri ----
+
+const REZERVE = YTF.REZERVE_LISTE_ADLARI; // ['beyaz liste', 'kara liste']
+
+function ozelListeBul(ad) {
+    return ayar.listeler.ozel.find(l => l.ad === ad) || null;
+}
+
+// Bir anahtarı (küçük harfli kanal @adı, kanal ID'si veya video ID'si) tüm listelerden çıkarır.
+function listedenCikar(anahtar) {
+    delete ayar.listeler.beyaz[anahtar];
+    delete ayar.listeler.kara[anahtar];
+    ayar.listeler.ozel.forEach(l => { delete l.uyeler[anahtar]; });
+}
+
+// hedef: 'beyaz' | 'kara' | 'ozel:<ad>'. Bir anahtar tek bir listede bulunur (eklenince eskisinden taşınır).
+function listeyeEkle(anahtar, hedef) {
+    let hedefNesne = null;
+    if (hedef === 'beyaz') hedefNesne = ayar.listeler.beyaz;
+    else if (hedef === 'kara') hedefNesne = ayar.listeler.kara;
+    else if (hedef.startsWith('ozel:')) {
+        const l = ozelListeBul(hedef.slice(5));
+        if (l) hedefNesne = l.uyeler;
+    }
+    if (!hedefNesne) return false;
+    listedenCikar(anahtar);
+    hedefNesne[anahtar] = true;
+    return true;
+}
+
+function hedefAdi(hedef) {
+    if (hedef === 'beyaz') return 'Her zaman izin ver';
+    if (hedef === 'kara') return 'Her zaman engelle';
+    return hedef.startsWith('ozel:') ? hedef.slice(5) : hedef;
+}
+
+// Sayfa kimliğinden gelen kanal adı/avatarını (varsa) depoya yazar; liste kurallarını etkilemez.
+async function kanalBilgisiKaydet(anahtar, durum) {
+    if (!yazmaIzniVar()) return;
+    if (!durum || durum.tur !== 'Kanal' || !durum.kanalAdi) return;
+    const temiz = YTF.kanalBilgileriTemizle({ [anahtar]: { ad: durum.kanalAdi, avatar: durum.avatar } });
+    if (!temiz[anahtar]) return;
+    kanalBilgileri[anahtar] = temiz[anahtar];
+    await setStorageData({ kanalBilgileri });
+}
+
+function tumKayitlar() {
+    const kayitlar = [];
+    Object.keys(ayar.listeler.beyaz).forEach(id => kayitlar.push({ id, hedef: 'beyaz' }));
+    Object.keys(ayar.listeler.kara).forEach(id => kayitlar.push({ id, hedef: 'kara' }));
+    ayar.listeler.ozel.forEach(l => Object.keys(l.uyeler).forEach(id => kayitlar.push({ id, hedef: 'ozel:' + l.ad })));
+    return kayitlar;
+}
+
+// Girilen metinden (link, @kanal, video ID) liste anahtarını çıkarır; küçük harfe çevirir.
+function anahtarCikar(ham) {
+    let bulunan = ham.trim();
+    const video = ham.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([a-zA-Z0-9_-]{11})/);
+    const kanal = ham.match(/(@[a-zA-Z0-9._-]+)/);
+    const kanalId = ham.match(/\/channel\/(UC[a-zA-Z0-9_-]{22})/);
+    if (video && video[1]) bulunan = video[1];
+    else if (kanalId && kanalId[1]) bulunan = kanalId[1];
+    else if (kanal && kanal[1]) bulunan = kanal[1];
+    return bulunan.toLowerCase();
+}
+
+async function icerikEkle() {
+    const girdi = document.getElementById('yeniEtiketId');
+    const ham = girdi.value.trim();
+    if (!ham) return;
+    const hedef = document.getElementById('yeniEtiketTuru').value;
+    const anahtar = anahtarCikar(ham);
+    if (anahtar.length > 100) { showToast('Geçersiz giriş'); return; }
+    if (!listeyeEkle(anahtar, hedef)) { showToast('Hedef liste bulunamadı'); return; }
+    if (!(await ayarKaydet())) return;
+    if (aktifYouTubeIcerigi && aktifYouTubeIcerigi.tespit && aktifYouTubeIcerigi.tespit.toLowerCase() === anahtar) {
+        await kanalBilgisiKaydet(anahtar, aktifYouTubeIcerigi);
+    }
+    girdi.value = '';
+    renderListeler();
+    showToast(`${anahtar} → ${hedefAdi(hedef)}`);
+}
+
+async function ozelListeOlustur() {
+    const girdi = document.getElementById('yeniListeAdi');
+    const ad = girdi.value.trim().slice(0, 40);
+    if (!ad) return;
+    const kucuk = ad.toLocaleLowerCase('tr-TR'); // Türkçe I/ı, İ/i için
+    if (REZERVE.includes(kucuk) || ayar.listeler.ozel.some(l => l.ad.toLocaleLowerCase('tr-TR') === kucuk)) {
+        showToast('Bu adda bir liste zaten var');
+        return;
+    }
+    ayar.listeler.ozel.push({ ad, eylem: document.getElementById('yeniListeEylemi').value === 'izinver' ? 'izinver' : 'engelle', uyeler: {} });
+    if (!(await ayarKaydet())) return;
+    girdi.value = '';
+    renderListeler();
+    showToast(`"${ad}" listesi oluşturuldu`);
+}
+
+// ---- Render: Listeler sekmesi ----
+
+function renderListeler() {
+    if (aktifFiltre.startsWith('ozel:') && !ozelListeBul(aktifFiltre.slice(5))) aktifFiltre = 'all';
+    renderHedefSecimi();
+    renderListeDisaAktarSecimi();
+    renderFilterChips();
+    renderItemList();
+    renderOzelListeler();
+    const uyari = document.getElementById('istisnaUyarisi');
+    if (uyari) uyari.style.display = YTF.istisnaSayisi(ayar) >= YTF.ISTISNA_UYARI_ESIGI ? 'flex' : 'none';
+}
+
+function renderHedefSecimi() {
+    const secim = document.getElementById('yeniEtiketTuru');
+    const onceki = secim.value;
+    secim.textContent = '';
+    const secenekler = [['beyaz', 'Her zaman izin ver (Beyaz liste)'], ['kara', 'Her zaman engelle (Kara liste)'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
+    secenekler.forEach(([deger, ad]) => {
+        const o = el('option', '', ad);
+        o.value = deger;
+        secim.appendChild(o);
+    });
+    if (secenekler.some(([d]) => d === onceki)) secim.value = onceki;
+}
+
+function renderListeDisaAktarSecimi() {
+    const secim = document.getElementById('selListeDisaAktar');
+    if (!secim) return;
+    const onceki = secim.value;
+    secim.textContent = '';
+    const secenekler = [
+        ['hepsi', 'Tüm listeler'],
+        ['beyaz', 'Her zaman izin ver (Beyaz liste)'],
+        ['kara', 'Her zaman engelle (Kara liste)'],
+        ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])
+    ];
+    secenekler.forEach(([deger, ad]) => {
+        const o = el('option', '', ad);
+        o.value = deger;
+        secim.appendChild(o);
+    });
+    if (secenekler.some(([d]) => d === onceki)) secim.value = onceki;
+}
+
+function listeDisiAktar() {
+    const secim = document.getElementById('selListeDisaAktar');
+    const hedef = secim ? secim.value : 'hepsi';
+    const paket = YTF.listePaketiOlustur(ayar, hedef);
+    const ad = hedef === 'hepsi' ? 'yt_filter_listeler.json'
+        : 'yt_filter_liste_' + hedef.replace(/^ozel:/, '').replace(/[^a-zA-Z0-9_-]+/g, '_') + '.json';
+    jsonIndir(paket, ad);
+    showToast('Liste dosyası indirildi');
+}
+
+function cakismaSor(adlar) {
+    return new Promise(resolve => {
+        const modal = document.getElementById('listeCakismaModal');
+        const liste = document.getElementById('listeCakismaListesi');
+        const vazgec = document.getElementById('btnCakismaVazgec');
+        const uygula = document.getElementById('btnCakismaUygula');
+        if (!modal || !liste || !vazgec || !uygula) {
+            resolve(confirm(`Şu listeler zaten var: ${adlar.join(', ')}. Birleştirilsin mi?`) ? 'birlestir' : null);
+            return;
+        }
+        liste.textContent = `Şu özel listeler zaten var: ${adlar.join(', ')}. İçe aktarılan kayıtlar için ne yapılsın?`;
+        const varsayilan = document.querySelector('input[name="listeCakisma"][value="birlestir"]');
+        if (varsayilan) varsayilan.checked = true;
+        modal.style.display = 'flex';
+        const bitir = (deger) => {
+            modal.style.display = 'none';
+            uygula.onclick = null;
+            vazgec.onclick = null;
+            resolve(deger);
+        };
+        uygula.onclick = () => {
+            const secili = document.querySelector('input[name="listeCakisma"]:checked');
+            bitir(secili ? secili.value : 'birlestir');
+        };
+        vazgec.onclick = () => bitir(null);
+    });
+}
+
+async function listeleriIceAktarUygula(gelen, strateji) {
+    const { listeler, rapor } = YTF.listeleriBirlestir(ayar.listeler, gelen, strateji);
+    ayar.listeler = listeler;
+    if (!(await ayarKaydet())) return;
+    renderListeler();
+    let mesaj = `Listeler içe aktarıldı: ${rapor.eklenen} yeni kayıt`;
+    if (rapor.tasinan) mesaj += `, ${rapor.tasinan} taşındı`;
+    if (rapor.atlanan) mesaj += `, ${rapor.atlanan} atlandı`;
+    showToast(mesaj);
+}
+
+function listeIceAktarDosya(dosya) {
+    if (!dosya) return;
+    const okuyucu = new FileReader();
+    okuyucu.onload = async (olay) => {
+        let paket;
+        try {
+            paket = JSON.parse(olay.target.result);
+        } catch (e) {
+            alert('Geçersiz JSON dosyası!');
+            return;
+        }
+        const cozum = YTF.listePaketiCoz(paket);
+        if (!cozum.gecerli) {
+            alert('Liste paketi okunamadı: ' + (cozum.hatalar[0] || 'bilinmeyen biçim'));
+            return;
+        }
+        const cakisanlar = cozum.listeler.ozel
+            .filter(g => ayar.listeler.ozel.some(l => trKucuk(l.ad) === trKucuk(g.ad)))
+            .map(g => g.ad);
+
+        if (cakisanlar.length) {
+            const strateji = await cakismaSor(cakisanlar);
+            if (strateji) await listeleriIceAktarUygula(cozum.listeler, strateji);
+            return;
+        }
+        if (confirm('İçe aktarılan kayıtlar mevcut listelerle birleştirilecek. Devam edilsin mi?')) {
+            await listeleriIceAktarUygula(cozum.listeler, 'birlestir');
+        }
+    };
+    okuyucu.readAsText(dosya);
+}
+
+function renderFilterChips() {
+    const konteyner = document.getElementById('filterChipsContainer');
+    if (!konteyner) return;
+    konteyner.textContent = '';
+    const cipler = [['all', 'Tümü'], ['beyaz', 'İzin ver'], ['kara', 'Engelle'], ...ayar.listeler.ozel.map(l => ['ozel:' + l.ad, l.ad])];
+    cipler.forEach(([deger, ad]) => {
+        const b = el('button', 'chip' + (aktifFiltre === deger ? ' active' : ''), ad);
+        b.setAttribute('data-filter', deger);
+        b.addEventListener('click', () => {
+            aktifFiltre = deger;
+            renderFilterChips();
+            renderItemList();
+        });
+        konteyner.appendChild(b);
+    });
+}
+
+function renderItemList() {
+    const kutu = document.getElementById('itemListContainer');
+    const sayac = document.getElementById('lblToplamIcerik');
+    if (!kutu) return;
+    kutu.textContent = '';
+    const hepsi = tumKayitlar();
+    let gosterilen = 0;
+
+    hepsi.forEach(({ id, hedef }) => {
+        if (aktifFiltre !== 'all' && hedef !== aktifFiltre) return;
+        const kanalKaydi = veriTabani.anahtarBul(id);
+        const sayfaBilgisi = kanalBilgileri[id];
+        const ad = (sayfaBilgisi && sayfaBilgisi.ad) || (kanalKaydi && kanalKaydi.ad);
+        if (aramaMetni && !id.includes(aramaMetni) && !(ad && ad.toLowerCase().includes(aramaMetni))) return;
+        gosterilen++;
+
+        const kanalMi = id.startsWith('@') || id.startsWith('uc');
+        const satir = el('div', 'item-row');
+        const bilgi = el('div', 'item-info');
+        const avatarUrl = kanalMi && ((sayfaBilgisi && sayfaBilgisi.avatar) || (kanalKaydi && kanalKaydi.avatar));
+        if (avatarUrl) {
+            const avatar = el('img', 'item-avatar');
+            avatar.src = avatarUrl;
+            avatar.alt = '';
+            avatar.addEventListener('error', () => avatar.remove());
+            bilgi.append(avatar);
+        } else {
+            const ikon = el('div', 'item-type-icon');
+            ikon.title = kanalMi ? 'Kanal' : 'Video';
+            ikon.innerHTML = kanalMi ? SVG_KANAL : SVG_VIDEO; // sabit SVG, kullanıcı verisi içermez
+            bilgi.append(ikon);
+        }
+        const tanim = el('span', 'item-identifier', ad ? `${ad} (${id})` : id);
+        tanim.title = ad ? `${ad} (${id})` : id;
+        const rozet = el('span', 'item-tag-badge' + (hedef === 'beyaz' ? ' badge-beyaz' : hedef === 'kara' ? ' badge-kara' : ''), hedefAdi(hedef));
+        bilgi.append(tanim, rozet);
+
+        const sil = el('button', 'btn-delete-item');
+        sil.title = 'Listeden Kaldır';
+        sil.innerHTML = SVG_COP;
+        sil.addEventListener('click', async () => {
+            listedenCikar(id);
+            if (!(await ayarKaydet())) return;
+            renderListeler();
+            showToast(`${id} silindi`);
+        });
+
+        satir.append(bilgi, sil);
+        kutu.appendChild(satir);
+    });
+
+    if (sayac) sayac.textContent = `${hepsi.length} İçerik`;
+    if (gosterilen === 0) {
+        const bos = el('div', 'empty-state');
+        bos.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>';
+        bos.appendChild(el('p', '', 'Eşleşen içerik bulunamadı.'));
+        kutu.appendChild(bos);
+    }
+}
+
+function renderOzelListeler() {
+    const konteyner = document.getElementById('ozelListelerKonteyner');
+    if (!konteyner) return;
+    konteyner.textContent = '';
+    if (ayar.listeler.ozel.length === 0) {
+        konteyner.appendChild(el('div', 'card-desc', 'Henüz özel liste oluşturmadınız.'));
+        return;
+    }
+    ayar.listeler.ozel.forEach(liste => {
+        const kart = el('div', 'kural-card');
+        const baslik = el('div', 'kural-card-header');
+        baslik.appendChild(el('span', 'kural-card-name', liste.ad));
+        const sil = el('button', 'btn-delete-item');
+        sil.title = 'Listeyi Sil';
+        sil.innerHTML = SVG_COP;
+        sil.addEventListener('click', async () => {
+            const uyeSayisi = Object.keys(liste.uyeler).length;
+            if (!confirm(`"${liste.ad}" listesi${uyeSayisi ? ` ve içindeki ${uyeSayisi} içerik` : ''} silinecek. Emin misiniz?`)) return;
+            ayar.listeler.ozel = ayar.listeler.ozel.filter(l => l !== liste);
+            if (!(await ayarKaydet())) return;
+            renderListeler();
+            showToast(`"${liste.ad}" silindi`);
+        });
+        baslik.appendChild(sil);
+
+        const secenekler = el('div', 'kural-options');
+        const alan1 = el('div', 'kural-field');
+        alan1.appendChild(el('label', '', 'Eylem'));
+        const secim = el('select');
+        [['engelle', 'Engelle'], ['izinver', 'İzin ver']].forEach(([deger, ad]) => {
+            const o = el('option', '', ad);
+            o.value = deger;
+            secim.appendChild(o);
+        });
+        secim.value = liste.eylem;
+        secim.addEventListener('change', async () => {
+            liste.eylem = secim.value === 'izinver' ? 'izinver' : 'engelle';
+            if (!(await ayarKaydet())) return;
+            showToast('Liste eylemi güncellendi');
+        });
+        alan1.appendChild(secim);
+        const alan2 = el('div', 'kural-field');
+        alan2.appendChild(el('label', '', 'İçerik sayısı'));
+        alan2.appendChild(el('div', 'kural-count', String(Object.keys(liste.uyeler).length)));
+        secenekler.append(alan1, alan2);
+
+        kart.append(baslik, secenekler);
+        konteyner.appendChild(kart);
+    });
+}
+
+// ---- Render: Filtre sekmesi ----
+
+function renderFiltreSekmesi() {
+    renderMod();
+    renderEtiketlenmemis();
+    renderKonular();
+    renderEtiketler();
+}
+
+function renderMod() {
+    const indeks = Math.max(0, MODLAR.indexOf(ayar.mod));
+    document.getElementById('sliderMod').value = String(indeks);
+    modAciklamasiniGuncelle(indeks);
+    document.getElementById('chkKanalKontrol').checked = ayar.kanalKontrol !== false;
+    document.querySelectorAll('input[name="kararsiz"]').forEach(r => { r.checked = (r.value === ayar.kararsiz); });
+    kararsizAlaniniGuncelle(indeks);
+}
+
+// Kararsız seçeneği yalnızca Orta modda değiştirilebilir; diğer modlarda sabit davranış açıklanır.
+function kararsizAlaniniGuncelle(indeks) {
+    const mod = MODLAR[indeks] || 'orta';
+    const alan = document.getElementById('kararsizAlani');
+    alan.classList.toggle('pasif', mod !== 'orta');
+    const ipucu = mod === 'orta' ? KARARSIZ_IPUCU.orta[ayar.kararsiz === 'engelle' ? 'engelle' : 'izinver'] : KARARSIZ_IPUCU[mod];
+    document.getElementById('lblKararsizIpucu').textContent = ipucu;
+}
+
+function modAciklamasiniGuncelle(indeks) {
+    const mod = MODLAR[indeks] || 'orta';
+    document.getElementById('lblModAciklama').textContent = MOD_BILGI[mod];
+    document.querySelectorAll('#modEtiketleri span').forEach(s => s.classList.toggle('active', s.getAttribute('data-mod') === mod));
+    kararsizAlaniniGuncelle(indeks);
+}
+
+function renderEtiketlenmemis() {
+    document.querySelectorAll('input[name="etiketlenmemis"]').forEach(r => { r.checked = (r.value === ayar.etiketlenmemis); });
+    document.getElementById('lblEtiketlenmemisIpucu').textContent = ETIKETLENMEMIS_IPUCU[ayar.etiketlenmemis];
+    document.getElementById('kartEtiketlenmemis').classList.toggle('ilk-secim', ayar.etiketlenmemis === null);
+}
+
+// Engelleme biçimi menüsü (Gizle / Bulanıklaştır / Uyarı sayfası). Değer: 'kaldir' | 'bulaniklastir' | 'uyari'.
+function eylemMenusu(etiketAdi, deger, degisince, izinSecenegiVar) {
+    const sec = el('select', 'eylem-sec');
+    sec.setAttribute('aria-label', etiketAdi + ' engelleme biçimi');
+    if (izinSecenegiVar) sec.appendChild(new Option('İzin ver', 'izinli'));
+    EYLEM_SECENEKLERI.forEach(([v, ad]) => sec.appendChild(new Option(ad, v)));
+    sec.value = deger;
+    sec.addEventListener('change', () => degisince(sec.value));
+    return sec;
+}
+
+const eylemAdi = (v) => (EYLEM_SECENEKLERI.find(x => x[0] === v) || [v, v])[1].toLowerCase();
+const konuEngelliMi = (id) => !!ayar.konular[id] && ayar.konular[id] !== 'izinli';
+
+function renderKonular() {
+    const izgara = document.getElementById('konuGrid');
+    izgara.textContent = '';
+    YTF.KONULAR.forEach(konu => {
+        const oge = el('div', 'konu-item');
+        oge.title = konu.aciklama;
+        oge.appendChild(el('span', 'konu-ad', konu.ad));
+        const anahtar = el('label', 'switch');
+        const kutu = el('input');
+        kutu.type = 'checkbox';
+        kutu.checked = !konuEngelliMi(konu.id);
+        kutu.setAttribute('aria-label', konu.ad);
+        kutu.addEventListener('change', async () => {
+            ayar.konular[konu.id] = kutu.checked ? 'izinli' : ayar.engelEylemi;
+            if (!(await ayarKaydet())) return;
+            renderKonular();
+            showToast(`${konu.ad}: ${kutu.checked ? 'izinli' : 'engelli (' + eylemAdi(ayar.konular[konu.id]) + ')'}`);
+        });
+        anahtar.append(kutu, el('span', 'slider'));
+        oge.appendChild(anahtar);
+        if (konuEngelliMi(konu.id)) {
+            oge.appendChild(eylemMenusu(konu.ad, ayar.konular[konu.id], async (v) => {
+                ayar.konular[konu.id] = v;
+                if (!(await ayarKaydet())) return;
+                showToast(`${konu.ad}: ${eylemAdi(v)}`);
+            }, false));
+        }
+        izgara.appendChild(oge);
+    });
+}
+
+function renderEtiketler() {
+    const liste = document.getElementById('etiketListe');
+    liste.textContent = '';
+    YTF.ETIKETLER.forEach(etiket => {
+        const oge = el('div', 'switch-item');
+        const grup = el('div', 'switch-label-group');
+        grup.append(el('span', 'switch-title', etiket.ad), el('span', 'switch-subtext', etiket.aciklama));
+        const deger = ayar.etiketler[etiket.id] || 'kaldir';
+        const menu = eylemMenusu(etiket.ad, deger, async (v) => {
+            ayar.etiketler[etiket.id] = v;
+            if (!(await ayarKaydet())) return;
+            showToast(`${etiket.ad}: ${v === 'izinli' ? 'izin veriliyor' : eylemAdi(v)}`);
+        }, true);
+        oge.append(grup, menu);
+        liste.appendChild(oge);
+    });
+}
+
+async function tumKonulariAyarla(deger) {
+    // 'engelli' -> genel engelleme biçimi (Görünüm sekmesi); her konu sonradan kendi biçimini seçebilir
+    YTF.KONULAR.forEach(k => { ayar.konular[k.id] = deger === 'izinli' ? 'izinli' : ayar.engelEylemi; });
+    renderKonular();
+    if (!(await ayarKaydet())) return;
+    showToast(deger === 'izinli' ? 'Tüm konulara izin verildi' : 'Tüm konular engellendi');
+}
+
+// Arayüzü Verilerle Doldur
+function arayuzuDoldur() {
+    document.getElementById('chkShorts').checked = mevcutVeri.ayarlar.shortsGizle || false;
+    document.getElementById('chkYorum').checked = mevcutVeri.ayarlar.yorumGizle || false;
+    document.getElementById('chkOnerilen').checked = mevcutVeri.ayarlar.onerilenGizle || false;
+    document.getElementById('chkOtomatikOynatma').checked = mevcutVeri.ayarlar.otomatikOynatmaKapat || false;
+    document.getElementById('chkHizliEkleme').checked = mevcutVeri.ayarlar.hizliEkleme === true;
+    document.getElementById('chkPinIptal').checked = mevcutVeri.ayarlar.pinIptal || false;
+    document.getElementById('chkRozetGoster').checked = ayar.rozetGoster !== false;
+    document.getElementById('selEngelEylemi').value = YTF.ENGEL_EYLEMLERI.includes(ayar.engelEylemi) ? ayar.engelEylemi : 'kaldir';
+
+    renderFiltreSekmesi();
+    renderListeler();
+
+    // İlk kurulumda "etiketlenmemiş içerik" seçimi yapılmadıysa kullanıcının dikkatini çek
+    if (ayar.etiketlenmemis === null) {
+        const kart = document.getElementById('kartEtiketlenmemis');
+        if (kart && kart.scrollIntoView) kart.scrollIntoView({ block: 'nearest' });
+    }
+}
+
+// ---- Olay dinleyicileri ----
+
+// Başka bir ayar penceresi veya içerik betiği depoyu değiştirdiğinde bu pencereyi senkronlar.
+// Özellikle başka penceredeki "Kilitle" bu penceredeki açık oturumu da kapatmalıdır.
+function depoSenkronizeEt(degisim) {
+    if (!degisim) return;
+
+    if ('pinKodu' in degisim) {
+        mevcutVeri.pinKodu = degisim.pinKodu.newValue;
+    }
+    if ('ayarlar' in degisim) {
+        mevcutVeri.ayarlar = degisim.ayarlar.newValue || {};
+        const iptalKutusu = document.getElementById('chkPinIptal');
+        if (iptalKutusu) iptalKutusu.checked = mevcutVeri.ayarlar.pinIptal === true;
+    }
+    if ('pinKilitBitis' in degisim) {
+        const yeni = degisim.pinKilitBitis.newValue;
+        if (yeni === undefined || Number(yeni) <= Date.now()) {
+            delete mevcutVeri.pinKilitBitis;
+            const anaArayuz = document.getElementById('anaArayuz');
+            if (YTF.kilitGerekli(mevcutVeri) && anaArayuz && anaArayuz.style.display !== 'none') kilitle();
+        } else {
+            mevcutVeri.pinKilitBitis = yeni;
+        }
+    }
+
+    const kilitleBtn = document.getElementById('btnPinKilitle');
+    if (kilitleBtn) {
+        kilitleBtn.style.display = (!mevcutVeri.ayarlar.pinIptal && mevcutVeri.pinKodu) ? 'flex' : 'none';
+    }
+}
+
 function initEvents() {
+    if (browserAPI.storage && browserAPI.storage.onChanged) {
+        browserAPI.storage.onChanged.addListener((degisim, alan) => {
+            if (alan === 'local') depoSenkronizeEt(degisim);
+        });
+    }
+
     // Tema Değiştirme
     document.getElementById('btnTemaGecis').addEventListener('click', async () => {
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
+            return;
+        }
         document.body.classList.toggle('dark-theme');
         const isDark = document.body.classList.contains('dark-theme');
         document.getElementById('lblTemaIkon').innerText = isDark ? '☀️' : '🌙';
-        
+
         mevcutVeri.ayarlar.koyuTema = isDark;
         await setStorageData({ ayarlar: mevcutVeri.ayarlar });
     });
@@ -201,8 +1016,8 @@ function initEvents() {
         if (e.key === 'Enter') pinDogrula();
     });
 
-    // Yeniden Kilitleme Butonu
-    document.getElementById('btnPinKilitle').addEventListener('click', kilitle);
+    // Yeniden Kilitleme Butonu (içerik oturumunu siler ve arayüzü kilitler)
+    document.getElementById('btnPinKilitle').addEventListener('click', kilitleVeOturumuSil);
 
     // Sekmeler (Tabs)
     document.querySelectorAll('.tab-btn').forEach(btn => {
@@ -217,6 +1032,72 @@ function initEvents() {
         });
     });
 
+    // Filtre modu kaydırıcısı: sürüklerken açıklama güncellenir, bırakınca kaydedilir
+    const kaydirici = document.getElementById('sliderMod');
+    kaydirici.addEventListener('input', () => modAciklamasiniGuncelle(Number(kaydirici.value)));
+    kaydirici.addEventListener('change', async () => {
+        ayar.mod = MODLAR[Number(kaydirici.value)] || 'orta';
+        if (!(await ayarKaydet())) return;
+        showToast('Filtre modu güncellendi');
+    });
+
+    // Etiketlenmemiş içerik seçimi
+    document.querySelectorAll('input[name="etiketlenmemis"]').forEach(r => {
+        r.addEventListener('change', async () => {
+            if (!r.checked) return;
+            ayar.etiketlenmemis = r.value === 'ac' ? 'ac' : 'engelle';
+            if (!(await ayarKaydet())) return;
+            renderEtiketlenmemis();
+            showToast('Seçiminiz kaydedildi');
+        });
+    });
+
+    // Kanal kontrol ayarı
+    document.getElementById('chkKanalKontrol').addEventListener('change', async (e) => {
+        ayar.kanalKontrol = e.target.checked;
+        if (!(await ayarKaydet())) return;
+        showToast(ayar.kanalKontrol ? 'Kanalın konu ve etiketlerine de bakılacak' : 'Yalnızca videonun kendi kaydına bakılacak');
+    });
+
+    // Kararsızlar (Orta mod)
+    document.querySelectorAll('input[name="kararsiz"]').forEach(r => {
+        r.addEventListener('change', async () => {
+            if (!r.checked) return;
+            ayar.kararsiz = r.value === 'engelle' ? 'engelle' : 'izinver';
+            if (!(await ayarKaydet())) return;
+            kararsizAlaniniGuncelle(Math.max(0, MODLAR.indexOf(ayar.mod)));
+            showToast('Seçiminiz kaydedildi');
+        });
+    });
+
+    // İlk kurulum PIN kartı
+    document.getElementById('btnKurulumPinKaydet').addEventListener('click', async () => {
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
+            return;
+        }
+        const pin = document.getElementById('kurulumPin').value.trim();
+        if (!/^\d{4}$/.test(pin)) {
+            document.getElementById('kurulumPinHata').style.display = 'block';
+            return;
+        }
+        await pinKurVeOturumAc(pin);
+        document.getElementById('pinKurulumKarti').style.display = 'none';
+        showToast('PIN kaydedildi');
+    });
+    document.getElementById('btnKurulumPinAtla').addEventListener('click', async () => {
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
+            return;
+        }
+        mevcutVeri.pinKurulumAtlandi = true;
+        await setStorageData({ pinKurulumAtlandi: true });
+        document.getElementById('pinKurulumKarti').style.display = 'none';
+    });
+
+    document.getElementById('btnKonuHepsiIzin').addEventListener('click', () => tumKonulariAyarla('izinli'));
+    document.getElementById('btnKonuHepsiEngel').addEventListener('click', () => tumKonulariAyarla('engelli'));
+
     // Canlı Arama
     document.getElementById('txtArama').addEventListener('input', (e) => {
         aramaMetni = e.target.value.toLowerCase().trim();
@@ -229,22 +1110,10 @@ function initEvents() {
         if (e.key === 'Enter') icerikEkle();
     });
 
-    // Yeni Kategori Oluştur
-    document.getElementById('btnKuralEkle').addEventListener('click', () => {
-        const orjinalYazim = document.getElementById('yeniKuralAdi').value.trim();
-        const etiketAnahtari = orjinalYazim.toLowerCase();
-        
-        if (orjinalYazim && !mevcutVeri.preferences[etiketAnahtari]) {
-            mevcutVeri.preferences[etiketAnahtari] = { 
-                visibility: "Show Badge", 
-                enforcement: "Allow Video", 
-                adi: orjinalYazim 
-            };
-            document.getElementById('yeniKuralAdi').value = '';
-            renderKurallar();
-            renderFilterChips();
-            showToast(`"${orjinalYazim}" kategorisi oluşturuldu`);
-        }
+    // Yeni Özel Liste Oluştur
+    document.getElementById('btnListeEkle').addEventListener('click', ozelListeOlustur);
+    document.getElementById('yeniListeAdi').addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') ozelListeOlustur();
     });
 
     // Uyarı Banner'ından PIN Değiştirmeye Yönlendirme
@@ -268,21 +1137,18 @@ function initEvents() {
 
     // PIN Güncelle
     document.getElementById('btnPinGuncelle').addEventListener('click', async () => {
-        const yeni = document.getElementById('yeniPin').value.trim();
-        if (yeni.length < 4) {
-            alert("PIN kodu en az 4 haneli olmalıdır.");
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
             return;
         }
-        mevcutVeri.pinKodu = yeni;
-        mevcutVeri.pinDegistirildi = true;
-        mevcutVeri.ilkGirisYapildi = true;
-        await setStorageData({ 
-            pinKodu: yeni,
-            pinDegistirildi: true,
-            ilkGirisYapildi: true
-        });
+        const yeni = document.getElementById('yeniPin').value.trim();
+        if (!/^\d{4}$/.test(yeni)) {
+            alert("PIN tam 4 rakam olmalıdır.");
+            return;
+        }
+        await pinKurVeOturumAc(yeni);
         document.getElementById('yeniPin').value = '';
-        
+
         // Uyarı banner'ını ve ipucunu kapat
         const uyariBanner = document.getElementById('pinDegistirUyarisi');
         if (uyariBanner) uyariBanner.style.display = 'none';
@@ -298,53 +1164,218 @@ function initEvents() {
     // Dışa Aktarma
     document.getElementById('btnDisaAktar').addEventListener('click', async () => {
         const veri = await getStorageData(null);
-        const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(veri, null, 2));
-        const indirmeLinki = document.createElement('a');
-        indirmeLinki.setAttribute("href", dataStr);
-        indirmeLinki.setAttribute("download", "yt_filter_yedek.json");
-        document.body.appendChild(indirmeLinki);
-        indirmeLinki.click();
-        indirmeLinki.remove();
+        // Kullanıcının içe aktardığı büyük db.json yedeğe girmesin; db ayrıca içe/dışa aktarılır.
+        delete veri.dbOverride;
+        jsonIndir(veri, "yt_filter_yedek.json");
         showToast("Yedek dosyası indirildi");
     });
 
-    // İçe Aktarma
+    // Liste dışa / içe aktarma
+    document.getElementById('btnListeDisaAktar').addEventListener('click', listeDisiAktar);
+    const listeIceInput = document.getElementById('btnListeIceAktar');
+    listeIceInput.addEventListener('change', (e) => {
+        const dosya = e.target.files[0];
+        e.target.value = '';
+        listeIceAktarDosya(dosya);
+    });
+
+    // db.json içe aktarma / paketli veriye dönüş
+    const dbIceInput = document.getElementById('btnDbIceAktar');
+    dbIceInput.addEventListener('change', (e) => {
+        const dosya = e.target.files[0];
+        e.target.value = '';
+        if (!dosya) return;
+        const okuyucu = new FileReader();
+        okuyucu.onload = async (olay) => {
+            if (!yazmaIzniVar()) {
+                await yazmaReddedildi();
+                return;
+            }
+            let json;
+            try {
+                json = JSON.parse(olay.target.result);
+            } catch (hata) {
+                alert('Geçersiz JSON dosyası!');
+                return;
+            }
+            if (!json || json.sema !== YTF.DB_SEMA) {
+                alert(`Desteklenmeyen şema: ${json && json.sema}. Bu sürüm yalnızca sema ${YTF.DB_SEMA} okur.`);
+                return;
+            }
+            const surum = Number(json.veriSurumu);
+            if (!Number.isInteger(surum) || surum < 0) {
+                alert('veriSurumu geçersiz.');
+                return;
+            }
+            const db = YTF.dbKur(json);
+            if (db.sayac.kanal + db.sayac.video === 0) {
+                alert('Dosyada geçerli kanal/video kaydı yok.');
+                return;
+            }
+            const paketSurum = Number(paketliDb && paketliDb.veriSurumu) || 0;
+            let mesaj = `${db.sayac.kanal} kanal, ${db.sayac.video} video içe aktarılacak.`;
+            if (db.sayac.atlanan) mesaj += ` ${db.sayac.atlanan} geçersiz kayıt atlanacak.`;
+            if (surum <= paketSurum) {
+                mesaj += `\n\nUyarı: veriSurumu (v${surum}) paketli veriden (v${paketSurum}) yeni değil; paketli veri kullanılmaya devam eder.`;
+            }
+            if (!confirm(mesaj + '\n\nDevam edilsin mi?')) return;
+
+            mevcutVeri.dbOverride = json;
+            await setStorageData({ dbOverride: json });
+            await veriTabaniniYukle();
+            renderListeler();
+            showToast('Veritabanı içe aktarıldı');
+        };
+        okuyucu.readAsText(dosya);
+    });
+
+    document.getElementById('btnDbSifirla').addEventListener('click', async () => {
+        if (!yazmaIzniVar()) {
+            await yazmaReddedildi();
+            return;
+        }
+        if (!confirm('İçe aktarılan veritabanı kaldırılsın ve paketli veri kullanılsın mı?')) return;
+        delete mevcutVeri.dbOverride;
+        await removeStorageData(['dbOverride']);
+        await veriTabaniniYukle();
+        renderListeler();
+        showToast('Paketli veritabanına dönüldü');
+    });
+
+    // İçe Aktarma (yeni ve eski yedek biçimlerini kabul eder; üzerine yazar)
     document.getElementById('btnIceAktar').addEventListener('change', (e) => {
         const dosya = e.target.files[0];
         if (!dosya) return;
         const okuyucu = new FileReader();
         okuyucu.onload = async (olay) => {
+            if (!yazmaIzniVar()) {
+                await yazmaReddedildi();
+                return;
+            }
             try {
                 const yuklenen = JSON.parse(olay.target.result);
+                let yeniAyar;
+                if (yuklenen && yuklenen.surum >= 2 && yuklenen.ayar) {
+                    yeniAyar = YTF.ayarTemizle(yuklenen.ayar);
+                } else if (yuklenen && (yuklenen.customMapping || yuklenen.preferences)) {
+                    yeniAyar = YTF.ayarTemizle(YTF.migrate(yuklenen).ayar);
+                } else {
+                    throw new Error('tanınmayan yedek');
+                }
+                if (!confirm('Mevcut filtre ayarlarınızın ve listelerinizin üzerine yazılacak. Devam edilsin mi?')) return;
+
+                ayar = yeniAyar;
+                const ithalPinKodu = yuklenen.pinKodu || mevcutVeri.pinKodu;
+                const ithalPinVarsayilan = yuklenen.pinVarsayilan !== undefined
+                    ? yuklenen.pinVarsayilan === true
+                    : (yuklenen.pinKodu ? yuklenen.pinKodu === '1234' : mevcutVeri.pinVarsayilan);
                 await setStorageData({
-                    customMapping: yuklenen.customMapping || mevcutVeri.customMapping,
+                    surum: 2,
+                    ayar,
                     ayarlar: yuklenen.ayarlar || mevcutVeri.ayarlar,
-                    preferences: yuklenen.preferences || mevcutVeri.preferences,
-                    pinKodu: yuklenen.pinKodu || mevcutVeri.pinKodu,
+                    kanalBilgileri: yuklenen.kanalBilgileri ? YTF.kanalBilgileriTemizle(yuklenen.kanalBilgileri) : kanalBilgileri,
+                    pinKodu: ithalPinKodu,
+                    pinVarsayilan: ithalPinVarsayilan,
                     pinDegistirildi: yuklenen.pinDegistirildi || mevcutVeri.pinDegistirildi,
                     ilkGirisYapildi: yuklenen.ilkGirisYapildi || mevcutVeri.ilkGirisYapildi
                 });
                 mevcutVeri = await getStorageData(null);
+                kanalBilgileri = YTF.kanalBilgileriTemizle(mevcutVeri.kanalBilgileri);
+                if (!mevcutVeri.ayarlar) mevcutVeri.ayarlar = {};
                 arayuzuDoldur();
                 showToast("Yedek başarıyla yüklendi!");
-            } catch (hata) { 
-                alert("Geçersiz JSON yedek dosyası!"); 
+            } catch (hata) {
+                alert("Geçersiz JSON yedek dosyası!");
             }
         };
         okuyucu.readAsText(dosya);
     });
 
-    // Otomatik Anlık Kaydedilen Tweak Switch'leri
-    const tweakCheckboxes = ['chkShorts', 'chkYorum', 'chkOnerilen', 'chkOtomatikOynatma', 'chkPinIptal'];
-    tweakCheckboxes.forEach(id => {
+    // Otomatik Anlık Kaydedilen Tweak Switch'leri ve görünüm ayarları
+    const anlikKaydedilenler = ['chkShorts', 'chkYorum', 'chkOnerilen', 'chkOtomatikOynatma', 'chkHizliEkleme', 'chkPinIptal', 'chkRozetGoster', 'selEngelEylemi'];
+    anlikKaydedilenler.forEach(id => {
         document.getElementById(id).addEventListener('change', async () => {
-            await kaydetTumAyarlar(false);
-            showToast("Ayar güncellendi");
+            if (await kaydetTumAyarlar(false)) showToast("Ayar güncellendi");
         });
     });
 }
 
-// Aktif YouTube Sekmesini Algılama (Quick Action)
+async function sekmeyeSor(tabId) {
+    try {
+        if (typeof browser !== 'undefined' && browser.tabs && browser.tabs.sendMessage) {
+            return await browser.tabs.sendMessage(tabId, { tur: 'sayfaDurumu' });
+        }
+        return await new Promise(resolve => {
+            chrome.tabs.sendMessage(tabId, { tur: 'sayfaDurumu' }, yanit => {
+                if (chrome.runtime.lastError) resolve(null);
+                else resolve(yanit || null);
+            });
+        });
+    } catch (e) {
+        return null;
+    }
+}
+
+function urlKimligi(url) {
+    if (!url || !url.includes('youtube.com')) return null;
+    const videoMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/) || url.match(/\/(?:shorts|embed)\/([a-zA-Z0-9_-]{11})/);
+    const channelMatch = url.match(/youtube\.com\/(@[a-zA-Z0-9._-]+)/);
+    const kanalIdMatch = url.match(/\/channel\/(UC[A-Za-z0-9_-]{22})/);
+    if (videoMatch && videoMatch[1]) return { tespit: videoMatch[1], tur: 'Video', videoId: videoMatch[1], handle: null, kanalId: null };
+    if (channelMatch && channelMatch[1]) return { tespit: channelMatch[1], tur: 'Kanal', videoId: null, handle: channelMatch[1], kanalId: null };
+    if (kanalIdMatch && kanalIdMatch[1]) return { tespit: kanalIdMatch[1], tur: 'Kanal', videoId: null, handle: null, kanalId: kanalIdMatch[1] };
+    return null;
+}
+
+function hizliBandiDoldur(durum) {
+    if (!durum || !durum.tespit) {
+        aktifYouTubeIcerigi = null;
+        return;
+    }
+    aktifYouTubeIcerigi = durum;
+    const titleEl = document.getElementById('quickTitle');
+    const typeEl = document.getElementById('quickPageType');
+    const kararEl = document.getElementById('quickKarar');
+    const sebepEl = document.getElementById('quickSebep');
+    const notEl = document.getElementById('quickBilinmeyenNot');
+    if (titleEl) titleEl.textContent = durum.tespit;
+    if (typeEl) typeEl.textContent = durum.tur || '';
+
+    let ozet = durum.ozet;
+    if (!ozet && ayar && durum.hazir !== false) {
+        const sonuc = YTF.icerikKarari(ayar, veriTabani, {
+            videoId: durum.videoId, handle: durum.handle, channelId: durum.kanalId
+        });
+        ozet = YTF.kararOzeti(sonuc);
+        durum.sebepler = sonuc.sebepler;
+    }
+    if (kararEl && ozet) {
+        kararEl.textContent = `Şu an: ${ozet.etiket}`;
+        kararEl.classList.toggle('engelleniyor', ozet.engelleniyor);
+        kararEl.classList.toggle('acik', !ozet.engelleniyor);
+    } else if (kararEl) {
+        kararEl.textContent = 'Şu an: karar bekleniyor';
+        kararEl.classList.remove('engelleniyor', 'acik');
+    }
+    if (sebepEl) sebepEl.textContent = ozet ? ozet.sebep : '';
+    const bilinmeyen = (durum.sebepler || []).some(s => s.tur === 'etiketlenmemis');
+    if (notEl) notEl.style.display = bilinmeyen ? 'block' : 'none';
+
+    const hizliEkle = async (hedef) => {
+        listeyeEkle(durum.tespit.toLowerCase(), hedef);
+        if (!(await ayarKaydet())) return;
+        await kanalBilgisiKaydet(durum.tespit.toLowerCase(), durum);
+        renderListeler();
+        showToast(`${durum.tespit} → ${hedefAdi(hedef)}`);
+        const yenilenen = YTF.icerikKarari(ayar, veriTabani, {
+            videoId: durum.videoId, handle: durum.handle, channelId: durum.kanalId
+        });
+        hizliBandiDoldur({ ...durum, hazir: true, sebepler: yenilenen.sebepler, ozet: YTF.kararOzeti(yenilenen) });
+    };
+    document.getElementById('btnQuickBlock').onclick = () => hizliEkle('kara');
+    document.getElementById('btnQuickAllow').onclick = () => hizliEkle('beyaz');
+}
+
 async function algilaAktifYouTubeSekmesi() {
     try {
         const tabs = await new Promise(resolve => {
@@ -354,324 +1385,60 @@ async function algilaAktifYouTubeSekmesi() {
                 resolve([]);
             }
         });
-
-        if (!tabs || !tabs[0] || !tabs[0].url) return;
-        const url = tabs[0].url;
-
-        if (!url.includes("youtube.com")) return;
-
-        let tespit = null;
-        let tur = "Kanal";
-
-        const channelMatch = url.match(/youtube\.com\/(@[a-zA-Z0-9._-]+)/);
-        const videoMatch = url.match(/[?&]v=([a-zA-Z0-9_-]{11})/);
-
-        if (videoMatch && videoMatch[1]) {
-            tespit = videoMatch[1];
-            tur = "Video ID";
-        } else if (channelMatch && channelMatch[1]) {
-            tespit = channelMatch[1];
-            tur = "Kanal";
-        }
-
-        if (tespit) {
-            aktifYouTubeIcerigi = { tespit, tur };
-
-            const titleEl = document.getElementById('quickTitle');
-            const typeEl = document.getElementById('quickPageType');
-            
-            if (titleEl) titleEl.textContent = tespit;
-            if (typeEl) typeEl.textContent = tur;
-
-            // DİKKAT: Burada banner display yapılmaz!
-            // Sadece PIN açıldıktan sonra kilidiAc() fonksiyonunda görünür olur.
-
-            document.getElementById('btnQuickBlock').onclick = () => {
-                mevcutVeri.customMapping[tespit.toLowerCase()] = "violence"; // Varsayılan engelleme
-                setStorageData({ customMapping: mevcutVeri.customMapping });
-                renderItemList();
-                showToast(`${tespit} engellenenlere eklendi`);
-            };
-
-            document.getElementById('btnQuickAllow').onclick = () => {
-                mevcutVeri.customMapping[tespit.toLowerCase()] = "safe"; // Varsayılan izin
-                setStorageData({ customMapping: mevcutVeri.customMapping });
-                renderItemList();
-                showToast(`${tespit} güvenli listeye eklendi`);
-            };
-        }
+        if (!tabs || !tabs[0]) return;
+        const tab = tabs[0];
+        const yedek = urlKimligi(tab.url || '');
+        const yanit = tab.id != null ? await sekmeyeSor(tab.id) : null;
+        const durum = (yanit && yanit.tespit) ? yanit : yedek;
+        hizliBandiDoldur(durum);
     } catch (e) {
         // Tab sorgulama hatası durumunda sessizce geç
     }
 }
 
-// Arayüzü Verilerle Doldur
-function arayuzuDoldur() {
-    document.getElementById('chkShorts').checked = mevcutVeri.ayarlar.shortsGizle || false;
-    document.getElementById('chkYorum').checked = mevcutVeri.ayarlar.yorumGizle || false;
-    document.getElementById('chkOnerilen').checked = mevcutVeri.ayarlar.onerilenGizle || false;
-    document.getElementById('chkOtomatikOynatma').checked = mevcutVeri.ayarlar.otomatikOynatmaKapat || false;
-    document.getElementById('chkPinIptal').checked = mevcutVeri.ayarlar.pinIptal || false;
-
-    renderFilterChips();
-    renderItemList();
-    renderKurallar();
-}
-
-// Kategori Filtre Çipleri
-function renderFilterChips() {
-    const container = document.getElementById('filterChipsContainer');
-    if (!container) return;
-
-    container.innerHTML = `
-        <button class="chip ${aktifFiltre === 'all' ? 'active' : ''}" data-filter="all">Tümü</button>
-    `;
-
-    for (let tag in mevcutVeri.preferences) {
-        const pref = mevcutVeri.preferences[tag];
-        const isCore = coreTags.includes(tag);
-        const displayName = isCore ? tagLabels[tag] : (pref.adi || tag);
-        
-        const btn = document.createElement('button');
-        btn.className = `chip ${aktifFiltre === tag ? 'active' : ''}`;
-        btn.setAttribute('data-filter', tag);
-        btn.textContent = displayName;
-        
-        btn.addEventListener('click', () => {
-            document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-            btn.classList.add('active');
-            aktifFiltre = tag;
-            renderItemList();
-        });
-        
-        container.appendChild(btn);
-    }
-
-    // "Tümü" çipi tıklaması
-    container.querySelector('[data-filter="all"]').addEventListener('click', (e) => {
-        document.querySelectorAll('.chip').forEach(c => c.classList.remove('active'));
-        e.target.classList.add('active');
-        aktifFiltre = 'all';
-        renderItemList();
-    });
-}
-
-// Tanımlı İçerik Listesini Render Et
-function renderItemList() {
-    const listContainer = document.getElementById('itemListContainer');
-    const countLabel = document.getElementById('lblToplamIcerik');
-    if (!listContainer) return;
-
-    listContainer.innerHTML = '';
-    const tumIdler = Object.keys(mevcutVeri.customMapping || {});
-    let gosterilenSayac = 0;
-
-    tumIdler.forEach(id => {
-        const tag = mevcutVeri.customMapping[id];
-        
-        // Kategori filtresi kontrolü
-        if (aktifFiltre !== 'all' && tag !== aktifFiltre) return;
-
-        // Arama filtresi kontrolü
-        if (aramaMetni && !id.toLowerCase().includes(aramaMetni)) return;
-
-        gosterilenSayac++;
-        const pref = mevcutVeri.preferences[tag] || {};
-        const isCore = coreTags.includes(tag);
-        const tagLabel = isCore ? tagLabels[tag] : (pref.adi || tag);
-        const isChannel = id.startsWith('@');
-
-        const row = document.createElement('div');
-        row.className = 'item-row';
-        row.innerHTML = `
-            <div class="item-info">
-                <div class="item-type-icon" title="${isChannel ? 'Kanal' : 'Video'}">
-                    ${isChannel ? `
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"></path><circle cx="12" cy="7" r="4"></circle></svg>
-                    ` : `
-                        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polygon points="5 3 19 12 5 21 5 3"></polygon></svg>
-                    `}
-                </div>
-                <span class="item-identifier" title="${id}">${id}</span>
-                <span class="item-tag-badge">${tagLabel}</span>
-            </div>
-            <button class="btn-delete-item" data-id="${id}" title="Listeden Kaldır">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
-        `;
-
-        row.querySelector('.btn-delete-item').addEventListener('click', async () => {
-            delete mevcutVeri.customMapping[id];
-            await setStorageData({ customMapping: mevcutVeri.customMapping });
-            renderItemList();
-            showToast(`${id} silindi`);
-        });
-
-        listContainer.appendChild(row);
-    });
-
-    if (countLabel) {
-        countLabel.textContent = `${tumIdler.length} İçerik`;
-    }
-
-    if (gosterilenSayac === 0) {
-        listContainer.innerHTML = `
-            <div class="empty-state">
-                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="10"></circle><line x1="8" y1="12" x2="16" y2="12"></line></svg>
-                <p>Eşleşen içerik bulunamadı.</p>
-            </div>
-        `;
-    }
-}
-
-// İçerik Ekleme Fonksiyonu
-async function icerikEkle() {
-    let rawInput = document.getElementById('yeniEtiketId').value.trim();
-    const tag = document.getElementById('yeniEtiketTuru').value;
-    
-    if (rawInput !== "") {
-        let finalId = rawInput;
-        const videoMatch = rawInput.match(/(?:v=|youtu\.be\/|shorts\/|embed\/)([a-zA-Z0-9_-]{11})/);
-        const channelMatch = rawInput.match(/(@[a-zA-Z0-9._-]+)/);
-        
-        if (videoMatch && videoMatch[1]) {
-            finalId = videoMatch[1];
-        } else if (channelMatch && channelMatch[1]) {
-            finalId = channelMatch[1];
-        }
-        
-        finalId = finalId.toLowerCase();
-        mevcutVeri.customMapping[finalId] = tag;
-        await setStorageData({ customMapping: mevcutVeri.customMapping });
-        
-        document.getElementById('yeniEtiketId').value = '';
-        renderItemList();
-        showToast(`${finalId} listeye eklendi`);
-    }
-}
-
-// Kural Kartlarını Render Et
-function renderKurallar() {
-    const container = document.getElementById('settings-container');
-    const selectEkle = document.getElementById('yeniEtiketTuru');
-    if (!container || !selectEkle) return;
-    
-    container.innerHTML = "";
-    selectEkle.innerHTML = "";
-    
-    for (let tag in mevcutVeri.preferences) {
-        const pref = mevcutVeri.preferences[tag];
-        const isCore = coreTags.includes(tag);
-        const displayName = isCore ? tagLabels[tag] : (pref.adi || tag);
-        
-        // Ekleme Select Kutusu Seçeneği
-        const opt = document.createElement('option');
-        opt.value = tag;
-        opt.textContent = displayName;
-        selectEkle.appendChild(opt);
-
-        // Kural Kartı
-        const card = document.createElement('div');
-        card.className = 'kural-card';
-        
-        let silButonuHTML = isCore ? '' : `
-            <button class="btnSilKural btn-delete-item" data-tag="${tag}" title="Kategoriyi Sil">
-                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-            </button>
-        `;
-
-        card.innerHTML = `
-            <div class="kural-card-header">
-                <span class="kural-card-name">${displayName}</span>
-                ${silButonuHTML}
-            </div>
-            <div class="kural-options">
-                <div class="kural-field">
-                    <label>Rozet Görünümü</label>
-                    <select id="${tag}-visibility">
-                        <option value="Show Badge" ${pref.visibility === 'Show Badge' ? 'selected' : ''}>Rozet Göster</option>
-                        <option value="Hide Badge" ${pref.visibility === 'Hide Badge' ? 'selected' : ''}>Rozet Gizle</option>
-                    </select>
-                </div>
-                <div class="kural-field">
-                    <label>Video Eylemi</label>
-                    <select id="${tag}-enforcement">
-                        <option value="Allow Video" ${pref.enforcement === 'Allow Video' ? 'selected' : ''}>İzin Ver</option>
-                        <option value="Blur Thumbnail" ${pref.enforcement === 'Blur Thumbnail' ? 'selected' : ''}>Bulanıklaştır</option>
-                        <option value="Remove Video Entirely" ${pref.enforcement === 'Remove Video Entirely' ? 'selected' : ''}>Tamamen Kaldır</option>
-                    </select>
-                </div>
-            </div>
-        `;
-
-        // Canlı Değişiklik Dinleyicileri
-        card.querySelector(`#${tag}-visibility`).addEventListener('change', async (e) => {
-            mevcutVeri.preferences[tag].visibility = e.target.value;
-            await setStorageData({ preferences: mevcutVeri.preferences });
-            showToast("Görünüm güncellendi");
-        });
-
-        card.querySelector(`#${tag}-enforcement`).addEventListener('change', async (e) => {
-            mevcutVeri.preferences[tag].enforcement = e.target.value;
-            await setStorageData({ preferences: mevcutVeri.preferences });
-            showToast("Eylem kuralı güncellendi");
-        });
-
-        // Silme Butonu
-        if (!isCore) {
-            card.querySelector('.btnSilKural').addEventListener('click', async () => {
-                if (confirm(`"${displayName}" kategorisini silmek istediğinize emin misiniz?`)) {
-                    delete mevcutVeri.preferences[tag];
-                    for (let id in mevcutVeri.customMapping) {
-                        if (mevcutVeri.customMapping[id] === tag) delete mevcutVeri.customMapping[id];
-                    }
-                    await setStorageData({ 
-                        preferences: mevcutVeri.preferences,
-                        customMapping: mevcutVeri.customMapping
-                    });
-                    renderKurallar();
-                    renderFilterChips();
-                    renderItemList();
-                    showToast(`"${displayName}" silindi`);
-                }
-            });
-        }
-
-        container.appendChild(card);
-    }
-}
-
 // Tüm Ayarları Manuel Kaydet
 async function kaydetTumAyarlar(bildirimVer = true) {
-    for (let tag in mevcutVeri.preferences) {
-        const visEl = document.getElementById(`${tag}-visibility`);
-        const enfEl = document.getElementById(`${tag}-enforcement`);
-        if (visEl && enfEl) {
-            const isCore = coreTags.includes(tag);
-            mevcutVeri.preferences[tag] = {
-                visibility: visEl.value,
-                enforcement: enfEl.value,
-                adi: isCore ? tagLabels[tag] : (mevcutVeri.preferences[tag].adi || tag)
-            };
-        }
+    if (!yazmaIzniVar()) {
+        await yazmaReddedildi();
+        return false;
     }
-
     mevcutVeri.ayarlar = {
         shortsGizle: document.getElementById('chkShorts').checked,
         yorumGizle: document.getElementById('chkYorum').checked,
         onerilenGizle: document.getElementById('chkOnerilen').checked,
         otomatikOynatmaKapat: document.getElementById('chkOtomatikOynatma').checked,
+        hizliEkleme: document.getElementById('chkHizliEkleme').checked,
         pinIptal: document.getElementById('chkPinIptal').checked,
         koyuTema: document.body.classList.contains('dark-theme')
     };
+    ayar.rozetGoster = document.getElementById('chkRozetGoster').checked;
+    const secilenEylem = document.getElementById('selEngelEylemi').value;
+    ayar.engelEylemi = YTF.ENGEL_EYLEMLERI.includes(secilenEylem) ? secilenEylem : 'kaldir';
+    mevcutVeri.ayar = ayar;
+
+    // PIN iptal edildiyse açık oturum zamanlayıcısı kilit ekranı açmasın
+    if (mevcutVeri.ayarlar.pinIptal) {
+        clearTimeout(kilitZamanlayici);
+        kilitZamanlayici = null;
+    }
 
     await setStorageData({
-        preferences: mevcutVeri.preferences,
-        customMapping: mevcutVeri.customMapping,
+        surum: 2,
+        ayar,
         ayarlar: mevcutVeri.ayarlar
     });
+
+    const pinKilitleBtn = document.getElementById('btnPinKilitle');
+    if (mevcutVeri.ayarlar.pinIptal) {
+        await removeStorageData(['pinKilitBitis']);
+        mevcutVeri.pinKilitBitis = 0;
+        pinKilitleBtn.style.display = 'none';
+    } else if (mevcutVeri.pinKodu) {
+        pinKilitleBtn.style.display = 'flex';
+    }
 
     if (bildirimVer) {
         showToast("Tüm ayarlar başarıyla kaydedildi!");
     }
+    return true;
 }

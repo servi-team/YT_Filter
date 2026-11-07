@@ -1,0 +1,311 @@
+/* Keşfet: arama araçları, tür filtreleri ve 12'lik kart ızgarası. */
+
+.araclar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: end;
+  gap: 1rem 2rem;
+  margin-bottom: clamp(1.75rem, 4vw, 2.5rem);
+}
+
+.aramaFormu {
+  display: flex;
+  gap: 0.5rem;
+  min-width: 0;
+}
+
+.gizli {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.aramaGirdi {
+  flex: 1 1 auto;
+  min-width: 0;
+  min-height: 44px;
+  padding: 0.7rem 0.95rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 10px;
+  background: var(--yuzey);
+  color: inherit;
+}
+
+.aramaGirdi::placeholder {
+  color: var(--ikincil);
+}
+
+.aramaDugme {
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0.7rem 1.2rem;
+  border: 0;
+  border-radius: 10px;
+  background: var(--sinyal);
+  color: var(--yuzey);
+  font-weight: 700;
+  transition: background-color var(--gecis), transform var(--gecis);
+}
+
+.aramaDugme:hover {
+  background: var(--sinyal-koyu);
+}
+
+.aramaDugme:active {
+  transform: translateY(1px);
+}
+
+.turler {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.15rem;
+}
+
+.turBag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  padding: 0 0.65rem;
+  border-bottom: 2px solid transparent;
+  color: var(--ikincil);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color var(--gecis), border-color var(--gecis);
+}
+
+.turBag:hover {
+  border-color: var(--cizgi);
+  color: var(--murekkep);
+}
+
+.turAktif {
+  border-color: var(--sinyal);
+  color: var(--murekkep);
+}
+
+.sonuclar {
+  min-width: 0;
+}
+
+.sonucUst {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 0.35rem 1.5rem;
+  margin-bottom: 1.1rem;
+  padding-bottom: 0.8rem;
+  border-bottom: 1px solid var(--cizgi);
+}
+
+.sonucBaslikGrup {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.4rem 1rem;
+}
+
+.sonucBaslik {
+  margin: 0;
+  font-size: clamp(1.35rem, 2.5vw, 1.8rem);
+}
+
+.sayim {
+  margin: 0;
+  color: var(--ikincil);
+  font-family: var(--font-kimlik);
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.02em;
+}
+
+.sayim strong {
+  color: var(--murekkep);
+  font-weight: 700;
+}
+
+.aramaVurgu {
+  color: var(--murekkep);
+  font-weight: 700;
+}
+
+.temizle {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--ikincil);
+  font-size: 0.82rem;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+.temizle:hover {
+  color: var(--sinyal-koyu);
+}
+
+.temizleBag {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  color: var(--murekkep);
+  font-weight: 700;
+}
+
+.izgara {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 1rem;
+}
+
+/* Sayfalama, kesfet sayfasının CSS modülünü paylaşır. */
+.sayfalama {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem 1rem;
+  margin-top: clamp(2rem, 4vw, 3rem);
+  padding-top: 1.25rem;
+  border-top: 1px solid var(--cizgi);
+}
+
+.sayfaYon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 44px;
+  padding: 0.5rem 0.9rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 10px;
+  color: var(--murekkep);
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color var(--gecis), color var(--gecis), background-color var(--gecis);
+}
+
+.sayfaYon:hover {
+  border-color: var(--sinyal);
+  color: var(--sinyal-koyu);
+}
+
+.sayfaPasif {
+  color: var(--ikincil);
+  opacity: 0.55;
+}
+
+.sayfaListesi {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 0.3rem;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.sayfaBag {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0 0.45rem;
+  border: 1px solid transparent;
+  border-radius: 10px;
+  color: var(--murekkep);
+  font-family: var(--font-kimlik);
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  transition: border-color var(--gecis), background-color var(--gecis), color var(--gecis);
+}
+
+.sayfaBag:hover {
+  border-color: var(--cizgi);
+  background: var(--yuzey);
+}
+
+.sayfaSimdi {
+  border-color: var(--murekkep);
+  background: var(--murekkep);
+  color: var(--zemin);
+}
+
+.sayfaBosluk {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 1.5rem;
+  min-height: 44px;
+  color: var(--ikincil);
+}
+
+@media (min-width: 720px) {
+  .izgara {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@media (min-width: 1280px) {
+  .izgara {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+}
+
+@media (max-width: 900px) {
+  .araclar {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .turler {
+    justify-content: flex-start;
+  }
+}
+
+@media (max-width: 520px) {
+  .aramaFormu {
+    flex-wrap: wrap;
+  }
+
+  .aramaGirdi {
+    flex-basis: 100%;
+  }
+
+  .aramaDugme {
+    width: 100%;
+  }
+
+  .sonucUst {
+    align-items: flex-start;
+    flex-direction: column;
+  }
+
+  .sayfalama {
+    justify-content: center;
+  }
+
+  .sayfaYon {
+    flex: 1 1 auto;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aramaDugme,
+  .turBag,
+  .sayfaYon,
+  .sayfaBag {
+    transition: none;
+  }
+}

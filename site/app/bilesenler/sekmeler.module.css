@@ -1,0 +1,41 @@
+.liste {
+  display: flex;
+  gap: 0.25rem;
+  overflow-x: auto;
+  border-bottom: 1px solid var(--cizgi);
+  scrollbar-width: thin;
+}
+
+.sekme {
+  position: relative;
+  flex: 0 0 auto;
+  min-height: 44px;
+  padding: 0.6rem 0.9rem;
+  border: 0;
+  border-bottom: 2px solid transparent;
+  background: transparent;
+  color: var(--ikincil);
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  transition:
+    border-color var(--gecis),
+    color var(--gecis);
+}
+
+.sekme:hover {
+  color: var(--murekkep);
+}
+
+.aktif {
+  border-bottom-color: var(--sinyal);
+  color: var(--murekkep);
+}
+
+.panel {
+  padding-top: 1rem;
+}
+
+.panel:focus-visible {
+  outline-offset: 6px;
+}

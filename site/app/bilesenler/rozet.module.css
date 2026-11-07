@@ -1,0 +1,50 @@
+.rozet {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.22rem 0.62rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 999px;
+  background: var(--yuzey);
+  color: var(--murekkep);
+  font-size: 0.76rem;
+  font-weight: 700;
+  line-height: 1.3;
+  letter-spacing: 0.01em;
+  white-space: nowrap;
+}
+
+.ikon {
+  font-family: var(--font-kimlik);
+  font-size: 0.72rem;
+  line-height: 1;
+}
+
+.konu {
+  border-color: color-mix(in srgb, var(--sinyal) 35%, var(--cizgi));
+  background: color-mix(in srgb, var(--sinyal) 9%, var(--yuzey));
+  color: var(--sinyal);
+}
+
+.etiket {
+  border-color: color-mix(in srgb, var(--murekkep) 18%, var(--cizgi));
+  background: color-mix(in srgb, var(--murekkep) 4%, var(--yuzey));
+}
+
+.kararsiz {
+  border-color: color-mix(in srgb, var(--amber) 38%, var(--cizgi));
+  background: color-mix(in srgb, var(--amber) 9%, var(--yuzey));
+  color: var(--amber);
+}
+
+.kilitli {
+  border-color: var(--murekkep);
+  background: var(--murekkep);
+  color: var(--zemin);
+}
+
+.yayinda {
+  border-color: color-mix(in srgb, var(--yesil) 38%, var(--cizgi));
+  background: color-mix(in srgb, var(--yesil) 9%, var(--yuzey));
+  color: var(--yesil);
+}

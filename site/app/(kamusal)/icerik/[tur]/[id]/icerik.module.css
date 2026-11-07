@@ -1,0 +1,141 @@
+/* İçerik sayfası: kapak, başlık, dış bağlantı ve kilit bandı. */
+
+.icerik {
+  display: grid;
+  gap: clamp(1.25rem, 3vw, 2rem);
+}
+
+.geri {
+  font-size: 0.88rem;
+}
+
+.geri a {
+  color: var(--ikincil);
+  text-decoration: none;
+  transition: color var(--gecis);
+}
+
+.geri a:hover {
+  color: var(--murekkep);
+}
+
+.baslikAlani {
+  display: grid;
+  grid-template-columns: minmax(0, 220px) minmax(0, 1fr);
+  align-items: start;
+  gap: clamp(1rem, 3vw, 1.75rem);
+}
+
+.kapak {
+  overflow: hidden;
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+  aspect-ratio: 16 / 9;
+}
+
+.kapakKucuk {
+  max-width: 132px;
+  aspect-ratio: 1;
+}
+
+.kapak img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.harf {
+  display: grid;
+  place-items: center;
+  width: 100%;
+  height: 100%;
+  min-height: 96px;
+  color: var(--sinyal);
+  font-family: var(--font-baslik);
+  font-size: 3.2rem;
+  font-weight: 600;
+}
+
+.baslikMetni {
+  min-width: 0;
+}
+
+.tur {
+  margin: 0 0 0.25rem;
+  color: var(--sinyal);
+  font-family: var(--font-kimlik);
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.baslik {
+  margin: 0 0 0.55rem;
+  font-size: clamp(1.9rem, 4.2vw, 3.2rem);
+  overflow-wrap: anywhere;
+}
+
+.kanal {
+  margin: 0 0 0.8rem;
+  color: var(--ikincil);
+  font-size: 0.95rem;
+}
+
+.ayrac {
+  color: var(--cizgi);
+}
+
+.disBag {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  min-height: 44px;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid var(--cizgi);
+  border-radius: 10px;
+  background: var(--yuzey);
+  color: var(--murekkep);
+  font-size: 0.88rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: border-color var(--gecis), color var(--gecis);
+}
+
+.disBag:hover {
+  border-color: var(--sinyal);
+  color: var(--sinyal);
+}
+
+.kilitBandi {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.65rem;
+  margin-top: 0.9rem;
+  padding: 0.75rem 0.9rem;
+  border: 1px solid color-mix(in srgb, var(--amber) 38%, var(--cizgi));
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--amber) 7%, var(--yuzey));
+  color: var(--murekkep);
+  font-size: 0.86rem;
+  line-height: 1.5;
+}
+
+.kilitGerekce {
+  color: var(--ikincil);
+}
+
+@media (max-width: 640px) {
+  .baslikAlani {
+    grid-template-columns: 1fr;
+  }
+
+  .kapakKucuk {
+    max-width: 96px;
+  }
+
+  .kapak {
+    width: 100%;
+  }
+}

@@ -46,3 +46,318 @@
 
 .yt-filter-hidden { display: none !important; }
 ytd-thumbnail, ytd-rich-grid-media, ytd-rich-item-renderer, ytd-video-renderer { position: relative !important; }
+
+/* PR 6 — Tam sayfa engel banner'ı */
+#yt-filter-engel-banner {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 999999 !important;
+    background: rgba(10, 10, 10, 0.96) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 16px !important;
+    padding: 32px !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    box-sizing: border-box !important;
+}
+.ytf-banner-baslik {
+    font-size: 22px !important;
+    font-weight: 700 !important;
+    color: #fff !important;
+    text-align: center !important;
+    margin: 0 !important;
+}
+.ytf-banner-sebep {
+    font-size: 14px !important;
+    color: #aaa !important;
+    text-align: center !important;
+    max-width: 480px !important;
+    line-height: 1.5 !important;
+    background: rgba(255,255,255,0.06) !important;
+    border: 1px solid rgba(255,255,255,0.12) !important;
+    border-radius: 8px !important;
+    padding: 10px 18px !important;
+    margin: 0 !important;
+}
+.ytf-banner-butonlar {
+    display: flex !important;
+    gap: 12px !important;
+    flex-wrap: wrap !important;
+    justify-content: center !important;
+    margin-top: 8px !important;
+}
+.ytf-btn {
+    padding: 10px 20px !important;
+    border-radius: 8px !important;
+    font-size: 14px !important;
+    font-weight: 600 !important;
+    cursor: pointer !important;
+    border: none !important;
+    transition: opacity 0.15s !important;
+}
+.ytf-btn:hover { opacity: 0.85 !important; }
+.ytf-btn-geri {
+    background: #3a3a3a !important;
+    color: #fff !important;
+}
+.ytf-btn-beyaz {
+    background: #2ecc71 !important;
+    color: #fff !important;
+}
+
+/* Uyarı sayfası eylemi: kartın üstünü sebebi yazan bir kapakla kapatır */
+.ytf-uyari-kapak {
+    position: absolute !important;
+    inset: 0 !important;
+    z-index: 300 !important;
+    background: rgba(15, 15, 15, 0.94) !important;
+    color: #fff !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 6px !important;
+    padding: 12px !important;
+    text-align: center !important;
+    border-radius: 8px !important;
+    box-sizing: border-box !important;
+    cursor: not-allowed !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+}
+.ytf-uyari-baslik { font-size: 14px !important; font-weight: 700 !important; }
+.ytf-uyari-sebep { font-size: 12px !important; color: #bbb !important; line-height: 1.4 !important; }
+
+/* Bulanıklaştırma kalkanı: yalnızca oynatıcı kökü filtrelenir, kalkan üstünü kapatır */
+.ytf-bulanik-kalkan {
+    position: fixed !important;
+    z-index: 2147483000 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 12px !important;
+    padding: 16px !important;
+    background: rgba(8, 8, 8, 0.72) !important;
+    color: #fff !important;
+    text-align: center !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    box-sizing: border-box !important;
+    animation: ytf-bulanik-acilis 0.16s ease-out !important;
+}
+.ytf-bulanik-kilit {
+    font-size: 40px !important;
+    line-height: 1 !important;
+}
+.ytf-bulanik-metin {
+    font-size: 16px !important;
+    font-weight: 600 !important;
+    line-height: 1.4 !important;
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.6) !important;
+}
+.ytf-bulanik-kalkan .ytf-btn {
+    margin-top: 4px !important;
+}
+@keyframes ytf-bulanik-acilis {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ytf-bulanik-kalkan { animation: none !important; }
+}
+
+/* Hızlı ekleme rayı (isteğe bağlı) */
+#ytf-hizli-ray {
+    position: fixed !important;
+    right: 16px !important;
+    top: 50% !important;
+    transform: translateY(-50%) !important;
+    z-index: 2000 !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 8px !important;
+    padding: 10px !important;
+    border-radius: 12px !important;
+    background: rgba(15, 15, 15, 0.94) !important;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    box-sizing: border-box !important;
+}
+.ytf-hizli-ray-etiket {
+    padding: 0 2px !important;
+    color: #d0d0d0 !important;
+    font-size: 10px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.08em !important;
+    text-transform: uppercase !important;
+    text-align: center !important;
+}
+.ytf-hizli-ray-btn {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    gap: 8px !important;
+    min-height: 36px !important;
+    margin: 0 !important;
+    padding: 8px 12px !important;
+    border: 0 !important;
+    border-radius: 8px !important;
+    font-family: inherit !important;
+    font-size: 13px !important;
+    font-weight: 600 !important;
+    line-height: 1.2 !important;
+    text-align: left !important;
+    cursor: pointer !important;
+    transition: filter 0.12s ease, transform 0.12s ease !important;
+}
+.ytf-hizli-ray-btn:hover { filter: brightness(1.1) !important; }
+.ytf-hizli-ray-btn:active { transform: scale(0.97) !important; }
+.ytf-hizli-ray-btn:focus-visible {
+    outline: 2px solid #fff !important;
+    outline-offset: 2px !important;
+}
+.ytf-hizli-ray-beyaz {
+    background: #2ecc71 !important;
+    color: #08210f !important;
+}
+.ytf-hizli-ray-kara {
+    background: #e74c3c !important;
+    color: #fff !important;
+}
+.ytf-hizli-ray-ikon {
+    flex: 0 0 auto !important;
+    font-size: 14px !important;
+    line-height: 1 !important;
+}
+.ytf-hizli-ray-metin { white-space: nowrap !important; }
+@media (max-width: 900px) {
+    #ytf-hizli-ray {
+        right: 8px !important;
+        padding: 8px !important;
+    }
+    .ytf-hizli-ray-etiket,
+    .ytf-hizli-ray-metin { display: none !important; }
+    .ytf-hizli-ray-btn {
+        justify-content: center !important;
+        width: 36px !important;
+        padding: 8px !important;
+    }
+    .ytf-hizli-ray-ikon { font-size: 16px !important; }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ytf-hizli-ray-btn { transition: none !important; }
+}
+
+/* PIN penceresi */
+.ytf-pin-pencere {
+    position: fixed !important;
+    inset: 0 !important;
+    z-index: 2147483647 !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: 24px !important;
+    background: rgba(0, 0, 0, 0.62) !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    box-sizing: border-box !important;
+}
+.ytf-pin-kutu {
+    width: min(360px, 100%) !important;
+    display: flex !important;
+    flex-direction: column !important;
+    gap: 12px !important;
+    padding: 22px !important;
+    border-radius: 12px !important;
+    background: #fff !important;
+    color: #0f0f0f !important;
+    box-shadow: 0 18px 50px rgba(0, 0, 0, 0.45) !important;
+    box-sizing: border-box !important;
+    animation: ytf-pin-acilis 0.16s ease-out !important;
+}
+html[dark] .ytf-pin-kutu {
+    background: #212121 !important;
+    color: #f1f1f1 !important;
+    border: 1px solid rgba(255, 255, 255, 0.12) !important;
+}
+.ytf-pin-baslik {
+    margin: 0 !important;
+    font-size: 18px !important;
+    font-weight: 700 !important;
+    line-height: 1.3 !important;
+}
+.ytf-pin-aciklama {
+    margin: 0 !important;
+    font-size: 13px !important;
+    line-height: 1.45 !important;
+    color: #606060 !important;
+}
+html[dark] .ytf-pin-aciklama { color: #aaa !important; }
+.ytf-pin-giris {
+    width: 100% !important;
+    padding: 10px 12px !important;
+    border-radius: 8px !important;
+    border: 1px solid #d0d0d0 !important;
+    background: #fff !important;
+    color: #0f0f0f !important;
+    font-size: 18px !important;
+    letter-spacing: 0.35em !important;
+    text-align: center !important;
+    box-sizing: border-box !important;
+    outline: none !important;
+}
+.ytf-pin-giris:focus {
+    border-color: #2ecc71 !important;
+    box-shadow: 0 0 0 2px rgba(46, 204, 113, 0.25) !important;
+}
+html[dark] .ytf-pin-giris {
+    background: #121212 !important;
+    color: #f1f1f1 !important;
+    border-color: #444 !important;
+}
+.ytf-pin-hata {
+    min-height: 18px !important;
+    margin: 0 !important;
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    color: #d93025 !important;
+}
+html[dark] .ytf-pin-hata { color: #ff7b72 !important; }
+.ytf-pin-butonlar {
+    display: flex !important;
+    justify-content: flex-end !important;
+    gap: 10px !important;
+    margin-top: 2px !important;
+}
+.ytf-pin-pencere .ytf-btn:disabled {
+    opacity: 0.5 !important;
+    cursor: not-allowed !important;
+}
+@keyframes ytf-pin-acilis {
+    from { opacity: 0; transform: scale(0.96); }
+    to { opacity: 1; transform: scale(1); }
+}
+@media (prefers-reduced-motion: reduce) {
+    .ytf-pin-kutu { animation: none !important; }
+}
+
+/* Kısa durum bildirimi */
+#ytf-bildirim {
+    position: fixed !important;
+    left: 50% !important;
+    bottom: 24px !important;
+    transform: translateX(-50%) !important;
+    z-index: 2147483647 !important;
+    max-width: min(480px, calc(100vw - 32px)) !important;
+    padding: 10px 18px !important;
+    border-radius: 8px !important;
+    background: rgba(15, 15, 15, 0.96) !important;
+    color: #fff !important;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
+    font-size: 13px !important;
+    line-height: 1.4 !important;
+    text-align: center !important;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35) !important;
+    box-sizing: border-box !important;
+}

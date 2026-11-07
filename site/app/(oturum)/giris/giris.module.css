@@ -1,0 +1,10 @@
+.govde {
+  max-width: 30rem;
+}
+
+.not {
+  margin-top: 1.2rem;
+  color: var(--ikincil);
+  font-size: 0.9rem;
+  line-height: 1.55;
+}

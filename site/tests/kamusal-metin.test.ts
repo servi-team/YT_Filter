@@ -1,0 +1,53 @@
+import test from 'node:test';
+import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+
+const oku = (yol: string) => readFileSync(new URL(yol, import.meta.url), 'utf8');
+
+test('site gizlilik metni gerekli açıklamaları içerir ve eklenti metninden ayrıdır', () => {
+  const s = oku('../app/(kamusal)/gizlilik/page.tsx');
+  for (const metin of ['1 yıl', '30 gün', 'IP', 'çerez', 'takma etiket', 'arşiv', 'GitHub Issues', 'analitik', 'reklam', 'üçüncü taraf', 'eklenti']) {
+    assert.ok(s.includes(metin), `eksik: ${metin}`);
+  }
+  assert.match(s, /yalnızca.*site.*kapsar/i);
+  assert.equal(s.includes('GIZLILIK.md'), false);
+});
+
+test('koşullar ve iletişim sayfaları taslak metni ve gerçek issue bağlantısını taşır', () => {
+  const k = oku('../app/(kamusal)/kosullar/page.tsx');
+  for (const metin of ['Kullanım Koşulları', 'sorumluluk', 'moderasyon', 'değişiklik', 'YouTube']) assert.ok(k.includes(metin), metin);
+  const i = oku('../app/(kamusal)/iletisim/page.tsx');
+  assert.match(i, /github\.com\/servi-team\/YT_Filter\/issues/);
+  assert.equal(i.includes('<form'), false);
+});
+
+test('layout footer veri sürümünü gerçek sorguya bağlar', () => {
+  const l = oku('../app/layout.tsx');
+  assert.match(l, /sonYayinSurumu/);
+  assert.match(l, /<AltBilgi veriSurumu=\{sonSurum\}/);
+  assert.equal(l.includes('veriSurumu={null}'), false);
+});
+
+test('404 ve hata sayfaları Türkçe ve erişilebilir', () => {
+  const n = oku('../app/not-found.tsx');
+  assert.match(n, /Sayfa bulunamadı/);
+  assert.match(n, /href="\/"/);
+  const e = oku('../app/error.tsx');
+  assert.match(e, /'use client'/);
+  assert.match(e, /Tekrar dene/);
+});
+
+test('güncel gizlilik, iletişim, koşullar ve alt bilgi ana depoyu gösterir', () => {
+  const dosyalar = [
+    '../app/(kamusal)/gizlilik/page.tsx',
+    '../app/(kamusal)/kosullar/page.tsx',
+    '../app/(kamusal)/iletisim/page.tsx',
+    '../app/bilesenler/alt-bilgi.tsx',
+    '../../docs/GIZLILIK.md',
+  ];
+  for (const yol of dosyalar) {
+    const s = oku(yol);
+    assert.equal(s.includes('TalhaOzz/YouTubeFilter'), false, yol);
+    assert.ok(s.includes('servi-team/YT_Filter'), yol);
+  }
+});

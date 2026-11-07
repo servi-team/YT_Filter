@@ -5,6 +5,10 @@
 
 const browserAPI = (typeof browser !== 'undefined' && browser.runtime) ? browser : chrome;
 
+// Çekirdek tanımlar: Chromium service worker'da importScripts ile, Firefox'ta manifest'teki scripts listesiyle yüklenir.
+// Yüklenemezse eski varsayılanlarla devam edilir (arayüz ilk açılışta yeni modele taşır).
+try { if (typeof importScripts === 'function') importScripts('core/taxonomy.js'); } catch (e) { /* yedek yol kullanılacak */ }
+
 browserAPI.runtime.onInstalled.addListener((details) => {
     if (details.reason === "install") {
         const simdi = new Date();
@@ -18,11 +22,16 @@ browserAPI.runtime.onInstalled.addListener((details) => {
             "untagged": { visibility: "Show Badge", enforcement: "Remove Video Entirely" }
         };
         
+        // Yeni model (etiketlenmemis: null -> ilk açılışta kullanıcıya sorulur). Çekirdek yüklenemediyse eski model.
+        const modelVerisi = (typeof YTF !== 'undefined' && YTF.varsayilanAyar)
+            ? { surum: 2, ayar: YTF.varsayilanAyar() }
+            : { customMapping: {}, preferences: defaultPreferences };
+
         const varsayilanVeriler = {
             kurulumTarihi: tarihSaat,
-            pinKodu: "1234",
-            customMapping: {},
-            preferences: defaultPreferences,
+            pinKodu: "", // Yeni kurulumda PIN seçimini kullanıcı ilk açılışta yapar (options.js, "Hoş geldiniz" kartı)
+            kanalBilgileri: {}, // Kullanıcı eklerken sayfadan toplanan kanal adı/avatarı (PR 8E)
+            ...modelVerisi,
             ayarlar: {
                 shortsGizle: true,
                 yorumGizle: true,
@@ -35,4 +44,9 @@ browserAPI.runtime.onInstalled.addListener((details) => {
         
         browserAPI.storage.local.set(varsayilanVeriler);
     }
+});
+
+// Tarayıcı açılışında önceki oturumdan kalan PIN süresi/hata kayıtları temizlenir.
+browserAPI.runtime.onStartup.addListener(() => {
+    browserAPI.storage.local.remove(['pinKilitBitis', 'pinHataSayisi', 'pinHataBitis']);
 });

@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1200" height="132" viewBox="0 0 1200 132" role="img" aria-labelledby="b1-title b1-desc">
+  <title id="b1-title">01 — Uzantı</title>
+  <desc id="b1-desc">Tarayıcıda çalışan ve verisi yerelde kalan uzantı bölümü; sağda bir tarayıcı paneli ve açma kapama anahtarları.</desc>
+
+  <rect width="1200" height="132" rx="22" fill="#171A1C"/>
+  <rect x="1" y="1" width="1198" height="130" rx="21" fill="none" stroke="#F3EFE7" stroke-opacity="0.12"/>
+
+  <text x="64" y="92" font-family="Georgia, 'Times New Roman', serif" font-size="68" font-weight="700" letter-spacing="-2" fill="#F2635A">01</text>
+  <rect x="150" y="28" width="2" height="76" fill="#F3EFE7" fill-opacity="0.18"/>
+  <text x="182" y="40" font-family="ui-monospace, 'Cascadia Mono', Consolas, monospace" font-size="14" font-weight="600" letter-spacing="2.2" fill="#E9B45C">TARAYICI</text>
+  <text x="182" y="76" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" letter-spacing="-0.4" fill="#F3EFE7">Tarayıcıda çalışır,</text>
+  <text x="182" y="106" font-family="Georgia, 'Times New Roman', serif" font-size="28" font-weight="700" letter-spacing="-0.4" fill="#F3EFE7">veri yerelde kalır.</text>
+
+  <g transform="translate(864 26)">
+    <rect width="272" height="80" rx="12" fill="#24282C" stroke="#F3EFE7" stroke-opacity="0.15"/>
+    <circle cx="18" cy="16" r="3" fill="#F2635A"/>
+    <circle cx="30" cy="16" r="3" fill="#E9B45C"/>
+    <circle cx="42" cy="16" r="3" fill="#63C9A8"/>
+    <rect x="18" y="32" width="96" height="7" rx="3.5" fill="#F3EFE7" fill-opacity="0.65"/>
+    <rect x="220" y="29" width="34" height="14" rx="7" fill="#F2635A"/>
+    <rect x="18" y="52" width="132" height="7" rx="3.5" fill="#F3EFE7" fill-opacity="0.35"/>
+    <rect x="220" y="49" width="34" height="14" rx="7" fill="#F3EFE7" fill-opacity="0.22"/>
+  </g>
+</svg>

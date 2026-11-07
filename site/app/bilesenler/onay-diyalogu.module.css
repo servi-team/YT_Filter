@@ -1,0 +1,53 @@
+.dialog {
+  width: min(32rem, calc(100vw - 2rem));
+  max-width: none;
+  margin: auto;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+}
+
+.dialog::backdrop {
+  background: rgb(17 19 21 / 55%);
+  backdrop-filter: blur(2px);
+}
+
+.ic {
+  padding: clamp(1.25rem, 4vw, 1.75rem);
+  border: 1px solid var(--cizgi);
+  border-radius: 14px;
+  background: var(--yuzey);
+  box-shadow: 0 24px 70px -35px rgb(17 19 21 / 60%);
+}
+
+.baslik {
+  margin: 0 0 0.75rem;
+  font-size: clamp(1.3rem, 3vw, 1.6rem);
+}
+
+.govde {
+  color: var(--ikincil);
+  font-size: 0.95rem;
+  line-height: 1.55;
+}
+
+.govde > :last-child {
+  margin-bottom: 0;
+}
+
+.alt {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 0.6rem;
+  margin-top: 1.4rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--cizgi);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dialog::backdrop {
+    backdrop-filter: none;
+  }
+}

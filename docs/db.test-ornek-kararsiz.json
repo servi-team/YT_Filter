@@ -1,0 +1,13 @@
+{
+  "sema": 1,
+  "veriSurumu": 1,
+  "kanallar": [
+    { "id": "UCaaaaaaaaaaaaaaaaaaaaaa", "handle": "@trtspor", "ad": "TRT Spor", "anaKonu": "spor", "yanKonular": [], "etiketler": [] },
+    { "id": "UCbbbbbbbbbbbbbbbbbbbbbb", "handle": "@oyuncukanal", "ad": "Oyuncu Kanal", "anaKonu": "oyun", "yanKonular": ["eglence"], "etiketler": ["kufur"], "kararsizEtiketler": ["siddet"] }
+  ],
+  "videolar": [
+    { "id": "AAAAAAAAAAA", "anaKonu": "teknoloji", "yanKonular": ["oyun"], "etiketler": ["ai"], "kararsizKonular": ["eglence"], "kararsizEtiketler": ["kufur"] },
+    { "id": "BBBBBBBBBBB", "etiketler": ["argo"] },
+    { "id": "CCCCCCCCCCC", "kararsizKonular": ["spor"] }
+  ]
+}
